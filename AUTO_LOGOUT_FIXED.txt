@@ -1,0 +1,73 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║              ✅ AUTO-LOGOUT ISSUE FIXED (40-45 seconds)                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+🔍 PROBLEM:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Users were being automatically logged out after 40-45 seconds, even with
+valid sessions.
+
+🔧 ROOT CAUSES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. ❌ Axios timeout too short (30 seconds)
+2. ❌ Token validator treated network errors as invalid tokens
+3. ❌ Refresh logic was too aggressive (double validation)
+4. ❌ App resume triggered immediate validation
+
+✅ SOLUTIONS APPLIED:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. ✅ Increased timeout: 30s → 60s
+2. ✅ Smarter token validation: Only logout on 401/403, not network errors
+3. ✅ Removed double validation in refresh logic
+4. ✅ Added 500ms delay on app resume refresh
+
+📋 BEHAVIOR CHANGES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BEFORE:
+- Network timeout → Logout ❌
+- Slow API → Logout ❌
+- Network error → Logout ❌
+- Token expired → Logout ✅
+
+AFTER:
+- Network timeout → Stay logged in ✅
+- Slow API → Stay logged in ✅
+- Network error → Stay logged in ✅
+- Token expired (401/403) → Logout ✅
+
+📄 FILES MODIFIED:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. src/utils/config/axiosInstance.tsx
+   └─ Increased timeout to 60 seconds
+
+2. src/utils/config/tokenValidator.tsx
+   └─ Only invalidate token on 401/403, not network errors
+
+3. src/routes/index.tsx
+   └─ Less aggressive refresh logic
+   └─ Delayed app resume refresh
+
+✅ TESTING:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Test these scenarios:
+□ Use app for 5+ minutes → Should stay logged in
+□ Use on slow network → Should stay logged in
+□ Turn off network temporarily → Should stay logged in when back
+□ Put app in background → Should stay logged in on resume
+□ Wait for actual token expiration → Should logout correctly
+
+🎉 RESULT:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Users will now stay logged in unless their token is actually expired!
+Network issues won't cause unexpected logouts.
+
+See AUTO_LOGOUT_FIX.md for detailed technical explanation.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

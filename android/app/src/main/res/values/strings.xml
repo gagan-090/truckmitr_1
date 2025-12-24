@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name" translatable="false">TruckMitr</string>
+
+    <string name="facebook_app_id" translatable="false">1045443160897702</string>
+    <string name="fb_login_protocol_scheme" translatable="false">fb1045443160897702</string>
+    <string name="facebook_client_token" translatable="false">fe87da28dc4fe0e8b325d9df7604c1fe</string>
+
+    <!--  Google Map  -->
+    <string name="google_maps_key" templateMergeStrategy="preserve"   translatable="false">AIzaSyCjnRRjhyPaOnsCsAuwKCCNIYfxo8Q8os0</string>
+
+</resources>

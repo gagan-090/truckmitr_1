@@ -1,0 +1,25 @@
+{
+  "extends": "@react-native/typescript-config",
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["**/node_modules", "**/Pods"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@truckmitr/src/*": ["src/*"],
+      "@truckmitr/layouts/*": ["src/app/layouts/*"],
+      "@truckmitr/modals/*": ["src/app/modals/*"],
+      "@truckmitr/stacks/*": ["src/stacks/*"],
+      "@truckmitr/routes/*": ["src/routes/*"],
+      "@truckmitr/res/*": ["src/res/*"],
+      "@truckmitr/redux/*": ["src/redux/*"],
+      "@truckmitr/functions/*": ["src/app/functions/*"],
+      "@truckmitr/hooks/*": ["src/app/hooks/*"],
+      "@truckmitr/components/*": ["src/app/components/*"],
+      "@truckmitr/permissions/*": ["src/app/permissions/*"],
+      "@truckmitr/location/*": ["src/app/location/*"],
+      "@truckmitr/assets/*": ["src/assets/*"],
+      "@truckmitr/lib/*": ["src/lib/*"],
+      "@truckmitr/utils/*": ["src/utils/*"]
+    }
+  }
+}

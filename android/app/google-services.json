@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "340655515389",
+    "project_id": "truckmitr-728e5",
+    "storage_bucket": "truckmitr-728e5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:340655515389:android:2a519db0de7a5dda920094",
+        "android_client_info": {
+          "package_name": "com.truckmitr"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjnRRjhyPaOnsCsAuwKCCNIYfxo8Q8os0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
