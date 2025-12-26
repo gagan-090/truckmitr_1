@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { setupFirebaseNotifications } from '@truckmitr/src/utils/notification';
 import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
 import { END_POINTS } from '@truckmitr/src/utils/config';
-import { currentLocationDetails } from '@truckmitr/src/utils/maps/location/location.detail';
+import { fetchCompleteLocationDetails } from '@truckmitr/src/utils/maps/location/location.detail';
 
 export default function Welcome() {
     const { t } = useTranslation();
@@ -26,7 +26,7 @@ export default function Welcome() {
     const imageColorGradient = ['#3D5EE1', '#18A9B3']
 
     const _currentLocationDetails = async () => {
-        const locationData = await currentLocationDetails();
+        const locationData = await fetchCompleteLocationDetails();
         console.log(locationData, '------------- locationData')
     };
 

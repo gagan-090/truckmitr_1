@@ -2,8 +2,12 @@ import React, { useEffect } from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { STACKS } from '@truckmitr/stacks/stacks';
 import Bottom from './tabs/bottom';
-import { AddDriver, AddJob, AddLoad, AppliedJob, AvailableJob, ContactUs, Dashboard, DriverDrivingDetailsByTransporter, DriverList, DriverProfileEditByTransporter, DriverUploadDocumentsByTransporter, DrivingDetails, DrivingDetailsTransporter, ExcelImport, JobStep2, JobStep3, LanguageMain, LocationSearch, LocationMap, Modules, Notification, PaymentSuccess, Player, PreferredColor, Privacy, ProfileEdit, ProfileEditTransporter, Quiz, QuizResult, Rating, Search, Settings, SuitsJob, TransporterAppliedJob, TransporterVerificationScreen, UploadDocuments, UploadDocumentsTransporter, ViewJobs } from '@truckmitr/layouts/index';
+import { AddDriver, AddJob, AddLoad, AppliedJob, AvailableJob, ContactUs, Dashboard, DriverDrivingDetailsByTransporter, DriverList, DriverProfileEditByTransporter, DriverUploadDocumentsByTransporter, DrivingDetails, DrivingDetailsTransporter, ExcelImport, JobStep2, JobStep3, LanguageMain, LocationSearch, LocationMap, Modules, Notification, PaymentSuccess, Player, PreferredColor, Privacy, ProfileEdit, ProfileEditTransporter, Quiz, QuizResult, Rating, Search, Settings, SuitsJob, TransporterAppliedJob, TransporterVerificationScreen, UploadDocuments, UploadDocumentsTransporter, ViewJobs, ProfileCompletion } from '@truckmitr/layouts/index';
 import { setupFirebaseNotifications, initializeNotificationChannel } from '@truckmitr/src/utils/notification';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { NavigatorParams } from '@truckmitr/stacks/stacks';
 import { DocumentUploadScreen, VerificationStatusScreen, } from '../app/layouts/main';
 import DriverInvites from '@truckmitr/src/app/layouts/main/driver-invites/driver-invites';
 import InviteDriver from '@truckmitr/src/app/layouts/main/all-driver-list/all-drivers-invitation-tab';
@@ -21,6 +25,23 @@ const Stack = createNativeStackNavigator();
 export default function Main() {
   const hasSetupNotifications = React.useRef(false);
   const [isMounted, setIsMounted] = React.useState(false);
+  const navigation = useNavigation<NativeStackNavigationProp<NavigatorParams>>();
+
+  // Check for saved profile completion state on mount
+  useEffect(() => {
+    const checkProfileCompletion = async () => {
+      try {
+        const savedState = await AsyncStorage.getItem('profile_completion_progress');
+        if (savedState) {
+          console.log('Restoring Profile Completion Flow');
+          navigation.navigate(STACKS.PROFILE_COMPLETION as any);
+        }
+      } catch (e) {
+        console.log('Error checking profile completion state', e);
+      }
+    };
+    checkProfileCompletion();
+  }, []);
 
   // Mark component as mounted after a delay
   useEffect(() => {
@@ -48,10 +69,10 @@ export default function Main() {
       try {
         console.log('Initializing notifications for authenticated user...');
         await initializeNotificationChannel();
-        
+
         // Additional delay before requesting permission to avoid activity restart issues
         await new Promise<void>(resolve => setTimeout(() => resolve(), 1000));
-        
+
         const token = await setupFirebaseNotifications();
         if (token) {
           console.log('Firebase notifications initialized successfully with token:', token);
@@ -129,6 +150,7 @@ export default function Main() {
       <Stack.Screen name={STACKS.REFERRAL} component={Referral} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.VERIFIED_DRIVERS_DOCUMENTS_UPLOAD} component={DriverDocumentUploadScreen} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.PAYMENT_HISTORY_SCREEN} component={PaymentHistoryScreen} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.PROFILE_COMPLETION} component={ProfileCompletion} options={{ animation: 'slide_from_right' }} />
     </Stack.Navigator>
   )
 }

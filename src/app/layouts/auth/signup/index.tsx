@@ -264,7 +264,7 @@ export default function Signup() {
                                 }));
                             }}
                             keyboardType="default"
-                            theme={{ colors: { primary: colors.royalBlue, background: colors.white, onSurface: colors.black  } }}
+                            theme={{ colors: { primary: colors.royalBlue, background: colors.white, onSurface: colors.black } }}
                             style={{ backgroundColor: colors.transparent }}
                             outlineStyle={{ borderRadius: 10 }}
                         />
@@ -287,7 +287,7 @@ export default function Signup() {
                                 }));
                             }}
                             keyboardType="email-address"
-                            theme={{ colors: { primary: colors.royalBlue, background: colors.white, onSurface: colors.black  } }}
+                            theme={{ colors: { primary: colors.royalBlue, background: colors.white, onSurface: colors.black } }}
                             style={{ backgroundColor: colors.transparent }}
                             outlineStyle={{ borderRadius: 10 }}
                         />
@@ -298,7 +298,7 @@ export default function Signup() {
 
                         {/* Mobile Input */}
                         <PaperTextInput
-                            left={<PaperTextInput.Affix text="+91" textStyle={{color: colors.black}} />}
+                            left={<PaperTextInput.Affix text="+91" textStyle={{ color: colors.black }} />}
                             mode="outlined"
                             label={<Text>{t(`mobile`)} <Text style={{ color: 'red' }}>*</Text></Text>}
                             value={mobile}
@@ -311,7 +311,7 @@ export default function Signup() {
                             }}
                             maxLength={10}
                             keyboardType="phone-pad"
-                            theme={{ colors: { primary: colors.royalBlue, background: colors.white, onSurface: colors.black  } }}
+                            theme={{ colors: { primary: colors.royalBlue, background: colors.white, onSurface: colors.black } }}
                             style={{ backgroundColor: colors.transparent }}
                             outlineStyle={{ borderRadius: 10 }}
                         />
@@ -319,18 +319,18 @@ export default function Signup() {
                             <Text style={{ color: 'red', fontSize: responsiveFontSize(1.6), marginTop: 4 }}>{errors.mobile}</Text>
                         )}
                         {role == 'driver' && <>
-                        <Space height={responsiveHeight(1.5)} />
-                        <PaperTextInput
-                            mode="outlined"
-                            label={t(`referralCode`)}
-                            value={code}
-                            onChangeText={(text) => {
-                                setCode(text)
-                            }}
-                            theme={{ colors: { primary: colors.royalBlue } }}
-                            style={{ backgroundColor: colors.transparent }}
-                            outlineStyle={{ borderRadius: 10 }}
-                        /> </>}
+                            <Space height={responsiveHeight(1.5)} />
+                            <PaperTextInput
+                                mode="outlined"
+                                label={t(`referralCode`)}
+                                value={code}
+                                onChangeText={(text) => {
+                                    setCode(text)
+                                }}
+                                theme={{ colors: { primary: colors.royalBlue } }}
+                                style={{ backgroundColor: colors.transparent }}
+                                outlineStyle={{ borderRadius: 10 }}
+                            /> </>}
                         <Space height={responsiveHeight(1.5)} />
                         {/* State Dropdown using fetched locations */}
                         <View>

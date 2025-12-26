@@ -337,16 +337,16 @@ const Otp = () => {
                     console.log("🔹 Saving token to storage...");
                     await saveUserData(token);
                     console.log("🔹 Token saved. Marking session as active...");
-                    
+
                     // Mark session as active immediately to prevent re-initialization
                     await AsyncStorage.setItem('app_session_active', 'true');
-                    
+
                     console.log("🔹 Fetching profile...");
 
                     try {
                         // Add a small delay to ensure backend has processed the token
                         await new Promise<void>(resolve => setTimeout(() => resolve(), 300));
-                        
+
                         // Explicitly pass token to avoid race condition with AsyncStorage
                         // Also skip global logout to prevent crash if 401
                         const profile: any = await axiosInstance.get(END_POINTS?.GET_PROFILE, {
@@ -360,11 +360,17 @@ const Otp = () => {
                         if (profile?.data?.status) {
                             console.log("🔹 Profile fetched successfully. Dispatching actions...");
                             dispatch(userAction(profile?.data))
-                            
-                            // Dispatch authentication immediately - no need for delay
-                            console.log("🔹 Dispatching userAuthenticatedAction(true)");
-                            dispatch(userAuthenticatedAction(true))
-                            
+
+                            // For new signups, navigate to profile completion screen
+                            if (flow !== 'login') {
+                                console.log("🔹 New signup - navigating to Profile Completion...");
+                                navigation.navigate(STACKS.PROFILE_COMPLETION as any);
+                            } else {
+                                // Dispatch authentication immediately for login
+                                console.log("🔹 Login - Dispatching userAuthenticatedAction(true)");
+                                dispatch(userAuthenticatedAction(true))
+                            }
+
                             // Setup notifications after successful login
                             setupFirebaseNotifications();
                         } else {

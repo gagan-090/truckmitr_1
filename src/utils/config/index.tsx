@@ -1,7 +1,7 @@
 
 export const BASE_URL = `https://development.truckmitr.com/`
 // export const BASE_URL = `https://truckmitr.com/`
-
+// export const BASE_URL = `http://192.168.1.41:8000/`
 
 export const STATICS = {
     // RAYZORPAY_KEY_ID: 'rzp_live_sZcCjZPcBGzMSm',  // live

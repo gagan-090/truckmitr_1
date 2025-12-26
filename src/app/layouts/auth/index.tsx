@@ -6,5 +6,6 @@ import Otp from "@truckmitr/src/app/layouts/auth/otp"
 import Language from "@truckmitr/src/app/layouts/auth/language"
 import Approval from "@truckmitr/src/app/layouts/auth/approval"
 import IntroVideo from "@truckmitr/src/app/layouts/auth/introVideo"
+import ProfileCompletion from "@truckmitr/src/app/layouts/auth/profile-completion"
 
-export { Namaste, Welcome, Login, Signup, Otp, Language,Approval,IntroVideo }
+export { Namaste, Welcome, Login, Signup, Otp, Language, Approval, IntroVideo, ProfileCompletion }

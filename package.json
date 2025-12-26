@@ -39,6 +39,7 @@
     "react-native-android-location-enabler": "^3.0.1",
     "react-native-blob-util": "^0.22.2",
     "react-native-bootsplash": "^6.3.10",
+    "react-native-calendars": "^1.1313.0",
     "react-native-contacts": "^8.0.6",
     "react-native-date-picker": "^5.0.13",
     "react-native-device-info": "^14.0.4",

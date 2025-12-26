@@ -10,6 +10,7 @@ export type NavigatorParams = {
     preferredColor: undefined
     paymentSuccess: any
     signup: undefined
+    profileCompletion: undefined
     phone: undefined;
     countries: undefined;
     name: undefined
@@ -86,7 +87,7 @@ export type NavigatorParams = {
     loadingModal: any
     VerificationDriversByTransporter: undefined
     invites: undefined
-    "All Drivers": undefined
+    "All Drivers": { job_id?: any } | undefined
     Verification: undefined
     referral: undefined
 };
@@ -103,6 +104,7 @@ export const STACKS = {
     PREFERRED_COLOR: 'preferredColor',
     PAYMENT_SUCCESS: 'paymentSuccess',
     SIGNUP: 'signup',
+    PROFILE_COMPLETION: 'profileCompletion',
     PHONE: 'phone',
     COUNTRIES: 'countries',
     NAME: 'name',
