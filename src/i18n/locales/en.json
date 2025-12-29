@@ -953,5 +953,7 @@
   "premiumTransporter": "Premium Transporter",
   "unlimitedJobs": "Unlimited Jobs",
   "allModules": "All Modules",
-  "iAmA": "I am a"
+  "iAmA": "I am a",
+  "driver": "Driver",
+  "transporter": "Transporter"
 }
