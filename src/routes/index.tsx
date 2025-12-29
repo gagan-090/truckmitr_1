@@ -1,4 +1,4 @@
-import { StatusBar, useColorScheme, View, Image, AppState } from 'react-native';
+import { StatusBar, useColorScheme, View, Image, AppState, Linking } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { darkTheme, lightTheme } from '@truckmitr/res/colors';
@@ -25,6 +25,13 @@ import InAppUpdatePopup from '../utils/update';
 import analytics from '@react-native-firebase/analytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppEventsLogger } from 'react-native-fbsdk-next';
+import { consumePendingNotificationNavigation, resetNotificationFlag } from '../utils/notification';
+
+export let isNavigationReady = false;
+
+export const setNavigationReady = (ready: boolean) => {
+  isNavigationReady = ready;
+};
 
 export default function Routes() {
   const dispatch = useDispatch();
@@ -310,6 +317,13 @@ export default function Routes() {
     init();
     SystemNavigationBar.setNavigationColor('translucent');
   }, []);
+  useEffect(() => {
+    const sub = Linking.addEventListener('url', ({ url }) => {
+      console.log('🌐 Deep link received by Navigation:', url);
+    });
+
+    return () => sub.remove();
+  }, []);
 
   // Only show loading screen during initial app load, not during refresh
   if (!isAppReady && isInitializing) {
@@ -328,9 +342,18 @@ export default function Routes() {
   // -------------------------------
   return (
     <NavigationContainer
+      // linking={linking}
       ref={navigationRef}
       theme={theme}
-      onReady={() => {
+      onReady={async () => {
+        setNavigationReady(true);
+        console.log('🟢 NavigationContainer READY');
+        await consumePendingNotificationNavigation();
+        console.log(
+          '🟢 Initial route:',
+          navigationRef.current?.getCurrentRoute()?.name
+        );
+
         const initialScreen = navigationRef.current?.getCurrentRoute()?.name;
         routeNameRef.current = initialScreen;
 
@@ -351,6 +374,7 @@ export default function Routes() {
           await logUserEventBackend(currentScreen); // log every screen change
 
           routeNameRef.current = currentScreen;
+          resetNotificationFlag();
         }
       }}
     >

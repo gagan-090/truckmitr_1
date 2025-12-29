@@ -1,3 +1,4 @@
+
 import messaging, {
     FirebaseMessagingTypes,
     AuthorizationStatus,
@@ -7,14 +8,33 @@ import {
     requestNotifications,
     RESULTS,
 } from 'react-native-permissions';
-import notifee, { AndroidImportance } from '@notifee/react-native';
+import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
 import { Platform } from 'react-native';
+import { navigationRef } from '../global/global.ref';
+import { STACKS } from '@truckmitr/src/stacks/stacks';
+import { isNavigationReady } from '@truckmitr/src/routes';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CommonActions } from '@react-navigation/native';
 
 const CHANNEL_ID = 'truckMitr_channel';
 const CHANNEL_NAME = 'TruckMitr Notifications';
 const SOUND_NAME = 'truck_sound';
 
 let notificationShown = false;
+let notificationNavigationHandled = false;
+let pendingNotificationData: NotificationData | null = null;
+const PENDING_NOTIFICATION_KEY = 'PENDING_NOTIFICATION_NAV';
+
+type NotificationData = {
+    screen?: string;
+    job_id?: string;
+    room_id?: string;
+};
+
+type StackRoute =
+    | typeof STACKS.HOME
+    | typeof STACKS.PROFILE_EDIT
+    | typeof STACKS.JOB;
 
 export const setupFirebaseNotifications = async () => {
     console.log('--- Setting up Firebase Notifications ---');
@@ -53,6 +73,111 @@ export const setupFirebaseNotifications = async () => {
     attachNotificationListeners();
     console.log('--- Firebase Notifications setup complete ---');
     return token;
+};
+
+// export const handleNotificationNavigation = async (data?: NotificationData) => {
+//     console.log('📍 handleNotificationNavigation called with:', data);
+
+//     if (!data?.screen) {
+//         console.log('🔕 No screen in notification data');
+//         return;
+//     }
+
+//     // Navigation not ready → store
+//     if (!isNavigationReady || !navigationRef.current) {
+//         console.log('⏳ Navigation not ready → saving to AsyncStorage');
+//         await AsyncStorage.setItem(
+//             PENDING_NOTIFICATION_KEY,
+//             JSON.stringify(data)
+//         );
+//         return;
+//     }
+
+//     console.log('✅ Navigating to:', data.screen);
+
+//     switch (data.screen) {
+//         case 'profileEdit':
+//             navigationRef.current.navigate(STACKS.PROFILE_EDIT);
+//             break;
+//         case 'jobs':
+//             navigationRef.current.navigate(STACKS.JOB);
+//             break;
+//         default:
+//             navigationRef.current.navigate(STACKS.HOME);
+//     }
+// };
+
+// export const handleNotificationNavigation = (data?: NotificationData) => {
+//     console.log('📍 handleNotificationNavigation:', data);
+
+//     if (!data?.screen) return;
+
+//     switch (data.screen) {
+//         case 'profileEdit':
+//             navigationRef.current?.navigate(STACKS.PROFILE_EDIT);
+//             break;
+
+//         default:
+//             navigationRef.current?.navigate(STACKS.HOME);
+//     }
+// };
+
+
+
+
+// export const handleNotificationNavigation = async (data?: NotificationData) => {
+//     if (!data?.screen || !navigationRef.current) return;
+
+//     console.log('🔁 Notification navigation:', data.screen);
+
+//     // 1️⃣ Always reset to Main initial screen
+//     navigationRef.current.dispatch(
+//         CommonActions.reset({
+//             index: 0,
+//             routes: [{ name: STACKS.BOTTOM_TAB }],
+//         })
+//     );
+
+//     // 2️⃣ Navigate AFTER reset (small delay is important)
+//     setTimeout(() => {
+//         if (!navigationRef.current) return;
+
+//         switch (data.screen) {
+//             case 'profileEdit':
+//                 navigationRef.current.navigate(STACKS.PROFILE_EDIT);
+//                 break;
+
+//             case 'jobs':
+//                 navigationRef.current.navigate(STACKS.JOB);
+//                 break;
+
+//             default:
+//                 // stay on home
+//                 break;
+//         }
+//     }, 150);
+// };
+
+export const handleNotificationNavigation = async (data?: NotificationData) => {
+    if (!data?.screen || !navigationRef.current) return;
+
+    console.log('📍 Notification navigation:', data.screen);
+
+    switch (data.screen) {
+        case 'profileEdit':
+            navigationRef.current.navigate(STACKS.PROFILE_EDIT);
+            break;
+
+        case 'jobs':
+            navigationRef.current.navigate(STACKS.JOB);
+            break;
+
+        default:
+            navigationRef.current.navigate(STACKS.HOME);
+    }
+
+    // ✅ IMPORTANT: clear immediately after use
+    await AsyncStorage.removeItem(PENDING_NOTIFICATION_KEY);
 };
 
 const requestFCMUserPermission = async () => {
@@ -186,70 +311,132 @@ const attachNotificationListeners = () => {
         console.log('------------------------------------------------');
     });
 
-    messaging().setBackgroundMessageHandler(async msg => {
-        console.log('--- Background message received (setBackgroundMessageHandler) ---');
-        console.log('Message:', JSON.stringify(msg, null, 2));
+    // messaging().setBackgroundMessageHandler(async msg => {
+    //     console.log('--- Background message received (setBackgroundMessageHandler) ---');
+    //     console.log('Message:', JSON.stringify(msg, null, 2));
 
-        const title: any = msg.notification?.title || msg.data?.title;
-        const body: any = msg.notification?.body || msg.data?.body;
+    //     const title: any = msg.notification?.title || msg.data?.title;
+    //     const body: any = msg.notification?.body || msg.data?.body;
 
-        try {
-            await displayNotificationWithTruckSound(title, body, msg.data);
-        } catch (displayError) {
-            console.error('Error displaying background notification:', displayError);
-        }
+    //     try {
+    //         await displayNotificationWithTruckSound(title, body, msg.data);
+    //     } catch (displayError) {
+    //         console.error('Error displaying background notification:', displayError);
+    //     }
 
-        console.log('----------------------------------------------------');
-    });
+    //     console.log('----------------------------------------------------');
+    // });
 
     messaging().onNotificationOpenedApp(msg => {
         console.log('Message:', JSON.stringify(msg, null, 2));
         notificationShown = false;
         // You can add navigation logic here based on msg.data
+        handleNotificationNavigation(msg?.data);
         console.log('-------------------------------------------------------------------');
     });
 
+    // messaging()
+    //     .getInitialNotification()
+    //     .then(async msg => {
+    //         if (msg) {
+    //             console.log('--- App launched from quit by tapping notification (getInitialNotification) ---');
+    //             console.log('Message:', JSON.stringify(msg, null, 2));
+    //             notificationShown = false;
+    //             handleNotificationNavigation(msg?.data);
+    //             // You can add navigation logic here based on msg.data
+    //             // handleNotificationNavigation(msg?.data);
+    //             console.log('---------------------------------------------------------------------');
+    //         } else {
+    //             console.log('No initial notification found (app launched normally).');
+    //         }
+    //     });
+
+    // messaging()
+    //     .getInitialNotification()
+    //     .then(async msg => {
+    //         if (msg?.data) {
+    //             console.log('🚀 Kill mode notification received:', msg.data);
+
+    //             await AsyncStorage.setItem(
+    //                 'PENDING_NOTIFICATION_NAV',
+    //                 JSON.stringify(msg.data)
+    //             );
+    //         }
+    //     });
+
     messaging()
         .getInitialNotification()
-        .then(msg => {
-            if (msg) {
-                console.log('--- App launched from quit by tapping notification (getInitialNotification) ---');
-                console.log('Message:', JSON.stringify(msg, null, 2));
-                notificationShown = false;
-                // You can add navigation logic here based on msg.data
-                console.log('---------------------------------------------------------------------');
-            } else {
-                console.log('No initial notification found (app launched normally).');
+        .then(async msg => {
+            if (msg?.data) {
+                console.log('🚀 Kill mode notification received:', msg.data);
+
+                if (navigationRef.current) {
+                    console.log('✅ Navigation ready, handling immediately');
+                    handleNotificationNavigation(msg.data);
+                } else {
+                    console.log('⏳ Navigation NOT ready, saving to storage');
+                    const storageData = { ...msg.data, timestamp: Date.now() };
+                    await AsyncStorage.setItem(
+                        PENDING_NOTIFICATION_KEY,
+                        JSON.stringify(storageData)
+                    );
+                }
             }
         });
 
+
     notifee.onForegroundEvent(({ type, detail }) => {
-        console.log('--- Notifee Foreground Event ---');
-        console.log('Event Type:', type);
-        console.log('Detail:', JSON.stringify(detail, null, 2));
-        // if (type === notifee.EventType.PRESS) {
-        //     console.log('User pressed Notifee notification in foreground.');
-        // } else if (type === notifee.EventType.DISMISSED) {
-        //     console.log('User dismissed Notifee notification in foreground.');
-        // }
-        console.log('-------------------------------');
+        console.log('🔔 Notifee FOREGROUND event:', type);
+
+        if (type === EventType.PRESS) {
+            console.log('🟢 User tapped notification (FOREGROUND)');
+            handleNotificationNavigation(detail?.notification?.data);
+        }
     });
 
-    notifee.onBackgroundEvent(async ({ type, detail }) => {
-        console.log('--- Notifee Background Event ---');
-        console.log('Event Type:', type);
-        console.log('Detail:', JSON.stringify(detail, null, 2));
-        // if (type === notifee.EventType.PRESS) {
-        //     console.log('User pressed Notifee notification in background/quit.');
-        // } else if (type === notifee.EventType.DISMISSED) {
-        //     console.log('User dismissed Notifee notification in background/quit.');
-        // }
-        console.log('-------------------------------');
-        return Promise.resolve();
-    });
+    // notifee.onBackgroundEvent(async ({ type, detail }) => {
+    //     console.log('🔔 Notifee BACKGROUND event:', type);
+
+    //     if (type === EventType.PRESS) {
+    //         console.log('🟢 User tapped notification (BACKGROUND / KILL)');
+    //         handleNotificationNavigation(detail?.notification?.data);
+    //     }
+    // });
 };
 
 // Add method to manually reset the notification flag if needed
 export const resetNotificationFlag = () => {
     notificationShown = false;
+    notificationNavigationHandled = false;
 };
+
+// Update type to include timestamp for internal storage
+export const consumePendingNotificationNavigation = async () => {
+    try {
+        const raw = await AsyncStorage.getItem(PENDING_NOTIFICATION_KEY);
+        if (!raw) return;
+
+        const parsedData = JSON.parse(raw);
+        const { timestamp, ...data } = parsedData;
+
+        // Check if notification is stale (older than 5 minutes)
+        const isStale = Date.now() - (timestamp || 0) > 5 * 60 * 1000;
+
+        // Always clear the data to prevent loops
+        await AsyncStorage.removeItem(PENDING_NOTIFICATION_KEY);
+
+        if (isStale) {
+            console.log('⏳ Pending notification is stale, ignoring...');
+            return;
+        }
+
+        console.log('🚀 Consuming pending notification:', data);
+        handleNotificationNavigation(data);
+    } catch (e) {
+        console.error('Error consuming pending notification:', e);
+        await AsyncStorage.removeItem(PENDING_NOTIFICATION_KEY);
+    }
+};
+
+
+

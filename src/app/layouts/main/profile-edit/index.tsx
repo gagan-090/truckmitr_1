@@ -1,4 +1,4 @@
-import { Image, Modal, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Image, Modal, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, ScrollView, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useColor, useResponsiveScale, useShadow } from '@truckmitr/src/app/hooks';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,899 +6,1244 @@ import { useNavigation } from '@react-navigation/native';
 import { NavigatorParams, STACKS } from '@truckmitr/stacks/stacks';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Space } from '@truckmitr/src/app/components';
-import { hitSlop, isIOS } from '@truckmitr/src/app/functions';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useDispatch, useSelector } from 'react-redux';
-import DatePicker from 'react-native-date-picker'
-import moment from 'moment'
+import moment from 'moment';
 import ImagePicker from 'react-native-image-crop-picker';
 import { Dropdown } from 'react-native-element-dropdown';
 import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
 import { BASE_URL, END_POINTS } from '@truckmitr/src/utils/config';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
-import { userEditAction } from '@truckmitr/src/redux/actions/user.action';
+import { userAction, userEditAction } from '@truckmitr/src/redux/actions/user.action';
 import { useTranslation } from 'react-i18next';
 import { requestCameraPermission, requestPhotoLibraryPermission } from '@truckmitr/src/utils/permissions/imagePermissions';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
+import { Calendar } from 'react-native-calendars';
+import DatePicker from 'react-native-date-picker';
+import Video from 'react-native-video';
 
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 
+// Truck Images
+const TruckImages = {
+    cargoOpen: require('@truckmitr/src/assets/trucks/open_cargo.png'),
+    cargoClosed: require('@truckmitr/src/assets/trucks/close_cargo.png'),
+    tipper: require('@truckmitr/src/assets/trucks/tripper.png'),
+    trailer: require('@truckmitr/src/assets/trucks/tailer.png'),
+    tanker: require('@truckmitr/src/assets/trucks/tainkers.png'),
+    carCarrier: require('@truckmitr/src/assets/trucks/car_carrier.png'),
+    container: require('@truckmitr/src/assets/trucks/container.png'),
+    reefer: require('@truckmitr/src/assets/trucks/refregerator.png'),
+};
+
+// Driver Steps - Profile photo first
+const DRIVER_STEPS = [
+    { id: 'avatar', title: 'profilePhotoStep', subtitle: 'profilePhotoStepDesc' },
+    { id: 'personal_info', title: 'personalInfoStep', subtitle: 'personalInfoStepDesc' },
+    { id: 'dob', title: 'dateOfBirthStep', subtitle: 'dateOfBirthStepDesc' },
+    { id: 'gender', title: 'genderMaritalStep', subtitle: 'genderMaritalStepDesc' },
+    { id: 'education', title: 'educationStep', subtitle: 'educationStepDesc' },
+    { id: 'address', title: 'addressStep', subtitle: 'addressStepDesc' },
+    { id: 'vehicle', title: 'vehicleTypeStep', subtitle: 'vehicleTypeStepDesc' },
+    { id: 'experience', title: 'experienceStep', subtitle: 'experienceStepDesc' },
+    { id: 'license_type', title: 'licenseTypeStep', subtitle: 'licenseTypeStepDesc' },
+    { id: 'salary', title: 'salaryStep', subtitle: 'salaryStepDesc' },
+    { id: 'preferences', title: 'preferencesStep', subtitle: 'preferencesStepDesc' },
+    { id: 'aadhar_details', title: 'aadharStep', subtitle: 'aadharStepDesc' },
+    { id: 'license_details', title: 'licenseStep', subtitle: 'licenseStepDesc' },
+];
+
+// Transporter Steps - Profile photo first
+const TRANSPORTER_STEPS = [
+    { id: 'avatar', title: 'profilePhotoStep', subtitle: 'profilePhotoStepDesc' },
+    { id: 'personal_info', title: 'personalInfoStep', subtitle: 'personalInfoStepDesc' },
+    { id: 'transport_details', title: 'transportDetailsStep', subtitle: 'transportDetailsStepDesc' },
+    { id: 'address', title: 'addressStep', subtitle: 'addressStepDesc' },
+    { id: 'year_of_exp', title: 'experienceYearsStep', subtitle: 'experienceYearsStepDesc' },
+    { id: 'fleet_size', title: 'fleetSizeStep', subtitle: 'fleetSizeStepDesc' },
+    { id: 'industry_segment', title: 'industryStep', subtitle: 'industryStepDesc' },
+    { id: 'avg_km_run', title: 'avgKmStep', subtitle: 'avgKmStepDesc' },
+    { id: 'vehicle', title: 'vehicleTypeStep', subtitle: 'vehicleTypeStepDescTransporter' },
+    { id: 'pan_gst', title: 'panGstStep', subtitle: 'panGstStepDesc' },
+];
+
+// Voice file mapping for Hindi step descriptions - using step IDs
+const DRIVER_VOICE_FILES: { [key: string]: any } = {
+    'avatar': require('@truckmitr/src/assets/voice/step_profile_photo.mp3'),
+    'personal_info': require('@truckmitr/src/assets/voice/step_personal_info.mp3'),
+    'dob': require('@truckmitr/src/assets/voice/step_dob.mp3'),
+    'gender': require('@truckmitr/src/assets/voice/step_gender.mp3'),
+    'education': require('@truckmitr/src/assets/voice/step_education.mp3'),
+    'address': require('@truckmitr/src/assets/voice/step_address.mp3'),
+    'vehicle': require('@truckmitr/src/assets/voice/step_vehicle.mp3'),
+    'experience': require('@truckmitr/src/assets/voice/step_experience.mp3'),
+    'license_type': require('@truckmitr/src/assets/voice/step_license_type.mp3'),
+    'salary': require('@truckmitr/src/assets/voice/step_salary.mp3'),
+    'preferences': require('@truckmitr/src/assets/voice/step_preferences.mp3'),
+    'aadhar_details': require('@truckmitr/src/assets/voice/step_aadhar.mp3'),
+    'license_details': require('@truckmitr/src/assets/voice/step_license.mp3'),
+};
+
+const TRANSPORTER_VOICE_FILES: { [key: string]: any } = {
+    'avatar': require('@truckmitr/src/assets/voice/step_profile_photo.mp3'),
+    'personal_info': require('@truckmitr/src/assets/voice/step_personal_info.mp3'),
+    'transport_details': require('@truckmitr/src/assets/voice/step_transport_details.mp3'),
+    'address': require('@truckmitr/src/assets/voice/step_address.mp3'),
+    'year_of_exp': require('@truckmitr/src/assets/voice/step_experience_years.mp3'),
+    'fleet_size': require('@truckmitr/src/assets/voice/step_fleet_size.mp3'),
+    'industry_segment': require('@truckmitr/src/assets/voice/step_industry.mp3'),
+    'avg_km_run': require('@truckmitr/src/assets/voice/step_avg_km.mp3'),
+    'vehicle': require('@truckmitr/src/assets/voice/step_vehicle_transporter.mp3'),
+    'pan_gst': require('@truckmitr/src/assets/voice/step_pan_gst.mp3'),
+};
+
 export default function ProfileEdit() {
-    const { t } = useTranslation();
-    const dispatch = useDispatch()
+    const { t, i18n } = useTranslation();
+    const dispatch = useDispatch();
     const colors = useColor();
+    const { shadow } = useShadow();
     const safeAreaInsets = useSafeAreaInsets();
     const { responsiveHeight, responsiveWidth, responsiveFontSize } = useResponsiveScale();
     const navigation = useNavigation<NavigatorProp>();
-    const { shadow } = useShadow();
-    const { userEdit } = useSelector((state: any) => { return state?.user })
+    const { userEdit, isTransporter, user } = useSelector((state: any) => state?.user);
 
-    const dateOfBirth = userEdit?.DOB ? new Date(userEdit?.DOB) : moment().subtract(18, 'years').toDate();
+    const userRole = isTransporter || user?.role === 'transporter' || userEdit?.role === 'transporter' ? 'transporter' : 'driver';
+    const STEPS = userRole === 'transporter' ? TRANSPORTER_STEPS : DRIVER_STEPS;
 
-    const [dateOfBirthModel, setdateOfBirthModel] = useState(false)
-    const [profileModel, setprofileModel] = useState(false)
-
+    const [currentStep, setCurrentStep] = useState(0);
+    const [profileModalOpen, setProfileModalOpen] = useState(false);
     const [locations, setLocations] = useState<any[]>([]);
+    const [vehicleTypes, setVehicleTypes] = useState<any[]>([]);
+    const [yearPickerOpen, setYearPickerOpen] = useState(false);
+    const [licenseExpiryModal, setLicenseExpiryModal] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [calendarMonth, setCalendarMonth] = useState(moment().subtract(18, 'years').format('YYYY-MM-DD'));
+    const [currentAudioSource, setCurrentAudioSource] = useState<any>(null);
+    const [isVoiceMuted, setIsVoiceMuted] = useState(false);
+    const [loadingPincode, setLoadingPincode] = useState(false);
 
-    const [errors, setErrors] = useState<{
-        fullName?: string;
-        email?: string;
-        mobile?: string;
-        dateOfBirth?: string;
-        gender?: string;
-        address?: string
-        city?: string
-        state?: string;
-    }>({});
+    const contentOpacity = useSharedValue(1);
+    const contentTranslateX = useSharedValue(0);
 
-    const validate = (): boolean => {
-        let valid = true;
-        const newErrors: { [key: string]: string } = {};
-        if (!userEdit?.name) {
-            newErrors.fullName = t('fullNameRequired');
-            valid = false;
-        }
-        // if (!userEdit?.email) {
-        //     newErrors.email = t('e-mailRequired');
-        //     valid = false;
-        // }
-        else if (userEdit?.email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(userEdit?.email)) {
-                newErrors.email = t('invalidEmailFormat');
-                valid = false;
-            }
-        }
-        if (!userEdit?.mobile) {
-            newErrors.mobile = t('mobileNumberRequired');
-            valid = false;
-        } else if (userEdit?.mobile.length < 10) {
-            newErrors.mobile = t('mobileNumber_10_digits');
-            valid = false;
-        }
-        if (!userEdit?.DOB) {
-            newErrors.dateOfBirth = t('dobRequired');
-            valid = false;
-        }
-        if (!userEdit?.Sex) {
-            newErrors.gender = t('genderRequired');
-            valid = false;
-        }
-        if (!userEdit?.address) {
-            newErrors.address = t('addressRequired');
-            valid = false;
-        }
-        if (!userEdit?.city) {
-            newErrors.city = t('cityRequired');
-            valid = false;
-        }
-        if (!userEdit?.states) {
-            newErrors.state = t('stateRequired');
-            valid = false;
-        }
-        setErrors(newErrors);
-        return valid;
-    };
+    const progressPercent = ((currentStep + 1) / STEPS.length) * 100;
 
-    const _goback = () => {
-        navigation.goBack();
-    };
+    // Data arrays
+    const drivingExperienceArray = Array.from({ length: 51 }, (_, i) => ({ label: i === 0 ? t('lessThan1Year') || 'Less than 1 year' : `${i} ${i === 1 ? 'year' : 'years'}`, value: i === 0 ? 'less_than_1' : `${i}` }));
 
-    const _navigateDrivingDetails = () => {
-        if (!validate()) return;
-        navigation.navigate(STACKS.DRIVING_DETAILS, {
-            profile: userEdit?.profilePath?.path ? userEdit?.profilePath : {},
-            fullName: userEdit?.name,
-            email: userEdit?.email,
-            mobile: userEdit?.mobile,
-            fatherName: userEdit?.Father_Name,
-            dateOfBirth: moment(dateOfBirth).format("DD-MM-YYYY"),
-            gender: userEdit?.Sex,
-            maritalStatus: userEdit.Marital_Status,
-            education: userEdit?.Highest_Education,
-            address: userEdit?.address,
-            city: userEdit?.city,
-            state: userEdit?.states
-        });
-    };
+    const salaryRanges = ['15000-20000', '20000-25000', '25000-30000', '30000-35000', '35000-40000', '40000-45000', '45000-50000', '50000-55000', '55000-60000'];
 
+    const translatedEducationList = [
+        { label: t('noFormalEducation') || 'No Formal Education', value: 'No Formal Education' },
+        { label: t('primarySchool') || 'Primary School', value: 'Primary School' },
+        { label: t('middleSchool') || 'Middle School', value: 'Middle School' },
+        { label: t('highSchool') || 'High School', value: 'High School' },
+        { label: t('intermediate') || 'Intermediate', value: 'Intermediate' },
+        { label: t('graduate') || 'Graduate', value: 'Graduate' },
+        { label: t('postGraduate') || 'Post Graduate', value: 'Post Graduate' },
+    ];
 
+    const licenseTypes = ['LMV', 'HMV', 'HGMV', 'HPMV/HTV'];
 
-    const _openCamera = async () => {
-        try {
-            // Request camera permission first
-            const hasPermission = await requestCameraPermission();
-            if (!hasPermission) {
-                showToast(t('cameraPermissionRequired') || 'Camera permission required');
-                return;
-            }
+    const translatedFleetSizes = [{ label: '0-9', value: '0-9' }, { label: '10-50', value: '10-50' }, { label: '51-100', value: '51-100' }, { label: t('fleetSize_100_plus') || '100+', value: '100+' }];
 
-            const image = await ImagePicker.openCamera({
-                cropping: true,
-                width: 512,
-                height: 512,
-                mediaType: 'photo',
-                includeBase64: false,
-                compressImageQuality: 0.8,
-            });
+    const translatedAvgKmRanges = [
+        { label: t('avgKm_less_1000') || '< 1000 km', value: 'less_1000' },
+        { label: t('avgKm_1000_3000') || '1000 - 3000 km', value: '1000_3000' },
+        { label: t('avgKm_3000_5000') || '3000 - 5000 km', value: '3000_5000' },
+        { label: t('avgKm_5000_10000') || '5000 - 10000 km', value: '5000_10000' },
+        { label: t('avgKm_10000_plus') || '10000+ km', value: '10000_plus' },
+    ];
 
-            console.log('Profile image from camera:', image);
+    const translatedIndustrySegments = [
+        { label: t('ecommerce') || 'E-commerce', value: 'ecommerce' },
+        { label: t('whiteGoods') || 'White Goods', value: 'white_goods' },
+        { label: t('livestock') || 'Livestock', value: 'livestock' },
+        { label: t('perishable') || 'Perishable', value: 'perishable' },
+        { label: t('oversized') || 'Oversized', value: 'oversized' },
+        { label: t('fuelTanker') || 'Fuel Tanker', value: 'fuel_tanker' },
+        { label: t('automobileCarrier') || 'Automobile Carrier', value: 'automobile_carrier' },
+        { label: t('constructionIndustry') || 'Construction', value: 'construction' },
+        { label: t('refrigeratorVehicle') || 'Refrigerator', value: 'refrigerator' },
+        { label: t('others') || 'Others', value: 'others' },
+    ];
 
-            if (image && image.path) {
-                dispatch(userEditAction({ ...userEdit, profilePath: image }));
-                setprofileModel(false);
-                showToast(t('imageSelected') || 'Image selected successfully');
-            } else {
-                console.error('Invalid image data from camera');
-                showToast(t('failedToOpenCamera') || 'Failed to capture image');
-            }
-        } catch (error: any) {
-            console.log('Camera image picker error:', error);
-            if (error.code !== 'E_PICKER_CANCELLED') {
-                showToast(t('failedToOpenCamera') || 'Failed to open camera');
-            }
-        }
-    }
-
-    const _openGallery = async () => {
-        try {
-            // Request photo library permission first
-            // On Android 13+, this returns true immediately as we use the system picker
-            const hasPermission = await requestPhotoLibraryPermission();
-            if (!hasPermission) {
-                showToast(t('photoPermissionRequired') || 'Photo permission required');
-                return;
-            }
-
-            const image = await ImagePicker.openPicker({
-                cropping: true,
-                width: 512,
-                height: 512,
-                mediaType: 'photo',
-                includeBase64: false,
-                compressImageQuality: 0.8,
-            });
-
-            console.log('Profile image from gallery:', image);
-
-            if (image && image.path) {
-                dispatch(userEditAction({ ...userEdit, profilePath: image }));
-                setprofileModel(false);
-                showToast(t('imageSelected') || 'Image selected successfully');
-            } else {
-                console.error('Invalid image data from gallery');
-                showToast(t('failedToSelectImage') || 'Failed to select image');
-            }
-        } catch (error: any) {
-            console.log('Gallery image picker error:', error);
-            if (error.code !== 'E_PICKER_CANCELLED') {
-                showToast(t('failedToSelectImage') || 'Failed to select image');
-            }
-        }
-    }
-
-    const _onPressProfile = () => {
-        setprofileModel(true)
-    };
-
-    const _onPressProfileDelete = () => {
-        dispatch(userEditAction({ ...userEdit, profilePath: {} }));
-    }
-
-    const getLocation = async () => {
-        try {
-            const response = await axiosInstance.get(END_POINTS.GETSTATES);
-            if (response?.data?.status) {
-                setLocations(response?.data?.data);
-            }
-            console.log('Fetched locations:', JSON.stringify(response));
-        } catch (error: any) {
-            console.log('Error fetching locations:', error);
-            showToast(error);
-        }
-    };
+    const translatedOperationalSegments = [
+        { label: t('localDelivery') || 'Local Delivery', value: 'local' },
+        { label: t('intracity') || 'Intracity', value: 'intracity' },
+        { label: t('intercity') || 'Intercity', value: 'intercity' },
+        { label: t('interstate') || 'Interstate', value: 'interstate' },
+        { label: t('allIndia') || 'All India', value: 'all_india' },
+    ];
 
     useEffect(() => {
-        getLocation();
+        const fetchData = async () => {
+            try {
+                const [locRes, vehRes] = await Promise.all([
+                    axiosInstance.get(END_POINTS.GETSTATES),
+                    axiosInstance.get(END_POINTS.VEHICLE_TYPES)
+                ]);
+                if (locRes?.data?.status) setLocations(locRes.data.data);
+                if (vehRes?.data?.status) setVehicleTypes(vehRes.data.data);
+            } catch (error) {
+                console.log('Error fetching data:', error);
+            }
+        };
+        fetchData();
     }, []);
 
-    // Add timestamp to server images to prevent caching issues
-    const profileImageUri = userEdit?.profilePath?.path
-        ? userEdit.profilePath.path
-        : userEdit?.images
-            ? `${BASE_URL}public/${userEdit.images}?t=${Date.now()}`
-            : 'https://cdn-icons-png.flaticon.com/512/3177/3177440.png';
+    // Play voice when step changes (only for Hindi language)
+    useEffect(() => {
+        contentOpacity.value = 0;
+        contentTranslateX.value = 20;
+        contentOpacity.value = withTiming(1, { duration: 300 });
+        contentTranslateX.value = withSpring(0, { damping: 12 });
 
-    // Create a unique key for the image to force re-render when it changes
-    const imageKey = userEdit?.profilePath?.path || `${userEdit?.images}-${Date.now()}` || 'default';
+        // Play voice for Hindi language only if not muted
+        if (i18n.language === 'hi' && !isVoiceMuted) {
+            playStepVoice();
+        }
+    }, [currentStep, i18n.language, isVoiceMuted]);
 
-    console.log('Profile Image URI:', profileImageUri);
-    console.log('userEdit.profilePath:', userEdit?.profilePath);
+    const playStepVoice = () => {
+        if (isVoiceMuted) return;
 
-    // Define minimum and maximum dates using Moment and convert them to Date objects.
-    const minimumDate = moment().subtract(150, "years").toDate();
-    const maximumDate = moment().subtract(18, "years").toDate();
-    return (
-        <View style={{ flex: 1, backgroundColor: colors.white, alignItems: 'center' }}>
-            <Space height={safeAreaInsets.top} />
-            <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center', padding: responsiveWidth(3) }}>
-                <TouchableOpacity
-                    hitSlop={hitSlop(10)}
-                    onPress={_goback}
-                    style={{
-                        height: responsiveFontSize(4),
-                        width: responsiveFontSize(4),
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: colors.white,
-                        borderRadius: 100,
-                        zIndex: 100,
-                    }}>
-                    <Ionicons name={'chevron-back'} size={24} color={colors.royalBlue} />
-                </TouchableOpacity>
-                <Text
-                    style={{
-                        width: responsiveWidth(100),
-                        fontSize: responsiveFontSize(2.2),
-                        color: colors.royalBlue,
-                        fontWeight: 'bold',
-                        textAlign: 'center',
-                        position: 'absolute',
-                        zIndex: 1,
-                    }}>
-                    {t('profileEdit')}
-                </Text>
+        try {
+            const stepId = STEPS[currentStep].id;
+            const VOICE_FILES = userRole === 'transporter' ? TRANSPORTER_VOICE_FILES : DRIVER_VOICE_FILES;
+            const voiceFile = VOICE_FILES[stepId];
+
+            if (voiceFile) {
+                // Stop any currently playing audio by setting to null first
+                setCurrentAudioSource(null);
+
+                // Small delay to ensure smooth transition
+                setTimeout(() => {
+                    setCurrentAudioSource(voiceFile);
+                }, 100);
+            } else {
+                console.log('No voice file found for step:', stepId);
+            }
+        } catch (error) {
+            console.log('Error playing voice:', error);
+        }
+    };
+
+    const toggleVoiceMute = () => {
+        setIsVoiceMuted(!isVoiceMuted);
+        if (!isVoiceMuted) {
+            // If muting, stop any currently playing audio
+            setCurrentAudioSource(null);
+        }
+    };
+
+    const animatedContentStyle = useAnimatedStyle(() => ({
+        opacity: contentOpacity.value,
+        transform: [{ translateX: contentTranslateX.value }]
+    }));
+
+    const validateCurrentStep = () => {
+        const step = STEPS[currentStep];
+
+        switch (step.id) {
+            case 'avatar':
+                if (!userEdit?.profilePath && !userEdit?.images) {
+                    showToast(t('pleaseUploadProfilePhoto') || 'Please upload your profile photo');
+                    return false;
+                }
+                break;
+
+            case 'personal_info':
+                if (!userEdit?.name?.trim()) {
+                    showToast(t('fullNameRequired') || 'Full name is required');
+                    return false;
+                }
+                // Email is optional
+                // Mobile is already set and disabled
+                if (userRole === 'driver' && !userEdit?.Father_Name?.trim()) {
+                    showToast(t('fatherNameRequired') || 'Father name is required');
+                    return false;
+                }
+                break;
+
+            case 'dob':
+                if (!userEdit?.DOB) {
+                    showToast(t('dobRequired') || 'Date of birth is required');
+                    return false;
+                }
+                break;
+
+            case 'gender':
+                if (!userEdit?.Sex) {
+                    showToast(t('genderRequired') || 'Gender is required');
+                    return false;
+                }
+                if (!userEdit?.Marital_Status) {
+                    showToast(t('maritalStatusRequired') || 'Marital status is required');
+                    return false;
+                }
+                break;
+
+            case 'education':
+                if (!userEdit?.education && !userEdit?.Highest_Education) {
+                    showToast(t('educationRequired') || 'Education is required');
+                    return false;
+                }
+                break;
+
+            case 'address':
+                if (!userEdit?.address?.trim()) {
+                    showToast(t('addressRequired') || 'Address is required');
+                    return false;
+                }
+                if (!userEdit?.pincode || userEdit.pincode.length !== 6) {
+                    showToast(t('pincodeRequired') || 'Valid Pincode is required');
+                    return false;
+                }
+                if (!userEdit?.city?.trim()) {
+                    showToast(t('cityRequired') || 'City is required');
+                    return false;
+                }
+                if (!userEdit?.states && !userEdit?.state_id) {
+                    showToast(t('stateRequired') || 'State is required');
+                    return false;
+                }
+                break;
+
+            case 'vehicle':
+                if (!userEdit?.vehicle_type) {
+                    showToast(t('vehicleTypeRequired') || 'Vehicle type is required');
+                    return false;
+                }
+                break;
+
+            case 'experience':
+                if (!userEdit?.Driving_Experience) {
+                    showToast(t('drivingExperienceRequired') || 'Driving experience is required');
+                    return false;
+                }
+                if (!userEdit?.Preferred_Location) {
+                    showToast(t('preferredLocationRequired') || 'Preferred location is required');
+                    return false;
+                }
+                break;
+
+            case 'license_type':
+                if (!userEdit?.Type_of_License) {
+                    showToast(t('licenseTypeRequired') || 'License type is required');
+                    return false;
+                }
+                break;
+
+            case 'salary':
+                if (!userEdit?.Current_Monthly_Income) {
+                    showToast(t('currentMonthlyIncomeRequired') || 'Current monthly income is required');
+                    return false;
+                }
+                if (!userEdit?.Expected_Monthly_Income) {
+                    showToast(t('expectedMonthlyIncomeRequired') || 'Expected monthly income is required');
+                    return false;
+                }
+                break;
+
+            case 'preferences':
+                if (!userEdit?.job_placement) {
+                    showToast(t('pleaseSelectJobPlacement') || 'Please select job placement preference');
+                    return false;
+                }
+                if (!userEdit?.previous_employer) {
+                    showToast(t('pleaseSelectPreviousEmployer') || 'Please select previous employer preference');
+                    return false;
+                }
+                break;
+
+            case 'aadhar_details':
+                if (!userEdit?.Aadhar_Number || userEdit.Aadhar_Number.length !== 12) {
+                    showToast(t('aadharNumberRequired') || 'Valid Aadhar number is required');
+                    return false;
+                }
+                if (!userEdit?.aadharImagePath && !userEdit?.Aadhar_Photo) {
+                    showToast(t('AadharPhotoRequired') || 'Aadhar photo is required');
+                    return false;
+                }
+                break;
+
+            case 'license_details':
+                if (!userEdit?.License_Number?.trim()) {
+                    showToast(t('licenseNumberRequired') || 'License number is required');
+                    return false;
+                }
+                if (!userEdit?.drivingLicensePath && !userEdit?.Driving_License) {
+                    showToast(t('drivingLicenseRequired') || 'Driving license photo is required');
+                    return false;
+                }
+                break;
+
+            // Transporter steps
+            case 'transport_details':
+                if (!userEdit?.transport_name?.trim()) {
+                    showToast(t('transportNameRequired') || 'Transport name is required');
+                    return false;
+                }
+                // Year of establishment and referral code are optional
+                break;
+
+            case 'year_of_exp':
+                if (!userEdit?.year_of_exp) {
+                    showToast(t('experienceRequired') || 'Experience is required');
+                    return false;
+                }
+                break;
+
+            case 'fleet_size':
+                if (!userEdit?.fleet_size) {
+                    showToast(t('fleetSizeRequired') || 'Fleet size is required');
+                    return false;
+                }
+                break;
+
+            case 'industry_segment':
+                if (!userEdit?.industry_segment) {
+                    showToast(t('industrySegmentRequired') || 'Industry segment is required');
+                    return false;
+                }
+                break;
+
+            case 'avg_km_run':
+                if (!userEdit?.avg_km_run) {
+                    showToast(t('avgKmRequired') || 'Average km run is required');
+                    return false;
+                }
+                break;
+
+            case 'pan_gst':
+                if (!userEdit?.pan && !userEdit?.PAN_Number) {
+                    showToast(t('panNumberRequired') || 'PAN number is required');
+                    return false;
+                }
+                if (!userEdit?.panImagePath && !userEdit?.PAN_Image) {
+                    showToast(t('panImageRequired') || 'PAN image is required');
+                    return false;
+                }
+                // GST is optional
+                break;
+        }
+
+        return true;
+    };
+
+    const handleNext = () => {
+        // Validate current step before proceeding
+        if (!validateCurrentStep()) {
+            return;
+        }
+
+        if (currentStep < STEPS.length - 1) {
+            contentOpacity.value = withTiming(0, { duration: 150 });
+            setTimeout(() => setCurrentStep(prev => prev + 1), 150);
+        } else {
+            submitProfile();
+        }
+    };
+
+    const handleBack = () => {
+        if (currentStep > 0) {
+            contentOpacity.value = withTiming(0, { duration: 150 });
+            setTimeout(() => setCurrentStep(prev => prev - 1), 150);
+        } else {
+            navigation.goBack();
+        }
+    };
+
+    // Helper function to normalize corrupted array data (handles nested JSON strings)
+    const normalizeArrayField = (value: any): string[] => {
+        if (!value) return [];
+
+        // Handle numbers - convert to string array
+        if (typeof value === 'number') {
+            return [String(value)];
+        }
+
+        // If it's already an array, flatten and clean it
+        if (Array.isArray(value)) {
+            const flattened: string[] = [];
+            value.forEach((item: any) => {
+                if (typeof item === 'number') {
+                    const cleaned = String(item).trim();
+                    if (cleaned && !flattened.includes(cleaned)) flattened.push(cleaned);
+                } else if (typeof item === 'string') {
+                    // Try to parse if it looks like JSON
+                    try {
+                        const parsed = JSON.parse(item);
+                        if (Array.isArray(parsed)) {
+                            parsed.forEach((p: any) => {
+                                const cleaned = String(p).replace(/[\[\]"\\]/g, '').trim();
+                                if (cleaned && !flattened.includes(cleaned)) flattened.push(cleaned);
+                            });
+                        } else {
+                            const cleaned = String(parsed).replace(/[\[\]"\\]/g, '').trim();
+                            if (cleaned && !flattened.includes(cleaned)) flattened.push(cleaned);
+                        }
+                    } catch {
+                        const cleaned = item.replace(/[\[\]"\\]/g, '').trim();
+                        if (cleaned && !flattened.includes(cleaned)) flattened.push(cleaned);
+                    }
+                } else {
+                    const cleaned = String(item).trim();
+                    if (cleaned && !flattened.includes(cleaned)) flattened.push(cleaned);
+                }
+            });
+            return flattened;
+        }
+
+        // If it's a string
+        if (typeof value === 'string') {
+            // First check if it's a simple comma-separated string (most common case)
+            // Only try JSON parsing if it starts with [ or {
+            if (!value.startsWith('[') && !value.startsWith('{')) {
+                return value.replace(/[\[\]"\\]/g, '').split(',').map((s: string) => s.trim()).filter(Boolean);
+            }
+
+            // Try to parse as JSON
+            try {
+                const parsed = JSON.parse(value);
+                return normalizeArrayField(parsed);
+            } catch {
+                // Clean and split by comma
+                return value.replace(/[\[\]"\\]/g, '').split(',').map((s: string) => s.trim()).filter(Boolean);
+            }
+        }
+
+        return [];
+    };
+
+    const submitProfile = async () => {
+        setLoading(true);
+        try {
+            const formData = new FormData();
+
+            formData.append('name', userEdit?.name || '');
+            formData.append('email', userEdit?.email || '');
+            formData.append('mobile', userEdit?.mobile || '');
+            formData.append('father_name', userEdit?.Father_Name || '');
+            formData.append('dob', userEdit?.DOB ? moment(userEdit.DOB).format('DD-MM-YYYY') : '');
+            formData.append('sex', userEdit?.Sex || '');
+            formData.append('marital_status', userEdit?.Marital_Status || '');
+            formData.append('highest_education', userEdit?.Highest_Education || userEdit?.education || '');
+            formData.append('address', userEdit?.address || '');
+            formData.append('city', userEdit?.city || '');
+            formData.append('pincode', userEdit?.pincode || '');
+            // API requires BOTH 'state' and 'states' fields
+            const stateValue = userEdit?.state_id || userEdit?.states || '';
+            formData.append('states', stateValue);
+            formData.append('state', stateValue);
+            // Vehicle Type - Driver expects array, Transporter expects string
+            // Use helper to normalize corrupted data
+            const cleanVehicleTypes = normalizeArrayField(userEdit?.vehicle_type);
+            console.log('Cleaned Vehicle Types:', cleanVehicleTypes);
+
+            if (cleanVehicleTypes.length > 0) {
+                if (userRole === 'driver') {
+                    // Driver: API expects array format with vehicle_type[]
+                    cleanVehicleTypes.forEach((vt: string) => {
+                        formData.append('vehicle_type[]', vt.trim());
+                    });
+                } else {
+                    // Transporter: API expects string format
+                    formData.append('vehicle_type', cleanVehicleTypes.join(','));
+                }
+            } else if (userRole === 'driver') {
+                // For driver with no vehicle selected, send empty array
+                // Don't append anything - let server handle validation
+            } else {
+                formData.append('vehicle_type', '');
+            }
+            formData.append('driving_experience', userEdit?.Driving_Experience || '');
+            formData.append('preferred_location', userEdit?.Preferred_Location || '');
+            formData.append('current_monthly_income', userEdit?.Current_Monthly_Income || '');
+            formData.append('expected_monthly_income', userEdit?.Expected_Monthly_Income || '');
+            formData.append('type_of_license', userEdit?.Type_of_License || '');
+            formData.append('Aadhar_Number', userEdit?.Aadhar_Number || '');
+            formData.append('license_number', userEdit?.License_Number || '');
+            formData.append('expiry_date_of_license', userEdit?.Expiry_date_of_License ? moment(userEdit.Expiry_date_of_License).format('DD-MM-YYYY') : '');
+            formData.append('job_placement', userEdit?.job_placement || '');
+            formData.append('previous_employer', userEdit?.previous_employer || '');
+
+            // Transporter fields
+            formData.append('year_of_exp', userEdit?.year_of_exp || '');
+            formData.append('fleet_size', userEdit?.fleet_size || '');
+            formData.append('industry_segment', userEdit?.industry_segment || '');
+            formData.append('average_km', userEdit?.avg_km_run || '');
+            formData.append('pan_number', userEdit?.pan || userEdit?.PAN_Number || '');
+            formData.append('gst_number', userEdit?.gst || userEdit?.GST_Number || '');
+            formData.append('transport_name', userEdit?.transport_name || '');
+            formData.append('year_of_establishment', userEdit?.year_of_establishment || userEdit?.establishment_year || '');
+            formData.append('Referral_Code', userEdit?.Referral_Code || '');
+
+            // Profile photo
+            if (userEdit?.profilePath?.path && userEdit?.profilePath?.mime) {
+                formData.append('profile_photo', {
+                    uri: userEdit.profilePath.path,
+                    type: userEdit.profilePath.mime,
+                    name: userEdit.profilePath.filename || 'profile.jpg'
+                });
+            }
+
+            // PAN image
+            if (userEdit?.panImagePath?.path && userEdit?.panImagePath?.mime && !userEdit?.PAN_Image) {
+                formData.append('pan_image', {
+                    uri: userEdit.panImagePath.path,
+                    type: userEdit.panImagePath.mime,
+                    name: userEdit.panImagePath.filename || 'pan.jpg'
+                });
+            }
+
+            // GST Certificate
+            if (userEdit?.gstCertificatePath?.path && userEdit?.gstCertificatePath?.mime && !userEdit?.GST_Certificate) {
+                formData.append('gst_certificate', {
+                    uri: userEdit.gstCertificatePath.path,
+                    type: userEdit.gstCertificatePath.mime,
+                    name: userEdit.gstCertificatePath.filename || 'gst.jpg'
+                });
+            }
+
+            // Aadhar photo
+            if (userEdit?.aadharImagePath?.path && userEdit?.aadharImagePath?.mime && !userEdit?.Aadhar_Photo) {
+                formData.append('aadhar_photo', {
+                    uri: userEdit.aadharImagePath.path,
+                    type: userEdit.aadharImagePath.mime,
+                    name: userEdit.aadharImagePath.filename || 'aadhar.jpg'
+                });
+            }
+
+            // Driving license photo
+            if (userEdit?.drivingLicensePath?.path && userEdit?.drivingLicensePath?.mime && !userEdit?.Driving_License) {
+                formData.append('driving_license', {
+                    uri: userEdit.drivingLicensePath.path,
+                    type: userEdit.drivingLicensePath.mime,
+                    name: userEdit.drivingLicensePath.filename || 'license.jpg'
+                });
+            }
+
+            // Debug: Log what's being sent
+            console.log('=== Profile Update Request ===');
+            console.log('User Role:', userRole);
+            console.log('Vehicle Type:', userEdit?.vehicle_type);
+            console.log('Sending to:', END_POINTS.EDIT_PROFILE);
+
+            const response = await axiosInstance.post(END_POINTS.EDIT_PROFILE, formData);
+
+            if (response?.data?.status) {
+                showToast(response.data.message || t('profileUpdated') || 'Profile updated');
+                const profile = await axiosInstance.get(END_POINTS.GET_PROFILE);
+                if (profile?.data?.status) {
+                    dispatch(userAction(profile.data));
+                    navigation.navigate(STACKS.BOTTOM_TAB, { screen: STACKS.PROFILE });
+                }
+            } else {
+                showToast(response?.data?.message || t('updateFailed') || 'Update failed');
+            }
+        } catch (error: any) {
+            console.log('Profile update error:', error);
+            console.log('Error response data:', error?.response?.data);
+            console.log('Error response status:', error?.response?.status);
+            const errorMessage = error?.response?.data?.message || error?.message || t('errorOccurred') || 'An error occurred';
+            showToast(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+
+    const toggleMultiSelect = (field: string, value: string) => {
+        console.log('=== toggleMultiSelect called ===');
+        console.log('Field:', field);
+        console.log('Value to toggle:', value);
+        console.log('Current userEdit[field]:', userEdit?.[field]);
+
+        // Normalize the current values first (handles corrupted data)
+        const currentValues = normalizeArrayField(userEdit?.[field]);
+        console.log('Normalized current values:', currentValues);
+
+        const newValues = currentValues.includes(value)
+            ? currentValues.filter((v: string) => v !== value)
+            : [...currentValues, value];
+        console.log('New values:', newValues);
+        console.log('New values joined:', newValues.join(','));
+
+        dispatch(userEditAction({ ...userEdit, [field]: newValues.join(',') }));
+    };
+
+    const pickImage = async (field: string) => {
+        try {
+            const hasPermission = await requestPhotoLibraryPermission();
+            if (!hasPermission) { showToast(t('photoPermissionRequired')); return; }
+            const image = await ImagePicker.openPicker({ cropping: true, width: 512, height: 512, mediaType: 'photo', compressImageQuality: 0.8 });
+            if (image?.path) {
+                dispatch(userEditAction({ ...userEdit, [field]: image }));
+                if (field === 'profilePath') setProfileModalOpen(false);
+            }
+        } catch (error: any) {
+            if (error.code !== 'E_PICKER_CANCELLED') showToast(t('failedToSelectImage'));
+        }
+    };
+
+    const openCamera = async (field: string) => {
+        try {
+            const hasPermission = await requestCameraPermission();
+            if (!hasPermission) { showToast(t('cameraPermissionRequired')); return; }
+            const image = await ImagePicker.openCamera({ cropping: true, width: 512, height: 512, mediaType: 'photo', compressImageQuality: 0.8 });
+            if (image?.path) {
+                dispatch(userEditAction({ ...userEdit, [field]: image }));
+                if (field === 'profilePath') setProfileModalOpen(false);
+            }
+        } catch (error: any) {
+            if (error.code !== 'E_PICKER_CANCELLED') showToast(t('failedToOpenCamera'));
+        }
+    };
+
+    const formatBytes = (bytes: number) => {
+        if (!bytes) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+    };
+
+    const profileImageUri = userEdit?.profilePath?.path || (userEdit?.images ? `${BASE_URL}public/${userEdit.images}` : 'https://cdn-icons-png.flaticon.com/512/3177/3177440.png');
+    const dateOfBirth = userEdit?.DOB ? new Date(userEdit.DOB) : moment().subtract(18, 'years').toDate();
+    const licenseExpiry = userEdit?.Expiry_date_of_License ? new Date(userEdit.Expiry_date_of_License) : new Date();
+
+    // Selection Chip Component
+    const Chip = ({ label, selected, onPress }: { label: string, selected: boolean, onPress: () => void }) => (
+        <TouchableOpacity style={[styles.chip, selected && styles.chipSelected]} onPress={onPress}>
+            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
+        </TouchableOpacity>
+    );
+
+    // Document Upload Component
+    const DocumentUpload = ({ label, imagePath, existingImage, fieldName, baseUrl }: any) => {
+        const imageUri = imagePath?.path || (existingImage ? `${BASE_URL}public/${existingImage}` : null);
+        return (
+            <View style={styles.documentBox}>
+                <Text style={styles.inputLabel}>{label}</Text>
+                {imageUri ? (
+                    <View style={styles.documentPreview}>
+                        <Image source={{ uri: imageUri }} style={styles.documentImage} />
+                        <TouchableOpacity style={styles.documentDelete} onPress={() => dispatch(userEditAction({ ...userEdit, [fieldName]: null, [existingImage ? fieldName.replace('Path', '') : '']: null }))}>
+                            <Ionicons name="close-circle" size={28} color="#dc3545" />
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <TouchableOpacity style={styles.uploadBox} onPress={() => pickImage(fieldName)}>
+                        <MaterialCommunityIcons name="file-upload-outline" size={40} color={colors.royalBlue} />
+                        <Text style={styles.uploadText}>{t('tapToUpload') || 'Tap to upload'}</Text>
+                        <Text style={styles.uploadHint}>.jpg, .jpeg, .png</Text>
+                    </TouchableOpacity>
+                )}
             </View>
-            <KeyboardAwareScrollView
-                contentContainerStyle={{ flexGrow: 1, backgroundColor: colors.white, alignItems: 'center' }}
-                keyboardShouldPersistTaps="handled"
-                enableOnAndroid={true}
-                extraScrollHeight={responsiveHeight(30)}>
-                <Space height={responsiveFontSize(2)} />
-                <View style={{ height: responsiveHeight(5.5), flexDirection: 'row', paddingHorizontal: responsiveWidth(2.5) }}>
-                    <View style={{ flex: 1, backgroundColor: colors.blueOpacity(0.2), alignItems: 'center', justifyContent: 'center', borderRadius: 10 }}>
-                        <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(1.6), fontWeight: '600', textAlign: 'center' }}>
-                            {t('personalDetails')}
-                        </Text>
-                    </View>
-                    <View style={{ flex: 1, backgroundColor: colors.blackOpacity(0.05), alignItems: 'center', justifyContent: 'center', borderRadius: 10, marginHorizontal: responsiveWidth(3) }}>
-                        <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.6), fontWeight: '500', textAlign: 'center' }}>
-                            {t('drivingDetails')}
-                        </Text>
-                    </View>
-                    <View style={{ flex: 1, backgroundColor: colors.blackOpacity(0.05), alignItems: 'center', justifyContent: 'center', borderRadius: 10 }}>
-                        <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.6), fontWeight: '500', textAlign: 'center' }}>
-                            {t('uploadDocuments')}
-                        </Text>
-                    </View>
-                </View>
-                <Space height={responsiveFontSize(2)} />
-                <TouchableOpacity onPress={_onPressProfile} activeOpacity={1}>
-                    <Image
-                        key={imageKey}
-                        style={{ height: responsiveHeight(14), width: responsiveHeight(14), borderRadius: 100, borderColor: colors.blackOpacity(.2), borderWidth: 1 }}
-                        source={{ uri: profileImageUri }}
-                        onError={(error) => console.log('Image load error:', error.nativeEvent)}
-                        onLoad={() => console.log('Image loaded successfully:', profileImageUri)}
-                    />
-                    {!userEdit?.profilePath?.path ? <TouchableOpacity
-                        onPress={_onPressProfile}
-                        activeOpacity={0.7}
-                        style={{
-                            height: responsiveFontSize(4.2),
-                            width: responsiveFontSize(4.2),
-                            backgroundColor: colors.white,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            position: 'absolute',
-                            bottom: responsiveFontSize(-2),
-                            alignSelf: 'center',
-                            borderRadius: 100,
-                            ...shadow,
-                            shadowColor: isIOS() ? colors.blackOpacity(0.2) : colors.blackOpacity(0.4),
-                        }}>
-                        <MaterialIcons name={'edit'} size={20} color={colors.black} />
-                    </TouchableOpacity>
-                        :
-                        <TouchableOpacity
-                            onPress={_onPressProfileDelete}
-                            activeOpacity={0.7}
-                            style={{
-                                height: responsiveFontSize(3.5),
-                                width: responsiveFontSize(3.5),
-                                backgroundColor: colors.white,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                position: 'absolute',
-                                bottom: responsiveFontSize(-2),
-                                alignSelf: 'center',
-                                borderRadius: 100,
-                                ...shadow,
-                                shadowColor: isIOS() ? colors.blackOpacity(0.2) : colors.blackOpacity(0.4),
-                            }}>
-                            <Ionicons name={'close'} size={16} color={colors.black} />
-                        </TouchableOpacity>}
-                </TouchableOpacity>
-                <Space height={responsiveFontSize(4)} />
-                <View style={{ flex: 1, width: responsiveWidth(100), paddingHorizontal: responsiveWidth(5) }}>
-                    {/* Full Name */}
-                    <View>
-                        <Text style={{ color: colors.blackOpacity(0.9), fontSize: responsiveFontSize(1.7), fontWeight: '600' }}>{t('fullName')} <Text style={{ color: colors.roseRed, fontWeight: 'bold' }}>*</Text>
-                        </Text>
-                        <TextInput
-                            value={userEdit?.name || ''}
-                            onChangeText={(text) => {
-                                dispatch(userEditAction({ ...userEdit, name: text }));
-                                setErrors((prevData) => ({
-                                    ...prevData,
-                                    fullName: undefined,
-                                }));
-                            }}
-                            placeholder={t('enterFullName')}
-                            style={{
-                                color: colors.black,
-                                fontSize: responsiveFontSize(2),
-                                fontWeight: '500',
-                                height: responsiveHeight(5.5),
-                                borderColor: colors.blackOpacity(0.2),
-                                borderWidth: 1,
-                                borderRadius: 10,
-                                marginTop: responsiveFontSize(0.5),
-                                paddingHorizontal: responsiveFontSize(2),
-                            }}
-                        />
-                        {errors?.fullName && (
-                            <Text style={{ color: 'red', fontSize: responsiveFontSize(1.6), marginTop: responsiveFontSize(.5), }}>{errors?.fullName}</Text>
-                        )}
-                    </View>
-                    <Space height={responsiveFontSize(2.5)} />
+        );
+    };
 
-                    {/* E-mail */}
-                    <View>
-                        <Text style={{ color: colors.blackOpacity(0.9), fontSize: responsiveFontSize(1.7), fontWeight: '600' }}>{t('e-mail')}
-                        </Text>
-                        <TextInput
-                            value={userEdit?.email || ''}
-                            onChangeText={(text) => {
-                                const lower = text.toLowerCase(); // lowercase all
-                                dispatch(userEditAction({ ...userEdit, email: lower }));
-                                setErrors((prevData) => ({
-                                    ...prevData,
-                                    email: undefined,
-                                }));
-                            }}
-                            placeholder={t('enterE-mail')}
-                            keyboardType={'email-address'}
-                            style={{
-                                color: colors.black,
-                                fontSize: responsiveFontSize(2),
-                                fontWeight: '500',
-                                height: responsiveHeight(5.5),
-                                borderColor: colors.blackOpacity(0.2),
-                                borderWidth: 1,
-                                borderRadius: 10,
-                                marginTop: responsiveFontSize(0.5),
-                                paddingHorizontal: responsiveFontSize(2),
-                            }}
-                        />
-                        {errors?.email && (
-                            <Text style={{ color: 'red', fontSize: responsiveFontSize(1.6), marginTop: responsiveFontSize(.5), }}>{errors?.email}</Text>
-                        )}
-                    </View>
-                    <Space height={responsiveFontSize(2.5)} />
+    const fetchCityFromPincode = async (pincode: string) => {
+        if (pincode.length === 6) {
+            setLoadingPincode(true);
+            try {
+                const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+                const data = await response.json();
+                if (data && Array.isArray(data) && data.length > 0 && data[0].Status === 'Success' && data[0].PostOffice && Array.isArray(data[0].PostOffice) && data[0].PostOffice.length > 0) {
+                    const city = data[0].PostOffice[0].District;
+                    dispatch(userEditAction({ ...(userEdit || {}), city: city, pincode: pincode }));
+                } else {
+                    dispatch(userEditAction({ ...(userEdit || {}), pincode: pincode }));
+                }
+            } catch (error) {
+                console.log('Error fetching city from pincode:', error);
+                dispatch(userEditAction({ ...(userEdit || {}), pincode: pincode }));
+            } finally {
+                setLoadingPincode(false);
+            }
+        } else {
+            dispatch(userEditAction({ ...(userEdit || {}), pincode: pincode }));
+            // Only toggle loading if it was somehow true
+            if (loadingPincode) setLoadingPincode(false);
+        }
+    };
 
-                    {/* Mobile */}
-                    <View>
-                        <Text style={{ color: colors.blackOpacity(0.9), fontSize: responsiveFontSize(1.7), fontWeight: '600' }}>{t(`mobile`)} <Text style={{ color: colors.roseRed, fontWeight: 'bold' }}>*</Text>
-                        </Text>
-                        <TextInput
-                            value={userEdit?.mobile || ''}
-                            editable={false}
-                            placeholder={t('enterMobile')}
-                            onChangeText={(text) => {
-                                dispatch(userEditAction({ ...userEdit, mobile: text }));
-                                setErrors((prevData) => ({
-                                    ...prevData,
-                                    mobile: undefined,
-                                }));
-                            }}
-                            style={{
-                                color: colors.black,
-                                fontSize: responsiveFontSize(2),
-                                fontWeight: '500',
-                                height: responsiveHeight(5.5),
-                                borderColor: colors.blackOpacity(0.2),
-                                borderWidth: 1,
-                                borderRadius: 10,
-                                marginTop: responsiveFontSize(0.5),
-                                paddingHorizontal: responsiveFontSize(2),
-                                opacity: 0.5,
-                            }}
-                        />
-                        {errors?.mobile && (
-                            <Text style={{ color: 'red', fontSize: responsiveFontSize(1.6), marginTop: responsiveFontSize(.5), }}>{errors?.mobile}</Text>
-                        )}
-                    </View>
-                    <Space height={responsiveFontSize(2.5)} />
+    const renderStepContent = () => {
+        const step = STEPS[currentStep];
 
-                    {/* Father's Name */}
-                    <Text style={{ color: colors.blackOpacity(0.9), fontSize: responsiveFontSize(1.7), fontWeight: '600' }}>{t('fatherName')}</Text>
-                    <TextInput
-                        value={userEdit?.Father_Name || ''}
-                        onChangeText={(text) => {
-                            dispatch(userEditAction({ ...userEdit, Father_Name: text }));
-                        }}
-                        placeholder={t('enterFatherName')}
-                        style={{
-                            color: colors.black,
-                            fontSize: responsiveFontSize(2),
-                            fontWeight: '500',
-                            height: responsiveHeight(5.5),
-                            borderColor: colors.blackOpacity(0.2),
-                            borderWidth: 1,
-                            borderRadius: 10,
-                            marginTop: responsiveFontSize(0.5),
-                            paddingHorizontal: responsiveFontSize(2),
-                        }}
-                    />
-                    <Space height={responsiveFontSize(2.5)} />
+        switch (step.id) {
+            case 'personal_info':
+                return (
+                    <View style={styles.stepContent}>
+                        <Text style={styles.inputLabel}>{t('fullName')} <Text style={styles.requiredAsterisk}>*</Text></Text>
+                        <TextInput style={styles.textInput} placeholder={t('enterFullName')} placeholderTextColor="#999" value={userEdit?.name || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, name: text }))} />
+                        <Space height={16} />
+                        <Text style={styles.inputLabel}>{t('e-mail')}</Text>
+                        <TextInput style={styles.textInput} placeholder={t('enterE-mail')} placeholderTextColor="#999" keyboardType="email-address" value={userEdit?.email || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, email: text.toLowerCase() }))} />
+                        <Space height={16} />
+                        <Text style={styles.inputLabel}>{t('mobile')}</Text>
+                        <TextInput style={[styles.textInput, { opacity: 0.6 }]} editable={false} value={userEdit?.mobile || ''} />
+                        {userRole === 'driver' && (<><Space height={16} /><Text style={styles.inputLabel}>{t('fatherName')} <Text style={styles.requiredAsterisk}>*</Text></Text><TextInput style={styles.textInput} placeholder={t('enterFatherName')} placeholderTextColor="#999" value={userEdit?.Father_Name || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, Father_Name: text }))} /></>)}
+                    </View>
+                );
 
-                    {/* DOB */}
-                    <View>
-                        <Text style={{ color: colors.blackOpacity(0.9), fontSize: responsiveFontSize(1.7), fontWeight: '600' }}>{t('dob')} <Text style={{ color: colors.roseRed, fontWeight: 'bold' }}>*</Text>
-                        </Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', height: responsiveHeight(5.5), borderColor: colors.blackOpacity(0.2), borderWidth: 1, borderRadius: 10, marginTop: responsiveFontSize(0.5), paddingHorizontal: responsiveFontSize(2), }}>
-                            <TextInput
-                                value={userEdit?.DOB ? moment(dateOfBirth).format("DD-MM-YYYY") : ''}
-                                editable={false}
-                                placeholder='DD-MM-YYYY'
-                                style={{
-                                    flex: 1,
-                                    color: colors.black,
-                                    fontSize: responsiveFontSize(2),
-                                    fontWeight: '500',
-
-                                }}
-                            />
-                            <TouchableOpacity onPress={() => setdateOfBirthModel(true)} hitSlop={hitSlop(10)}>
-                                <Ionicons name={'calendar'} size={20} color={colors.black} />
-                            </TouchableOpacity>
-                        </View>
-                        {errors?.dateOfBirth && (
-                            <Text style={{ color: 'red', fontSize: responsiveFontSize(1.6), marginTop: responsiveFontSize(.5), }}>{errors?.dateOfBirth}</Text>
-                        )}
-                    </View>
-                    <Space height={responsiveFontSize(2.5)} />
-
-                    {/* Gender */}
-                    <View>
-                        <Text style={{ color: colors.blackOpacity(0.9), fontSize: responsiveFontSize(1.7), fontWeight: '600' }}>{t('gender')} <Text style={{ color: colors.roseRed, fontWeight: 'bold' }}>*</Text>
-                        </Text>
-                        <View style={{ flexDirection: 'row', marginTop: responsiveFontSize(0.5) }}>
-                            <TouchableOpacity
-                                onPress={() => {
-                                    dispatch(userEditAction({ ...userEdit, Sex: 'Male' }));
-                                    setErrors((prevData) => ({
-                                        ...prevData,
-                                        gender: undefined,
-                                    }));
-                                }}
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    backgroundColor: userEdit?.Sex === 'Male' ? colors.blueOpacity(0.2) : colors.blackOpacity(0.05),
-                                    paddingHorizontal: responsiveFontSize(2.5),
-                                    paddingVertical: responsiveFontSize(1),
-                                    borderRadius: 100,
-                                }}>
-                                <Image
-                                    style={{ height: responsiveFontSize(2.8), width: responsiveFontSize(2.8) }}
-                                    source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2118/2118607.png' }}
-                                />
-                                <Text style={{ color: colors.black, fontWeight: userEdit?.Sex === 'Male' ? '500' : '400', fontSize: responsiveFontSize(1.7), marginStart: responsiveFontSize(0.5) }}>{'Male'}</Text>
-                            </TouchableOpacity>
-                            <Space width={responsiveFontSize(1.5)} />
-                            <TouchableOpacity
-                                onPress={() => {
-                                    dispatch(userEditAction({ ...userEdit, Sex: 'Female' }));
-                                    setErrors((prevData) => ({
-                                        ...prevData,
-                                        gender: undefined,
-                                    }));
-                                }}
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    backgroundColor: userEdit?.Sex === 'Female' ? colors.blueOpacity(0.2) : colors.blackOpacity(0.05),
-                                    paddingHorizontal: responsiveFontSize(2.5),
-                                    paddingVertical: responsiveFontSize(1),
-                                    borderRadius: 100,
-                                }}>
-                                <Image
-                                    style={{ height: responsiveFontSize(2.8), width: responsiveFontSize(2.8) }}
-                                    source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2118/2118601.png' }}
-                                />
-                                <Text style={{ color: colors.black, fontWeight: userEdit?.Sex === 'Female' ? '500' : '400', fontSize: responsiveFontSize(1.7), marginStart: responsiveFontSize(0.5) }}>{'Female'}</Text>
-                            </TouchableOpacity>
-                        </View>
-                        {errors?.gender && (
-                            <Text style={{ color: 'red', fontSize: responsiveFontSize(1.6), marginTop: responsiveFontSize(.5), }}>{errors?.gender}</Text>
-                        )}
-                    </View>
-                    <Space height={responsiveFontSize(2.5)} />
-
-                    {/* Marital Status */}
-                    <Text style={{ color: colors.blackOpacity(0.9), fontSize: responsiveFontSize(1.7), fontWeight: '600' }}>{t(`maritalStatus`)}</Text>
-                    <View style={{ flexDirection: 'row', marginTop: responsiveFontSize(0.5) }}>
-                        <TouchableOpacity
-                            onPress={() => {
-                                dispatch(userEditAction({ ...userEdit, Marital_Status: 'Single' }));
-                            }}
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                backgroundColor: userEdit.Marital_Status === 'Single' ? colors.blueOpacity(0.2) : colors.blackOpacity(0.05),
-                                paddingHorizontal: responsiveFontSize(2),
-                                paddingVertical: responsiveFontSize(1),
-                                borderRadius: 100,
-                            }}>
-                            <Text style={{ color: colors.black, fontWeight: userEdit.Marital_Status === 'Single' ? '500' : '400', fontSize: responsiveFontSize(1.7) }}>Single</Text>
-                        </TouchableOpacity>
-                        <Space width={responsiveFontSize(1.5)} />
-                        <TouchableOpacity
-                            onPress={() => {
-                                dispatch(userEditAction({ ...userEdit, Marital_Status: 'Married' }));
-                            }}
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                backgroundColor: userEdit.Marital_Status === 'Married' ? colors.blueOpacity(0.2) : colors.blackOpacity(0.05),
-                                paddingHorizontal: responsiveFontSize(2),
-                                paddingVertical: responsiveFontSize(1),
-                                borderRadius: 100,
-                            }}>
-                            <Text style={{ color: colors.black, fontWeight: userEdit.Marital_Status === 'Married' ? '500' : '400', fontSize: responsiveFontSize(1.7) }}>Married</Text>
-                        </TouchableOpacity>
-                        <Space width={responsiveFontSize(1.5)} />
-                        <TouchableOpacity
-                            onPress={() => {
-                                dispatch(userEditAction({ ...userEdit, Marital_Status: 'Widowed' }));
-                            }}
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                backgroundColor: userEdit.Marital_Status === 'Widowed' ? colors.blueOpacity(0.2) : colors.blackOpacity(0.05),
-                                paddingHorizontal: responsiveFontSize(2),
-                                paddingVertical: responsiveFontSize(1),
-                                borderRadius: 100,
-                            }}>
-                            <Text style={{ color: colors.black, fontWeight: userEdit.Marital_Status === 'Widowed' ? '500' : '400', fontSize: responsiveFontSize(1.7) }}>Widowed</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <View style={{ flexDirection: 'row', marginTop: responsiveFontSize(1) }}>
-                        <TouchableOpacity
-                            onPress={() => {
-                                dispatch(userEditAction({ ...userEdit, Marital_Status: 'Divorced' }));
-                            }}
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                backgroundColor: userEdit.Marital_Status === 'Divorced' ? colors.blueOpacity(0.2) : colors.blackOpacity(0.05),
-                                paddingHorizontal: responsiveFontSize(2),
-                                paddingVertical: responsiveFontSize(1),
-                                borderRadius: 100,
-                            }}>
-                            <Text style={{ color: colors.black, fontWeight: userEdit.Marital_Status === 'Divorced' ? '500' : '400', fontSize: responsiveFontSize(1.7) }}>Divorced</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <Space height={responsiveFontSize(2.5)} />
-
-                    {/* Highest Education */}
-                    <Text style={{ color: colors.blackOpacity(0.9), fontSize: responsiveFontSize(1.7), fontWeight: '600' }}>{t('highestEducation')}</Text>
-                    <View style={{ flexDirection: 'row', marginTop: responsiveFontSize(0.5) }}>
-                        <TouchableOpacity
-                            onPress={() => {
-                                dispatch(userEditAction({ ...userEdit, Highest_Education: 'Below 10th' }));
-                            }}
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                backgroundColor: userEdit?.Highest_Education === 'Below 10th' ? colors.blueOpacity(0.2) : colors.blackOpacity(0.05),
-                                paddingHorizontal: responsiveFontSize(2),
-                                paddingVertical: responsiveFontSize(1),
-                                borderRadius: 100,
-                            }}>
-                            <Text style={{ color: colors.black, fontWeight: userEdit?.Highest_Education === 'Below 10th' ? '500' : '400', fontSize: responsiveFontSize(1.7), marginStart: responsiveFontSize(0.5) }}>Below 10th</Text>
-                        </TouchableOpacity>
-                        <Space width={responsiveFontSize(1.5)} />
-                        <TouchableOpacity
-                            onPress={() => {
-                                dispatch(userEditAction({ ...userEdit, Highest_Education: '10th Passed' }));
-                            }}
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                backgroundColor: userEdit?.Highest_Education === '10th Passed' ? colors.blueOpacity(0.2) : colors.blackOpacity(0.05),
-                                paddingHorizontal: responsiveFontSize(2),
-                                paddingVertical: responsiveFontSize(1),
-                                borderRadius: 100,
-                            }}>
-                            <Text style={{ color: colors.black, fontWeight: userEdit?.Highest_Education === '10th Passed' ? '500' : '400', fontSize: responsiveFontSize(1.7), marginStart: responsiveFontSize(0.5) }}>10th Passed</Text>
-                        </TouchableOpacity>
-                        <Space width={responsiveFontSize(1.5)} />
-                        <TouchableOpacity
-                            onPress={() => {
-                                dispatch(userEditAction({ ...userEdit, Highest_Education: '12th Passed' }));
-                            }}
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                backgroundColor: userEdit?.Highest_Education === '12th Passed' ? colors.blueOpacity(0.2) : colors.blackOpacity(0.05),
-                                paddingHorizontal: responsiveFontSize(2),
-                                paddingVertical: responsiveFontSize(1),
-                                borderRadius: 100,
-                            }}>
-                            <Text style={{ color: colors.black, fontWeight: userEdit?.Highest_Education === '12th Passed' ? '500' : '400', fontSize: responsiveFontSize(1.7), marginStart: responsiveFontSize(0.5) }}>12th Passed</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <View style={{ flexDirection: 'row', marginTop: responsiveFontSize(1) }}>
-                        <TouchableOpacity
-                            onPress={() => {
-                                dispatch(userEditAction({ ...userEdit, Highest_Education: 'Graduate' }));
-                            }}
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                backgroundColor: userEdit?.Highest_Education === 'Graduate' ? colors.blueOpacity(0.2) : colors.blackOpacity(0.05),
-                                paddingHorizontal: responsiveFontSize(2),
-                                paddingVertical: responsiveFontSize(1),
-                                borderRadius: 100,
-                            }}>
-                            <Text style={{ color: colors.black, fontWeight: userEdit?.Highest_Education === 'Graduate' ? '500' : '400', fontSize: responsiveFontSize(1.7), marginStart: responsiveFontSize(0.5) }}>Graduate</Text>
-                        </TouchableOpacity>
-                        <Space width={responsiveFontSize(1.5)} />
-                        <TouchableOpacity
-                            onPress={() => {
-                                dispatch(userEditAction({ ...userEdit, Highest_Education: 'Post Graduate' }));
-                            }}
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                backgroundColor: userEdit?.Highest_Education === 'Post Graduate' ? colors.blueOpacity(0.2) : colors.blackOpacity(0.05),
-                                paddingHorizontal: responsiveFontSize(2),
-                                paddingVertical: responsiveFontSize(1),
-                                borderRadius: 100,
-                            }}>
-                            <Text style={{ color: colors.black, fontWeight: userEdit?.Highest_Education === 'Post Graduate' ? '500' : '400', fontSize: responsiveFontSize(1.7), marginStart: responsiveFontSize(0.5) }}>Post Graduate</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <Space height={responsiveFontSize(2.5)} />
-
-                    {/* Address */}
-                    <View>
-                        <Text style={{ color: colors.blackOpacity(0.9), fontSize: responsiveFontSize(1.7), fontWeight: '600' }}>{t('address')} <Text style={{ color: colors.roseRed, fontWeight: 'bold' }}>*</Text></Text>
-                        <TextInput
-                            value={userEdit?.address || ''}
-                            multiline
-                            onChangeText={(text) => {
-                                dispatch(userEditAction({ ...userEdit, address: text }));
-                                setErrors((prevData) => ({
-                                    ...prevData,
-                                    address: undefined,
-                                }));
-                            }}
-                            placeholder={t('enterCompleteAddress')}
-                            style={{
-                                textAlignVertical: 'top',
-                                color: colors.black,
-                                fontSize: responsiveFontSize(2),
-                                fontWeight: '500',
-                                height: responsiveHeight(14),
-                                borderColor: colors.blackOpacity(0.2),
-                                borderWidth: 1,
-                                borderRadius: 10,
-                                marginTop: responsiveFontSize(0.5),
-                                paddingHorizontal: responsiveFontSize(2),
-                            }}
-                        />
-                        {errors.address && (
-                            <Text style={{ color: 'red', fontSize: responsiveFontSize(1.6), marginTop: 4 }}>{errors.address}</Text>
-                        )}
-                    </View>
-                    <Space height={responsiveFontSize(2.5)} />
-
-                    {/* City */}
-                    <View>
-                        <Text style={{ color: colors.blackOpacity(0.9), fontSize: responsiveFontSize(1.7), fontWeight: '600' }}>{t('city')} <Text style={{ color: colors.roseRed, fontWeight: 'bold' }}>*</Text></Text>
-                        <TextInput
-                            value={userEdit?.city || ''}
-                            onChangeText={(text) => {
-                                dispatch(userEditAction({ ...userEdit, city: text }));
-                                setErrors((prevData) => ({
-                                    ...prevData,
-                                    city: undefined,
-                                }));
-                            }}
-                            placeholder={t('enterCity')}
-                            style={{
-                                color: colors.black,
-                                fontSize: responsiveFontSize(2),
-                                fontWeight: '500',
-                                height: responsiveHeight(5.5),
-                                borderColor: colors.blackOpacity(0.2),
-                                borderWidth: 1,
-                                borderRadius: 10,
-                                marginTop: responsiveFontSize(0.5),
-                                paddingHorizontal: responsiveFontSize(2),
-                            }}
-                        />
-                        {errors.city && (
-                            <Text style={{ color: 'red', fontSize: responsiveFontSize(1.6), marginTop: 4 }}>{errors.city}</Text>
-                        )}
-                    </View>
-                    <Space height={responsiveFontSize(2.5)} />
-
-                    {/* State */}
-                    <View>
-                        <Text style={{ fontSize: responsiveFontSize(1.8), color: colors.black, fontWeight: '500', marginLeft: responsiveFontSize(0.5) }}>{t('state')} <Text style={{ color: 'red' }}>*</Text>
-                        </Text>
-                        <Dropdown
-                            disable
-                            style={{
-                                height: responsiveHeight(6),
-                                paddingHorizontal: responsiveFontSize(1.5),
-                                borderRadius: 10,
-                                borderColor: colors.blackOpacity(0.1),
-                                borderWidth: 1,
-                                marginTop: responsiveFontSize(0.5),
-                            }}
-                            containerStyle={{ borderRadius: 10, backgroundColor: colors.white, ...shadow }}
-                            itemTextStyle={{ color: colors.blackOpacity(0.8) }}
-                            placeholderStyle={{
-                                fontSize: responsiveFontSize(1.9),
-                                color: colors.blackOpacity(0.7),
-                                fontWeight: '500',
-                            }}
-                            selectedTextStyle={{
-                                color: colors.blackOpacity(.5),
-                                fontSize: responsiveFontSize(2),
-                                fontWeight: '500',
-                            }}
-                            iconStyle={{ height: responsiveFontSize(2.8), width: responsiveFontSize(2.8) }}
-                            // Map the fetched locations to the required format
-                            data={locations.length ? locations.map(item => ({ label: item.name, value: item.id.toString() })) : []}
-                            dropdownPosition="top"
-                            maxHeight={300}
-                            labelField="label"
-                            valueField="value"
-                            placeholder={t("selectState")}
-                            value={(locations?.find(state => userEdit?.states && (state.name.toLowerCase() === userEdit.states.toLowerCase() || state.id === Number(userEdit.states)))?.id)?.toString() || ''}
-                            onChange={item => {
-                                dispatch(userEditAction({ ...userEdit, states: item.value }));
-                                setErrors((prevData) => ({
-                                    ...prevData,
-                                    state: undefined,
-                                }));
-                            }}
-                        />
-                        {errors.state && (
-                            <Text style={{ color: 'red', fontSize: responsiveFontSize(1.6), marginTop: 4 }}>{errors.state}</Text>
-                        )}
-                    </View>
-                    <Space height={responsiveFontSize(5)} />
-                    <TouchableOpacity
-                        onPress={_navigateDrivingDetails}
-                        activeOpacity={0.7}
-                        style={{
-                            height: responsiveHeight(5.8),
-                            width: responsiveWidth(90),
-                            backgroundColor: colors.royalBlue,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            alignSelf: 'center',
-                            borderRadius: 8,
-                        }}>
-                        <Text style={{ color: colors.white, fontSize: responsiveFontSize(2), fontWeight: '500' }}>{t('next')}</Text>
-                    </TouchableOpacity>
-                    <Space height={responsiveFontSize(10)} />
-                    {/* Model DOB */}
-                    <Modal
-                        animationType={'fade'}
-                        transparent={true}
-                        visible={dateOfBirthModel}
-                        statusBarTranslucent
-                        navigationBarTranslucent
-                        onRequestClose={() => {
-                            // Alert.alert('Modal has been closed.');
-                            // setModalVisible(!modalVisible);
-                        }}>
-                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.blackOpacity(.7), }}>
-                            <View style={{ backgroundColor: colors.white, alignItems: 'center', width: responsiveWidth(90), borderRadius: 10, overflow: 'hidden' }}>
-                                <Space height={responsiveHeight(2)} />
-                                <Text style={{ color: colors.black, fontSize: responsiveFontSize(2.4), fontWeight: '500' }}>{t(`dateOfBirth`)}</Text>
-                                <Space height={responsiveHeight(.5)} />
-                                <DatePicker
-                                    mode='date'
-                                    theme='light'
-                                    date={dateOfBirth} // Sets the initial date to display in the picker
-                                    minimumDate={minimumDate}
-                                    maximumDate={maximumDate}
-                                    onDateChange={(date) => {
-                                        dispatch(userEditAction({ ...userEdit, DOB: date }));
-                                        setErrors((prevData) => ({
-                                            ...prevData,
-                                            dateOfBirth: undefined
-                                        }))
-                                    }}
-                                    modal={false}
-                                />
-                                <Space height={responsiveHeight(.5)} />
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <TouchableOpacity onPress={() => setdateOfBirthModel(false)} activeOpacity={.7} style={{ height: responsiveHeight(6.5), flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.blackOpacity(.1), bottom: -1 }}>
-                                        <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.8), fontWeight: '500' }}>{t(`cancel`)}</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity onPress={() => {
-                                        setTimeout(() => {
-                                            setdateOfBirthModel(false)
-                                        }, 600);
-                                    }} activeOpacity={.7} style={{ height: responsiveHeight(6.5), flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.azureBlue, bottom: -1 }}>
-                                        <Text style={{ color: colors.white, fontSize: responsiveFontSize(1.8), fontWeight: '500' }}>{t(`confirm`)}</Text>
-                                    </TouchableOpacity>
-                                </View>
+            case 'dob':
+                const selectedDate = userEdit?.DOB ? moment(userEdit.DOB).format('YYYY-MM-DD') : '';
+                const maxDate = moment().subtract(18, 'years').format('YYYY-MM-DD');
+                const years = Array.from({ length: 70 }, (_, i) => moment().subtract(18 + i, 'years').year());
+                return (
+                    <View style={styles.stepContent}>
+                        <View style={styles.dateDisplay}><Text style={[styles.dateText, !userEdit?.DOB && { color: '#999' }]}>{userEdit?.DOB ? moment(userEdit.DOB).format('DD MMMM YYYY') : t('selectFromCalendar')}</Text><Ionicons name="calendar" size={22} color={colors.royalBlue} /></View>
+                        <Space height={12} />
+                        <View style={styles.calendarBox}>
+                            <View style={styles.calendarHeader}>
+                                <TouchableOpacity onPress={() => setCalendarMonth(moment(calendarMonth).subtract(1, 'month').format('YYYY-MM-DD'))}><Ionicons name="chevron-back" size={22} color={colors.royalBlue} /></TouchableOpacity>
+                                <TouchableOpacity onPress={() => setYearPickerOpen(true)} style={styles.yearBtn}><Text style={styles.yearBtnText}>{moment(calendarMonth).format('MMMM YYYY')}</Text><Ionicons name="caret-down" size={12} color={colors.royalBlue} /></TouchableOpacity>
+                                <TouchableOpacity onPress={() => { if (moment(calendarMonth).add(1, 'month').isSameOrBefore(moment(maxDate))) setCalendarMonth(moment(calendarMonth).add(1, 'month').format('YYYY-MM-DD')); }}><Ionicons name="chevron-forward" size={22} color={colors.royalBlue} /></TouchableOpacity>
                             </View>
+                            <Calendar key={calendarMonth} current={calendarMonth} maxDate={maxDate} hideArrows renderHeader={() => null} onDayPress={(day: any) => dispatch(userEditAction({ ...userEdit, DOB: new Date(day.dateString) }))} markedDates={{ [selectedDate]: { selected: true, selectedColor: colors.royalBlue } }} theme={{ selectedDayBackgroundColor: colors.royalBlue, todayTextColor: colors.royalBlue, dayTextColor: '#333' }} />
                         </View>
-                    </Modal>
+                        <Modal visible={yearPickerOpen} transparent animationType="fade"><TouchableWithoutFeedback onPress={() => setYearPickerOpen(false)}><View style={styles.modalOverlay}><View style={styles.yearPickerBox}><Text style={styles.yearPickerTitle}>{t('selectYear')}</Text><ScrollView>{years.map(y => (<TouchableOpacity key={y} style={[styles.yearItem, moment(calendarMonth).year() === y && styles.yearItemSelected]} onPress={() => { setCalendarMonth(moment(calendarMonth).year(y).format('YYYY-MM-DD')); setYearPickerOpen(false); }}><Text style={[styles.yearItemText, moment(calendarMonth).year() === y && { color: 'white' }]}>{y}</Text></TouchableOpacity>))}</ScrollView></View></View></TouchableWithoutFeedback></Modal>
+                    </View>
+                );
+
+            case 'gender':
+                return (
+                    <View style={styles.stepContent}>
+                        <Text style={styles.inputLabel}>{t('gender')}</Text>
+                        <View style={styles.radioGroup}>{['Male', 'Female', 'Other'].map(g => (<TouchableOpacity key={g} style={[styles.radioBox, userEdit?.Sex === g && styles.radioBoxSelected]} onPress={() => dispatch(userEditAction({ ...userEdit, Sex: g }))}><View style={[styles.radioCircle, userEdit?.Sex === g && styles.radioCircleSelected]}>{userEdit?.Sex === g && <View style={styles.radioDot} />}</View><Text style={[styles.radioText, userEdit?.Sex === g && { color: colors.royalBlue }]}>{g}</Text></TouchableOpacity>))}</View>
+                        <Space height={24} />
+                        <Text style={styles.inputLabel}>{t('maritalStatus')}</Text>
+                        <View style={styles.chipContainer}>{['Single', 'Married', 'Widowed', 'Divorced'].map(s => (<Chip key={s} label={s} selected={userEdit?.Marital_Status === s} onPress={() => dispatch(userEditAction({ ...userEdit, Marital_Status: s }))} />))}</View>
+                    </View>
+                );
+
+            case 'education':
+                return (
+                    <View style={styles.stepContent}>
+                        <View style={styles.gridContainer}>{translatedEducationList.map(e => (<TouchableOpacity key={e.value} style={[styles.gridTile, (userEdit?.education === e.value || userEdit?.Highest_Education === e.value) && styles.gridTileSelected]} onPress={() => dispatch(userEditAction({ ...userEdit, education: e.value, Highest_Education: e.value }))}><Text style={[styles.gridTileText, (userEdit?.education === e.value || userEdit?.Highest_Education === e.value) && styles.gridTileTextSelected]}>{e.label}</Text></TouchableOpacity>))}</View>
+                    </View>
+                );
+
+            case 'address':
+                // Find the matching state - handle both name and ID stored values
+                const getStateDisplayName = () => {
+                    // First check if we have a state_name directly
+                    if (userEdit?.state_name) return userEdit.state_name;
+                    if (!userEdit?.states) return '';
+
+                    // If locations are loaded, try to find the name
+                    if (locations.length > 0) {
+                        // Try to find by ID first (numeric value)
+                        const byId = locations.find(s => s.id === Number(userEdit.states));
+                        if (byId) return byId.name;
+                        // Try to find by name (string value)
+                        const byName = locations.find(s => s.name?.toLowerCase() === userEdit.states?.toLowerCase());
+                        if (byName) return byName.name;
+                        // Try to find by state_id field
+                        if (userEdit?.state_id) {
+                            const byStateId = locations.find(s => s.id === Number(userEdit.state_id));
+                            if (byStateId) return byStateId.name;
+                        }
+                    }
+                    // If it's a non-numeric value, it might be the state name itself
+                    if (isNaN(Number(userEdit.states))) {
+                        return userEdit.states;
+                    }
+                    // Return empty for ID that we can't resolve
+                    return '';
+                };
+                const stateDisplayName = getStateDisplayName();
+                const hasState = Boolean(userEdit?.states || userEdit?.state_name || userEdit?.state_id);
+
+                return (
+                    <View style={styles.stepContent}>
+                        <Text style={styles.inputLabel}>{t('address')} <Text style={styles.requiredAsterisk}>*</Text></Text>
+                        <TextInput style={[styles.textInput, { height: 80, textAlignVertical: 'top', paddingTop: 12 }]} placeholder={t('enterCompleteAddress')} placeholderTextColor="#999" multiline value={userEdit?.address || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, address: text }))} />
+                        <Space height={16} />
+                        <Text style={styles.inputLabel}>{t('pincode')} <Text style={styles.requiredAsterisk}>*</Text></Text>
+                        <View style={{ position: 'relative', justifyContent: 'center' }}>
+                            <TextInput
+                                style={[styles.textInput, { paddingRight: 40 }]}
+                                placeholder={t('enterPincode')}
+                                placeholderTextColor="#999"
+                                keyboardType="number-pad"
+                                maxLength={6}
+                                value={userEdit?.pincode || ''}
+                                onChangeText={fetchCityFromPincode}
+                            />
+                            {loadingPincode && (
+                                <ActivityIndicator
+                                    size="small"
+                                    color={colors.royalBlue}
+                                    style={{ position: 'absolute', right: 12 }}
+                                />
+                            )}
+                        </View>
+                        <Space height={16} />
+                        <Text style={styles.inputLabel}>{t('city')} <Text style={styles.requiredAsterisk}>*</Text></Text>
+                        <TextInput style={styles.textInput} placeholder={t('enterCity')} placeholderTextColor="#999" value={userEdit?.city || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, city: text }))} />
+                        <Space height={16} />
+                        <Text style={styles.inputLabel}>{t('state')} <Text style={styles.requiredAsterisk}>*</Text></Text>
+                        {hasState ? (
+                            <View style={[styles.textInput, { justifyContent: 'center', backgroundColor: '#F5F5F5' }]}>
+                                <Text style={{ color: '#333', fontSize: 15 }}>{stateDisplayName || t('stateSelected') || 'State Selected'}</Text>
+                            </View>
+                        ) : (
+                            <Dropdown
+                                style={styles.dropdown}
+                                placeholderStyle={{ color: '#999', fontSize: 15 }}
+                                selectedTextStyle={{ color: '#333', fontSize: 15 }}
+                                data={locations.map(l => ({ label: l.name, value: l.id.toString() }))}
+                                labelField="label"
+                                valueField="value"
+                                placeholder={t('selectState')}
+                                search
+                                searchPlaceholder={t('search')}
+                                value={''}
+                                onChange={item => dispatch(userEditAction({ ...userEdit, states: item.value }))}
+                            />
+                        )}
+                        {hasState && <Text style={styles.helperText}>{t('stateCannotBeChanged') || 'State captured during signup'}</Text>}
+                    </View>
+                );
+
+            case 'vehicle':
+                // Use only 8 predefined trucks with images (matching profile-completion)
+                const VEHICLE_TYPES_WITH_IMAGES = [
+                    { id: '1', name: t('cargoTruckOpen') || 'Cargo Truck (Open)', imgKey: 'cargoOpen' },
+                    { id: '2', name: t('cargoTruckClosed') || 'Cargo Truck (Closed)', imgKey: 'cargoClosed' },
+                    { id: '3', name: t('tipperTrucks') || 'Tipper Trucks', imgKey: 'tipper' },
+                    { id: '4', name: t('trailerTrucks') || 'Trailer Trucks', imgKey: 'trailer' },
+                    { id: '5', name: t('tankers') || 'Tankers', imgKey: 'tanker' },
+                    { id: '6', name: t('carCarriers') || 'Car Carriers', imgKey: 'carCarrier' },
+                    { id: '7', name: t('containerTrucks') || 'Container Trucks', imgKey: 'container' },
+                    { id: '8', name: t('reeferTrucks') || 'Refrigerator Trucks', imgKey: 'reefer' },
+                ];
+
+                // Get current selections using normalizeArrayField to handle corrupted data
+                const currentVehicleSelections = normalizeArrayField(userEdit?.vehicle_type);
+
+                return (
+                    <View style={styles.stepContent}>
+                        <View style={styles.vehicleGrid}>
+                            {VEHICLE_TYPES_WITH_IMAGES.map((v) => {
+                                const selected = currentVehicleSelections.includes(v.id);
+                                return (
+                                    <TouchableOpacity
+                                        key={v.id}
+                                        style={[styles.vehicleTile, selected && styles.vehicleTileSelected]}
+                                        onPress={() => toggleMultiSelect('vehicle_type', v.id)}
+                                    >
+                                        <Image source={(TruckImages as any)[v.imgKey]} style={styles.vehicleImage} resizeMode="contain" />
+                                        <Text style={[styles.vehicleLabel, selected && { color: colors.royalBlue }]}>{v.name}</Text>
+                                        {selected && <View style={styles.vehicleCheck}><Ionicons name="checkmark-circle" size={20} color={colors.royalBlue} /></View>}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
+                );
+
+            case 'experience':
+                return (
+                    <View style={styles.stepContent}>
+                        <Text style={styles.inputLabel}>{t('selectYourDrivingExperience')}</Text>
+                        <Dropdown style={styles.dropdown} data={drivingExperienceArray} labelField="label" valueField="value" placeholder={t('selectExperience')} value={userEdit?.Driving_Experience} onChange={item => dispatch(userEditAction({ ...userEdit, Driving_Experience: item.value }))} />
+                        <Space height={16} />
+                        <Text style={styles.inputLabel}>{t('preferredLocation')}</Text>
+                        <Dropdown style={styles.dropdown} data={locations.map(l => ({ label: l.name, value: l.id.toString() }))} labelField="label" valueField="value" placeholder={t('selectPreferredLocation')} search searchPlaceholder={t('search')} value={userEdit?.Preferred_Location} onChange={item => dispatch(userEditAction({ ...userEdit, Preferred_Location: item.value }))} />
+                    </View>
+                );
+
+            case 'license_type':
+                return (
+                    <View style={styles.stepContent}>
+                        {licenseTypes.map(l => (<TouchableOpacity key={l} style={[styles.radioBox, userEdit?.Type_of_License === l && styles.radioBoxSelected, { marginBottom: 10 }]} onPress={() => dispatch(userEditAction({ ...userEdit, Type_of_License: l }))}><View style={[styles.radioCircle, userEdit?.Type_of_License === l && styles.radioCircleSelected]}>{userEdit?.Type_of_License === l && <View style={styles.radioDot} />}</View><Text style={[styles.radioText, userEdit?.Type_of_License === l && { color: colors.royalBlue }]}>{l}</Text></TouchableOpacity>))}
+                    </View>
+                );
+
+            case 'salary':
+                return (
+                    <View style={styles.stepContent}>
+                        <Text style={styles.inputLabel}>{t('currentMonthlyIncome')} *</Text>
+                        <View style={styles.chipContainer}>{salaryRanges.map(s => (<Chip key={s} label={`₹${s}`} selected={userEdit?.Current_Monthly_Income === s} onPress={() => dispatch(userEditAction({ ...userEdit, Current_Monthly_Income: s }))} />))}</View>
+                        <Space height={20} />
+                        <Text style={styles.inputLabel}>{t('expectedMonthlyIncome')} *</Text>
+                        <View style={styles.chipContainer}>{salaryRanges.map(s => (<Chip key={s} label={`₹${s}`} selected={userEdit?.Expected_Monthly_Income === s} onPress={() => dispatch(userEditAction({ ...userEdit, Expected_Monthly_Income: s }))} />))}</View>
+                    </View>
+                );
+
+            case 'preferences':
+                return (
+                    <View style={styles.stepContent}>
+                        <Text style={styles.inputLabel}>{t('jobPlacementsTitle')}</Text>
+                        <View style={styles.chipContainer}><Chip label={t('yes') || 'Yes'} selected={userEdit?.job_placement === 'yes'} onPress={() => dispatch(userEditAction({ ...userEdit, job_placement: 'yes' }))} /><Chip label={t('no') || 'No'} selected={userEdit?.job_placement === 'no'} onPress={() => dispatch(userEditAction({ ...userEdit, job_placement: 'no' }))} /></View>
+                        <Space height={20} />
+                        <Text style={styles.inputLabel}>{t('previousEmployerTitle')}</Text>
+                        <View style={styles.chipContainer}><Chip label={t('yes') || 'Yes'} selected={userEdit?.previous_employer === 'yes'} onPress={() => dispatch(userEditAction({ ...userEdit, previous_employer: 'yes' }))} /><Chip label={t('no') || 'No'} selected={userEdit?.previous_employer === 'no'} onPress={() => dispatch(userEditAction({ ...userEdit, previous_employer: 'no' }))} /></View>
+                    </View>
+                );
+
+            case 'avatar':
+                return (
+                    <View style={[styles.stepContent, { alignItems: 'center' }]}>
+                        <TouchableOpacity onPress={() => setProfileModalOpen(true)} style={styles.avatarBox}>
+                            {userEdit?.profilePath?.path || userEdit?.images ? <Image source={{ uri: profileImageUri }} style={styles.avatarImage} /> : <Ionicons name="camera-outline" size={50} color="#ccc" />}
+                            <View style={styles.avatarBadge}><Ionicons name="pencil" size={14} color="white" /></View>
+                        </TouchableOpacity>
+                        <Text style={styles.helperText}>{t('tapToChangePhoto') || 'Tap to change photo'}</Text>
+                    </View>
+                );
+
+            case 'aadhar_details':
+                return (
+                    <View style={styles.stepContent}>
+                        <Text style={styles.inputLabel}>{t('aadharNumber')} <Text style={styles.requiredAsterisk}>*</Text></Text>
+                        <TextInput style={styles.textInput} placeholder="0000 0000 0000" placeholderTextColor="#999" keyboardType="number-pad" maxLength={12} value={userEdit?.Aadhar_Number || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, Aadhar_Number: text }))} />
+                        <Space height={20} />
+                        <DocumentUpload label={`${t('uploadAadharPhoto')} *`} imagePath={userEdit?.aadharImagePath} existingImage={userEdit?.Aadhar_Photo} fieldName="aadharImagePath" />
+                    </View>
+                );
+
+            case 'license_details':
+                return (
+                    <View style={styles.stepContent}>
+                        <Text style={styles.inputLabel}>{t('licenseNumber')} <Text style={styles.requiredAsterisk}>*</Text></Text>
+                        <TextInput style={styles.textInput} placeholder="MH01 20230000000" placeholderTextColor="#999" autoCapitalize="characters" value={userEdit?.License_Number || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, License_Number: text }))} />
+                        <Space height={16} />
+                        <Text style={styles.inputLabel}>{t('expiryDateOfLicense')}</Text>
+                        <TouchableOpacity style={styles.dateDisplay} onPress={() => setLicenseExpiryModal(true)}><Text style={styles.dateText}>{userEdit?.Expiry_date_of_License ? moment(licenseExpiry).format('DD-MM-YYYY') : 'DD-MM-YYYY'}</Text><Ionicons name="calendar" size={20} color={colors.royalBlue} /></TouchableOpacity>
+                        <Space height={20} />
+                        <DocumentUpload label={t('uploadDrivingLicense')} imagePath={userEdit?.drivingLicensePath} existingImage={userEdit?.Driving_License} fieldName="drivingLicensePath" />
+                        <Modal visible={licenseExpiryModal} transparent animationType="fade"><View style={styles.modalOverlay}><View style={styles.datePickerBox}><Text style={styles.datePickerTitle}>{t('expiryDateOfLicense')}</Text><DatePicker mode="date" theme="light" date={licenseExpiry} minimumDate={new Date()} maximumDate={moment().add(30, 'years').toDate()} onDateChange={(date) => dispatch(userEditAction({ ...userEdit, Expiry_date_of_License: date }))} /><View style={styles.datePickerButtons}><TouchableOpacity style={styles.cancelBtn} onPress={() => setLicenseExpiryModal(false)}><Text style={styles.cancelBtnText}>{t('cancel')}</Text></TouchableOpacity><TouchableOpacity style={[styles.confirmBtn, { backgroundColor: colors.royalBlue }]} onPress={() => setLicenseExpiryModal(false)}><Text style={styles.confirmBtnText}>{t('confirm')}</Text></TouchableOpacity></View></View></View></Modal>
+                    </View>
+                );
+
+            // Transporter steps
+            case 'year_of_exp':
+                return (
+                    <View style={styles.stepContent}>
+                        <View style={styles.gridContainer}>
+                            {[
+                                { label: t('lessThan1Year') || '< 1 Year', value: 'less_than_1' },
+                                { label: t('1to2Years') || '1-2 Years', value: '1-2' },
+                                { label: t('3to5Years') || '3-5 Years', value: '3-5' },
+                                { label: t('6to10Years') || '6-10 Years', value: '6-10' },
+                                { label: t('10PlusYears') || '10+ Years', value: '10+' }
+                            ].map(e => (
+                                <TouchableOpacity key={e.value} style={[styles.gridTile, userEdit?.year_of_exp === e.value && styles.gridTileSelected]} onPress={() => dispatch(userEditAction({ ...userEdit, year_of_exp: e.value }))}>
+                                    <Text style={[styles.gridTileText, userEdit?.year_of_exp === e.value && styles.gridTileTextSelected]}>{e.label}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                );
+
+            case 'fleet_size':
+                return (<View style={styles.stepContent}><View style={styles.gridContainer}>{translatedFleetSizes.map(f => (<TouchableOpacity key={f.value} style={[styles.gridTile, userEdit?.fleet_size === f.value && styles.gridTileSelected]} onPress={() => dispatch(userEditAction({ ...userEdit, fleet_size: f.value }))}><Text style={[styles.gridTileText, userEdit?.fleet_size === f.value && styles.gridTileTextSelected]}>{f.label}</Text></TouchableOpacity>))}</View></View>);
+
+            case 'industry_segment':
+                return (<View style={styles.stepContent}><View style={styles.chipContainer}>{translatedIndustrySegments.map(s => { const selected = userEdit?.industry_segment?.split(',')?.includes(s.value); return <Chip key={s.value} label={s.label} selected={selected} onPress={() => toggleMultiSelect('industry_segment', s.value)} />; })}</View></View>);
+
+            case 'avg_km_run':
+                return (<View style={styles.stepContent}><View style={styles.gridContainer}>{translatedAvgKmRanges.map(k => (<TouchableOpacity key={k.value} style={[styles.gridTile, userEdit?.avg_km_run === k.value && styles.gridTileSelected]} onPress={() => dispatch(userEditAction({ ...userEdit, avg_km_run: k.value }))}><Text style={[styles.gridTileText, userEdit?.avg_km_run === k.value && styles.gridTileTextSelected]}>{k.label}</Text></TouchableOpacity>))}</View></View>);
+
+            case 'operational_segment':
+                return (<View style={styles.stepContent}>{translatedOperationalSegments.map(s => { const selected = userEdit?.operational_segment?.split(',')?.includes(s.value); return (<TouchableOpacity key={s.value} style={[styles.radioBox, selected && styles.radioBoxSelected, { marginBottom: 10 }]} onPress={() => toggleMultiSelect('operational_segment', s.value)}><View style={[styles.radioCircle, selected && styles.radioCircleSelected]}>{selected && <View style={styles.radioDot} />}</View><Text style={[styles.radioText, selected && { color: colors.royalBlue }]}>{s.label}</Text></TouchableOpacity>); })}</View>);
+
+            case 'transport_details':
+                return (
+                    <View style={styles.stepContent}>
+                        <Text style={styles.inputLabel}>{t('transportName') || 'Transport Name'} <Text style={styles.requiredAsterisk}>*</Text></Text>
+                        <TextInput style={styles.textInput} placeholder={t('enterTransportName')} placeholderTextColor="#999" value={userEdit?.transport_name || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, transport_name: text }))} />
+                        <Space height={16} />
+                        <Text style={styles.inputLabel}>{t('yearOfEstablishment') || 'Year of Establishment'}</Text>
+                        <TextInput style={styles.textInput} placeholder="YYYY" maxLength={4} keyboardType="number-pad" placeholderTextColor="#999" value={userEdit?.year_of_establishment || userEdit?.establishment_year || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, year_of_establishment: text, establishment_year: text }))} />
+                        <Space height={16} />
+                        <Text style={styles.inputLabel}>{t('referralCode') || 'Referral Code'}</Text>
+                        <TextInput style={styles.textInput} placeholder={t('enterReferralCode')} placeholderTextColor="#999" value={userEdit?.Referral_Code || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, Referral_Code: text }))} />
+                    </View>
+                );
+
+            case 'pan_gst':
+                return (
+                    <View style={styles.stepContent}>
+                        <Text style={styles.inputLabel}>{t('panNumber') || 'PAN Number'} <Text style={styles.requiredAsterisk}>*</Text></Text>
+                        <TextInput style={styles.textInput} placeholder="ABCDE1234F" placeholderTextColor="#999" autoCapitalize="characters" maxLength={10} value={userEdit?.pan || userEdit?.PAN_Number || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, pan: text.toUpperCase(), PAN_Number: text.toUpperCase() }))} />
+                        <Space height={16} />
+                        <DocumentUpload label={`${t('uploadPanDocument')} *`} imagePath={userEdit?.panImagePath} existingImage={userEdit?.PAN_Image} fieldName="panImagePath" />
+                        <Space height={20} />
+                        <Text style={styles.inputLabel}>{t('gstNumber') || 'GST Number'}</Text>
+                        <TextInput style={styles.textInput} placeholder="22AAAAA0000A1Z5" placeholderTextColor="#999" autoCapitalize="characters" maxLength={15} value={userEdit?.gst || userEdit?.GST_Number || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, gst: text.toUpperCase(), GST_Number: text.toUpperCase() }))} />
+                        <Space height={16} />
+                        <DocumentUpload label={t('uploadGstCertificate')} imagePath={userEdit?.gstCertificatePath} existingImage={userEdit?.GST_Certificate} fieldName="gstCertificatePath" />
+                    </View>
+                );
+
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <View style={[styles.container, { backgroundColor: '#F8F9FA' }]}>
+            <Space height={safeAreaInsets.top} />
+            <View style={styles.header}><TouchableOpacity onPress={handleBack} style={styles.navBtn}><Ionicons name="arrow-back" size={24} color="#333" /></TouchableOpacity><Text style={styles.headerTitle}>{t('profileEdit')}</Text><View style={styles.navBtn} /></View>
+            <View style={styles.progressContainer}><View style={styles.progressBar}><View style={[styles.progressFill, { width: `${progressPercent}%`, backgroundColor: colors.royalBlue }]} /></View><Text style={styles.progressText}>{currentStep + 1}/{STEPS.length}</Text></View>
+
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+            >
+                <KeyboardAwareScrollView
+                    style={{ flex: 1 }}
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={true}
+                    extraScrollHeight={100}
+                    enableOnAndroid={false}
+                >
+                    <Animated.View style={animatedContentStyle}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.stepTitle}>{t(STEPS[currentStep].title)}</Text>
+                                <Text style={styles.stepSubtitle}>{t(STEPS[currentStep].subtitle)}</Text>
+                            </View>
+                            {i18n.language === 'hi' && ((userRole === 'driver' && DRIVER_VOICE_FILES[STEPS[currentStep].id]) || (userRole === 'transporter' && TRANSPORTER_VOICE_FILES[STEPS[currentStep].id])) && (
+                                <TouchableOpacity
+                                    onPress={toggleVoiceMute}
+                                    style={{
+                                        width: 44,
+                                        height: 44,
+                                        borderRadius: 22,
+                                        backgroundColor: isVoiceMuted ? '#999' : colors.royalBlue,
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                    }}
+                                >
+                                    <Ionicons name={isVoiceMuted ? "volume-mute" : "volume-high"} size={24} color="white" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                        <View style={styles.divider} />
+                        {renderStepContent()}
+                    </Animated.View>
+                </KeyboardAwareScrollView>
+
+                {/* Hidden audio player */}
+                {i18n.language === 'hi' && currentAudioSource && (
+                    <Video
+                        source={currentAudioSource}
+                        paused={false}
+                        volume={1.0}
+                        playInBackground={false}
+                        playWhenInactive={false}
+                        ignoreSilentSwitch="ignore"
+                        onEnd={() => { setCurrentAudioSource(null); }}
+                        onError={(error) => {
+                            console.log('Audio error:', error);
+                            setCurrentAudioSource(null);
+                        }}
+                        style={{ height: 0, width: 0, position: 'absolute' }}
+                    />
+                )}
+
+                <View style={styles.footer}>
+                    <TouchableOpacity style={[styles.nextButton, { backgroundColor: colors.royalBlue }]} onPress={handleNext} disabled={loading}>
+                        {loading ? <ActivityIndicator color="white" /> : <><Text style={styles.nextButtonText}>{currentStep === STEPS.length - 1 ? t('submit') : t('next')}</Text>{currentStep !== STEPS.length - 1 && <Ionicons name="arrow-forward" size={18} color="white" style={{ marginLeft: 8 }} />}</>}
+                    </TouchableOpacity>
                 </View>
-                {/* Profile Model */}
-                <Modal
-                    animationType="slide"
-                    transparent={true}
-                    visible={profileModel}
-                    statusBarTranslucent
-                    navigationBarTranslucent>
-                    <TouchableWithoutFeedback onPress={() => setprofileModel(false)}>
-                        <View style={{ flex: 1, backgroundColor: colors.blackOpacity(0.5), justifyContent: 'flex-end' }}>
-                            <TouchableWithoutFeedback>
-                                <View style={{ width: responsiveWidth(100), backgroundColor: colors.white, alignItems: 'center', padding: responsiveWidth(2.5), borderTopLeftRadius: 10, borderTopRightRadius: 10 }}>
-                                    <Text style={{ color: colors.black, fontSize: responsiveFontSize(2.4), fontWeight: '500' }}>{t(`chooseAction`)}</Text>
-                                    <Space height={responsiveFontSize(1.2)} />
-                                    <TouchableOpacity onPress={_openCamera} style={{ width: '100%', flexDirection: 'row', alignItems: 'center', padding: responsiveFontSize(1.5) }}>
-                                        <Image style={{ height: responsiveFontSize(3), width: responsiveFontSize(3) }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/16076/16076003.png' }} />
-                                        <Text style={{ color: colors.black, fontSize: responsiveFontSize(2), fontWeight: '500', marginLeft: responsiveFontSize(2.5) }}>{t(`camera`)}</Text>
-                                    </TouchableOpacity>
-                                    <Space style={{ height: responsiveFontSize(.1), width: '100%', backgroundColor: colors.blackOpacity(.05) }} />
-                                    <TouchableOpacity onPress={_openGallery} style={{ width: '100%', flexDirection: 'row', alignItems: 'center', padding: responsiveFontSize(1.5) }}>
-                                        <Image style={{ height: responsiveFontSize(3.2), width: responsiveFontSize(3.2) }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/9261/9261484.png' }} />
-                                        <Text style={{ color: colors.black, fontSize: responsiveFontSize(2), fontWeight: '500', marginLeft: responsiveFontSize(2.5) }}>{t(`gallery`)}</Text>
-                                    </TouchableOpacity>
-                                    <Space height={safeAreaInsets.bottom + responsiveHeight(1)} />
-                                </View>
-                            </TouchableWithoutFeedback>
-                        </View>
-                    </TouchableWithoutFeedback>
-                </Modal>
-            </KeyboardAwareScrollView>
+            </KeyboardAvoidingView>
+
+            <Modal visible={profileModalOpen} transparent animationType="slide"><TouchableWithoutFeedback onPress={() => setProfileModalOpen(false)}><View style={styles.bottomModalOverlay}><View style={styles.bottomModalContent}><Text style={styles.modalTitle}>{t('chooseAction')}</Text><TouchableOpacity style={styles.modalOption} onPress={() => openCamera('profilePath')}><Ionicons name="camera-outline" size={24} color="#333" /><Text style={styles.modalOptionText}>{t('camera')}</Text></TouchableOpacity><View style={styles.modalDivider} /><TouchableOpacity style={styles.modalOption} onPress={() => pickImage('profilePath')}><Ionicons name="image-outline" size={24} color="#333" /><Text style={styles.modalOptionText}>{t('gallery')}</Text></TouchableOpacity><Space height={safeAreaInsets.bottom} /></View></View></TouchableWithoutFeedback></Modal>
         </View>
     );
 }
+
+const styles = StyleSheet.create({
+    container: { flex: 1 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
+    navBtn: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
+    headerTitle: { fontSize: 16, fontWeight: '600', color: '#333', textTransform: 'uppercase' },
+    progressContainer: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginBottom: 8 },
+    progressBar: { flex: 1, height: 6, backgroundColor: '#E9ECEF', borderRadius: 3, marginRight: 12 },
+    progressFill: { height: '100%', borderRadius: 3 },
+    progressText: { fontSize: 12, color: '#6C757D', fontWeight: '600' },
+    scrollContent: { flexGrow: 1, padding: 16 },
+    stepTitle: { fontSize: 20, fontWeight: '700', color: '#212529', marginBottom: 4 },
+    stepSubtitle: { fontSize: 13, color: '#6C757D', marginBottom: 12 },
+    divider: { height: 1, backgroundColor: '#E9ECEF', marginBottom: 16 },
+    stepContent: { flex: 1 },
+    inputLabel: { fontSize: 13, fontWeight: '600', color: '#495057', marginBottom: 8 },
+    textInput: { borderWidth: 1, borderColor: '#CED4DA', backgroundColor: 'white', borderRadius: 8, paddingHorizontal: 14, height: 48, fontSize: 15, color: '#212529' },
+    dropdown: { borderWidth: 1, borderColor: '#CED4DA', backgroundColor: 'white', borderRadius: 8, paddingHorizontal: 14, height: 48 },
+    helperText: { fontSize: 12, color: '#6C757D', marginTop: 12 },
+    dateDisplay: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#CED4DA', backgroundColor: 'white', borderRadius: 8, paddingHorizontal: 14, height: 48 },
+    dateText: { fontSize: 15, color: '#212529' },
+    calendarBox: { backgroundColor: 'white', borderRadius: 10, padding: 8, borderWidth: 1, borderColor: '#E9ECEF' },
+    calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#E9ECEF' },
+    yearBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0F5FF', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 },
+    yearBtnText: { fontSize: 14, fontWeight: '600', color: '#246BFD' },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+    yearPickerBox: { backgroundColor: 'white', borderRadius: 16, padding: 20, width: '80%', maxHeight: '60%' },
+    yearPickerTitle: { fontSize: 18, fontWeight: '700', color: '#333', textAlign: 'center', marginBottom: 16 },
+    yearItem: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, marginBottom: 4 },
+    yearItemSelected: { backgroundColor: '#246BFD' },
+    yearItemText: { fontSize: 16, fontWeight: '500', color: '#333', textAlign: 'center' },
+    radioGroup: {},
+    radioBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#DEE2E6', backgroundColor: 'white', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 10 },
+    radioBoxSelected: { borderColor: '#246BFD', backgroundColor: '#F0F5FF' },
+    radioCircle: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: '#ADB5BD', marginRight: 12, justifyContent: 'center', alignItems: 'center' },
+    radioCircleSelected: { borderColor: '#246BFD' },
+    radioDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#246BFD' },
+    radioText: { fontSize: 15, color: '#212529', fontWeight: '500' },
+    chipContainer: { flexDirection: 'row', flexWrap: 'wrap' },
+    chip: { backgroundColor: '#F8F9FA', borderRadius: 20, paddingVertical: 10, paddingHorizontal: 16, margin: 4, borderWidth: 1, borderColor: '#DEE2E6' },
+    chipSelected: { backgroundColor: '#F0F5FF', borderColor: '#246BFD' },
+    chipText: { fontSize: 14, color: '#495057', fontWeight: '500' },
+    chipTextSelected: { color: '#246BFD', fontWeight: '600' },
+    gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+    gridTile: { width: '48%', backgroundColor: 'white', borderRadius: 8, borderWidth: 1.5, borderColor: '#DEE2E6', paddingVertical: 14, paddingHorizontal: 10, marginBottom: 10, alignItems: 'center' },
+    gridTileSelected: { borderColor: '#246BFD', backgroundColor: '#F0F5FF' },
+    gridTileText: { fontSize: 13, fontWeight: '500', color: '#495057', textAlign: 'center' },
+    gridTileTextSelected: { color: '#246BFD', fontWeight: '600' },
+    vehicleGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+    vehicleTile: { width: '48%', backgroundColor: 'white', borderRadius: 12, borderWidth: 2, borderColor: '#E9ECEF', padding: 10, marginBottom: 12, alignItems: 'center', position: 'relative' },
+    vehicleTileSelected: { borderColor: '#246BFD', backgroundColor: '#F0F5FF' },
+    vehicleImage: { width: '100%', height: 60, marginBottom: 4 },
+    vehicleLabel: { fontSize: 11, fontWeight: '600', color: '#495057', textAlign: 'center' },
+    vehicleCheck: { position: 'absolute', top: 6, right: 6 },
+    avatarBox: { width: 140, height: 140, borderRadius: 16, backgroundColor: '#E9ECEF', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#DEE2E6', position: 'relative' },
+    avatarImage: { width: 140, height: 140, borderRadius: 16 },
+    avatarBadge: { position: 'absolute', bottom: -8, right: -8, backgroundColor: '#246BFD', width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: 'white' },
+    documentBox: { marginBottom: 16 },
+    documentPreview: { position: 'relative', borderRadius: 10, overflow: 'hidden' },
+    documentImage: { width: '100%', height: 180, borderRadius: 10 },
+    documentDelete: { position: 'absolute', top: 8, right: 8, backgroundColor: 'white', borderRadius: 14 },
+    uploadBox: { borderWidth: 2, borderColor: '#DEE2E6', borderStyle: 'dashed', borderRadius: 10, padding: 30, alignItems: 'center', backgroundColor: '#FAFBFC' },
+    uploadText: { fontSize: 14, fontWeight: '600', color: '#246BFD', marginTop: 8 },
+    uploadHint: { fontSize: 12, color: '#6C757D', marginTop: 4 },
+    footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 20, borderTopWidth: 1, borderTopColor: '#E9ECEF', backgroundColor: 'white' },
+    nextButton: { height: 50, borderRadius: 8, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+    nextButtonText: { color: 'white', fontSize: 16, fontWeight: '600', textTransform: 'uppercase' },
+    bottomModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    bottomModalContent: { backgroundColor: 'white', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24 },
+    modalTitle: { fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 20 },
+    modalOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
+    modalOptionText: { fontSize: 16, color: '#333', marginLeft: 16, fontWeight: '500' },
+    modalDivider: { height: 1, backgroundColor: '#E9ECEF' },
+    datePickerBox: { backgroundColor: 'white', borderRadius: 16, padding: 20, width: '90%', alignItems: 'center' },
+    datePickerTitle: { fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 16 },
+    datePickerButtons: { flexDirection: 'row', marginTop: 16 },
+    cancelBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', backgroundColor: '#F0F0F0', borderRadius: 8, marginRight: 8 },
+    cancelBtnText: { fontSize: 15, fontWeight: '500', color: '#666' },
+    confirmBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 8 },
+    confirmBtnText: { fontSize: 15, fontWeight: '600', color: 'white' },
+    requiredAsterisk: { color: '#dc3545', fontSize: 13, fontWeight: '600' },
+});

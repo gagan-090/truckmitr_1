@@ -1,5 +1,5 @@
-import { Image, StyleSheet, Text, TouchableOpacity, View, Linking } from 'react-native'
-import React, { useCallback, useState } from 'react'
+import { Image, Text, TouchableOpacity, View, Linking, Animated, Pressable, ActivityIndicator } from 'react-native'
+import React, { useCallback, useState, useRef, useEffect } from 'react'
 import { useColor, useResponsiveScale, useShadow, useStatusBarStyle } from '@truckmitr/src/app/hooks';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -23,6 +23,358 @@ import ProfileIncompleteModal from '@truckmitr/src/app/components/profile-comple
 
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 
+// Info Item Component
+const InfoItem = ({ icon, label, value, colors, responsiveFontSize }: any) => (
+    <View style={{ flex: 1 }}>
+        <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: responsiveFontSize(0.5)
+        }}>
+            {icon}
+            <Text style={{
+                color: colors.royalBlue,
+                fontSize: responsiveFontSize(1.45),
+                fontWeight: '600',
+                marginLeft: responsiveFontSize(0.6),
+            }}>
+                {label}
+            </Text>
+        </View>
+        <Text style={{
+            color: colors.blackOpacity(0.75),
+            fontSize: responsiveFontSize(1.55),
+            fontWeight: '500',
+        }} numberOfLines={1}>
+            {value || '-'}
+        </Text>
+    </View>
+);
+
+// Animated Job Card Component
+const AppliedJobCard = ({
+    item,
+    index,
+    expandedJobs,
+    toggleExpand,
+    callToTransporter,
+    colors,
+    responsiveFontSize,
+    responsiveHeight,
+    responsiveWidth,
+    t,
+}: any) => {
+    const scaleAnim = useRef(new Animated.Value(0)).current;
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(30)).current;
+
+    useEffect(() => {
+        Animated.parallel([
+            Animated.spring(scaleAnim, {
+                toValue: 1,
+                tension: 50,
+                friction: 8,
+                delay: index * 80,
+                useNativeDriver: true,
+            }),
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 400,
+                delay: index * 80,
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 350,
+                delay: index * 80,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, []);
+
+    const _item = item?.job;
+    const isExpanded = expandedJobs[_item?.id] || false;
+    const shortDescription = _item?.Job_Description?.length > 150
+        ? _item?.Job_Description.slice(0, 150) + "..."
+        : _item?.Job_Description;
+
+    let skills: string[] = [];
+    try {
+        const parsed = JSON.parse(_item?.Preferred_Skills);
+        skills = Array.isArray(parsed) ? parsed : [parsed];
+    } catch (e) {
+        skills = [_item?.Preferred_Skills];
+    }
+
+    // Status colors
+    const getStatusColor = (status: string) => {
+        switch (status?.toLowerCase()) {
+            case 'accepted':
+                return '#10B981'; // Green
+            case 'rejected':
+                return '#EF4444'; // Red
+            case 'pending':
+            default:
+                return '#F59E0B'; // Amber
+        }
+    };
+
+    const statusColor = getStatusColor(item?.accept_reject_status);
+
+    return (
+        <Animated.View
+            style={{
+                transform: [
+                    { scale: scaleAnim },
+                    { translateY: slideAnim }
+                ],
+                opacity: fadeAnim,
+            }}
+        >
+            <View style={{
+                width: responsiveWidth(92),
+                backgroundColor: colors.white,
+                marginBottom: responsiveHeight(2),
+                borderRadius: responsiveFontSize(2.2),
+                overflow: 'hidden',
+                shadowColor: colors.royalBlue,
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.1,
+                shadowRadius: 14,
+                elevation: 6,
+                alignSelf: 'center',
+            }}>
+                {/* Status Badge at Top */}
+                <View style={{
+                    backgroundColor: statusColor + '15',
+                    paddingVertical: responsiveFontSize(0.8),
+                    paddingHorizontal: responsiveFontSize(1.5),
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: 4,
+                            backgroundColor: statusColor,
+                            marginRight: responsiveFontSize(0.8),
+                        }} />
+                        <Text style={{
+                            fontSize: responsiveFontSize(1.5),
+                            fontWeight: '600',
+                            color: statusColor,
+                            textTransform: 'capitalize',
+                        }}>
+                            {item?.accept_reject_status || 'Pending'}
+                        </Text>
+                    </View>
+                    <Text style={{
+                        fontSize: responsiveFontSize(1.35),
+                        fontWeight: '500',
+                        color: colors.blackOpacity(0.5),
+                    }}>
+                        {t('applied')}: {moment(item?.Created_at).format("DD MMM YYYY")}
+                    </Text>
+                </View>
+
+                {/* Gradient Accent */}
+                <LinearGradient
+                    colors={[colors.royalBlue + '08', 'transparent']}
+                    style={{ position: 'absolute', top: responsiveFontSize(3.5), left: 0, right: 0, height: responsiveHeight(8) }}
+                />
+
+                <View style={{ padding: responsiveFontSize(2.2) }}>
+                    {/* Header: Title + Job ID Badge */}
+                    <View style={{ marginBottom: responsiveFontSize(1.5) }}>
+                        <Text style={{
+                            fontSize: responsiveFontSize(2.2),
+                            color: colors.black,
+                            fontWeight: '700',
+                            letterSpacing: -0.3,
+                            lineHeight: responsiveFontSize(3),
+                        }}>
+                            {_item?.job_title}
+                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: responsiveFontSize(0.8) }}>
+                            <View style={{
+                                backgroundColor: colors.royalBlue + '15',
+                                paddingHorizontal: responsiveFontSize(0.8),
+                                paddingVertical: responsiveFontSize(0.35),
+                                borderRadius: responsiveFontSize(0.6),
+                            }}>
+                                <Text style={{
+                                    fontSize: responsiveFontSize(1.3),
+                                    color: colors.royalBlue,
+                                    fontWeight: '600'
+                                }}>
+                                    {_item?.job_id}
+                                </Text>
+                            </View>
+                            <View style={{
+                                backgroundColor: colors.blackOpacity(0.05),
+                                paddingHorizontal: responsiveFontSize(0.8),
+                                paddingVertical: responsiveFontSize(0.35),
+                                borderRadius: responsiveFontSize(0.6),
+                                marginLeft: responsiveFontSize(0.6),
+                            }}>
+                                <Text style={{
+                                    fontSize: responsiveFontSize(1.3),
+                                    color: colors.blackOpacity(0.55),
+                                    fontWeight: '500'
+                                }}>
+                                    {moment(_item?.Created_at).format("DD MMM YYYY")}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Description */}
+                    <View style={{ marginBottom: responsiveFontSize(1.5) }}>
+                        <Text style={{
+                            fontSize: responsiveFontSize(1.65),
+                            color: colors.blackOpacity(0.55),
+                            fontWeight: '400',
+                            lineHeight: responsiveFontSize(2.4),
+                        }}>
+                            {isExpanded ? _item?.Job_Description : shortDescription}
+                        </Text>
+                        {_item?.Job_Description?.length > 150 && (
+                            <Pressable
+                                onPress={() => toggleExpand(_item?.id)}
+                                style={({ pressed }) => [{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    marginTop: responsiveFontSize(0.8),
+                                    opacity: pressed ? 0.6 : 1
+                                }]}
+                            >
+                                <Text style={{
+                                    fontSize: responsiveFontSize(1.5),
+                                    color: colors.royalBlue,
+                                    fontWeight: '600',
+                                }}>
+                                    {isExpanded ? t("showLess") : t("showMore")}
+                                </Text>
+                                <FontAwesome6
+                                    name={!isExpanded ? 'chevron-down' : 'chevron-up'}
+                                    size={10}
+                                    color={colors.royalBlue}
+                                    style={{ marginLeft: responsiveFontSize(0.4) }}
+                                />
+                            </Pressable>
+                        )}
+                    </View>
+
+                    {/* Info Grid */}
+                    <View style={{
+                        backgroundColor: colors.blackOpacity(0.02),
+                        borderRadius: responsiveFontSize(1.2),
+                        padding: responsiveFontSize(1.5),
+                        marginBottom: responsiveFontSize(1.5),
+                    }}>
+                        {/* Row 1: Salary & License */}
+                        <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                            <InfoItem
+                                icon={<FontAwesome name='rupee' size={13} color={colors.royalBlue} />}
+                                label={t(`salary`)}
+                                value={_item?.Salary_Range}
+                                colors={colors}
+                                responsiveFontSize={responsiveFontSize}
+                            />
+                            <InfoItem
+                                icon={<MaterialCommunityIcons name='license' size={13} color={colors.royalBlue} />}
+                                label={t(`typeOfLicense`)}
+                                value={_item?.Type_of_License}
+                                colors={colors}
+                                responsiveFontSize={responsiveFontSize}
+                            />
+                        </View>
+
+                        {/* Row 2: Location & Experience */}
+                        <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: responsiveFontSize(1.2) }}>
+                            <InfoItem
+                                icon={<FontAwesome6 name='location-dot' size={13} color={colors.royalBlue} />}
+                                label={t(`location`)}
+                                value={_item?.job_location}
+                                colors={colors}
+                                responsiveFontSize={responsiveFontSize}
+                            />
+                            <InfoItem
+                                icon={<FontAwesome name='trophy' size={13} color={colors.royalBlue} />}
+                                label={t(`experience`)}
+                                value={_item?.Required_Experience}
+                                colors={colors}
+                                responsiveFontSize={responsiveFontSize}
+                            />
+                        </View>
+
+                        {/* Row 3: Vehicle & Deadline */}
+                        <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: responsiveFontSize(1.2) }}>
+                            <InfoItem
+                                icon={<FontAwesome6 name='car-rear' size={13} color={colors.royalBlue} />}
+                                label={t(`vehicleType`)}
+                                value={_item?.vehicle_type}
+                                colors={colors}
+                                responsiveFontSize={responsiveFontSize}
+                            />
+                            <InfoItem
+                                icon={<FontAwesome name='calendar-minus-o' size={13} color={colors.royalBlue} />}
+                                label={t(`lastDate`)}
+                                value={_item?.Application_Deadline}
+                                colors={colors}
+                                responsiveFontSize={responsiveFontSize}
+                            />
+                        </View>
+                    </View>
+
+                    {/* Call Transporter Button - Only for accepted */}
+                    {_item?.transporter_mobile && item?.accept_reject_status === 'accepted' && (
+                        <Pressable
+                            onPress={() => callToTransporter(_item)}
+                            style={({ pressed }) => [{
+                                height: responsiveFontSize(5.5),
+                                width: '100%',
+                                opacity: pressed ? 0.9 : 1,
+                                transform: [{ scale: pressed ? 0.98 : 1 }],
+                                marginBottom: responsiveFontSize(1),
+                            }]}
+                        >
+                            <LinearGradient
+                                colors={['#10B981', '#059669']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={{
+                                    flex: 1,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderRadius: responsiveFontSize(1.2),
+                                }}
+                            >
+                                <Ionicons
+                                    name='call'
+                                    size={18}
+                                    color={colors.white}
+                                    style={{ marginRight: responsiveFontSize(0.8) }}
+                                />
+                                <Text style={{
+                                    color: colors.white,
+                                    fontSize: responsiveFontSize(1.8),
+                                    fontWeight: '600',
+                                    letterSpacing: 0.3
+                                }}>
+                                    {t(`callToTransporter`)}
+                                </Text>
+                            </LinearGradient>
+                        </Pressable>
+                    )}
+                </View>
+            </View>
+        </Animated.View>
+    );
+};
 
 export default function AppliedJob() {
     const { t } = useTranslation();
@@ -33,6 +385,8 @@ export default function AppliedJob() {
     const { responsiveHeight, responsiveWidth, responsiveFontSize } = useResponsiveScale();
     const navigation = useNavigation<NavigatorProp>();
     const { profileCompletion, isDriver, isTransporter } = useSelector((state: any) => state?.user) || { profileCompletion: 0, isDriver: false, isTransporter: false };
+
+    const headerOpacity = useRef(new Animated.Value(0)).current;
 
     const _goback = () => {
         navigation.goBack()
@@ -45,6 +399,14 @@ export default function AppliedJob() {
     const [expandedJobs, setExpandedJobs] = useState<{ [key: number]: boolean }>({});
     const [appliedJobsList, setappliedJobsList] = useState<any[]>([])
     const [loading, setloading] = useState(true)
+
+    useEffect(() => {
+        Animated.timing(headerOpacity, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+        }).start();
+    }, []);
 
     useFocusEffect(
         useCallback(() => {
@@ -95,185 +457,131 @@ export default function AppliedJob() {
     return (
         <View style={{ flex: 1, backgroundColor: colors.white }}>
             <Space height={safeAreaInsets.top} />
-            <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center', padding: responsiveWidth(3) }}>
-                <TouchableOpacity hitSlop={hitSlop(10)} onPress={_goback} style={{ height: responsiveFontSize(4), width: responsiveFontSize(4), alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white, borderRadius: 100, zIndex: 100 }}>
-                    <Ionicons name={'chevron-back'} size={24} color={colors.royalBlue} />
-                </TouchableOpacity>
-                <Text style={{ width: responsiveWidth(100), fontSize: responsiveFontSize(2.2), color: colors.royalBlue, fontWeight: 'bold', textAlign: 'center', position: 'absolute', zIndex: 1 }}>{t(`appliedJobs`)}</Text>
-            </View>
-            {loading ?
-                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                    <Image style={{ height: responsiveHeight(22), width: responsiveWidth(50), borderTopLeftRadius: 10, borderTopRightRadius: 10, tintColor: colors.blackOpacity(.1) }} source={{ uri: 'https://truckmitr.com/public/images/preview.png' }} />
-                </View>
-                :
-                appliedJobsList?.length ?
-                    <View style={{ flex: 1 }}>
-                        <FlatList
-                            showsHorizontalScrollIndicator={false}
-                            showsVerticalScrollIndicator={false}
-                            data={appliedJobsList}
-                            renderItem={({ item }: any) => {
-                                const _item = item?.job
-                                const isExpanded = expandedJobs[_item?.id] || false;
-                                const shortDescription = _item?.Job_Description.slice(0, 200) + "...";
 
-                                let skills: string[] = [];
-                                try {
-                                    const parsed = JSON.parse(_item?.Preferred_Skills);
-                                    skills = Array.isArray(parsed) ? parsed : [parsed];
-                                } catch (e) {
-                                    skills = [_item?.Preferred_Skills];
-                                }
-                                return (
-                                    <View style={{ width: responsiveWidth(90), backgroundColor: colors.white, padding: responsiveFontSize(1.5), borderRadius: 10, marginBottom: responsiveFontSize(4), ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.2) : colors.blackOpacity(.4) }}>
-                                        <Text style={{ fontSize: responsiveFontSize(2.2), color: colors.black, fontWeight: '500' }}>{_item.job_title}</Text>
-                                        <Text style={{ fontSize: responsiveFontSize(1.8), color: colors.blackOpacity(.7), fontWeight: '400', marginTop: responsiveFontSize(1) }}>
-                                            {isExpanded ? _item.Job_Description : shortDescription}
-                                        </Text>
-                                        <TouchableOpacity onPress={() => toggleExpand(_item.id)} style={{ flexDirection: 'row', alignItems: 'center', marginTop: responsiveFontSize(1) }}>
-                                            <Text style={{ fontSize: responsiveFontSize(2), color: colors.royalBlue, fontWeight: '600' }}>
-                                                {isExpanded ? t("showLess") : t("showMore")}
-                                            </Text>
-                                            <FontAwesome6 name={!isExpanded ? 'chevron-down' : 'chevron-up'} size={14} color={colors.royalBlue} style={{ marginHorizontal: responsiveFontSize(.7), marginTop: responsiveFontSize(.2) }} />
-                                        </TouchableOpacity>
-                                        <Space height={responsiveHeight(2)} />
-                                        <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <View style={{ flex: 1.5 }}>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                    <FontAwesome name='rupee' size={14} color={colors.royalBlue} />
-                                                    <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(2), fontWeight: '500', marginStart: responsiveFontSize(.5) }}>{t(`salary`)}</Text>
-                                                </View>
-                                                <Text style={{ color: colors.blackOpacity(.8), fontSize: responsiveFontSize(1.8), fontWeight: '400' }}>{_item?.Salary_Range}</Text>
-                                            </View>
-                                            <View style={{ flex: 1 }}>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                    <MaterialCommunityIcons name='license' size={14} color={colors.royalBlue} />
-                                                    <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(2), fontWeight: '500', marginStart: responsiveFontSize(.5) }}>{t(`typeOfLicense`)}</Text>
-                                                </View>
-                                                <Text style={{ color: colors.blackOpacity(.8), fontSize: responsiveFontSize(1.8), fontWeight: '400' }}>{_item?.Type_of_License}</Text>
-                                            </View>
-                                        </View>
-                                        <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: responsiveFontSize(1) }}>
-                                            <View style={{ flex: 1.5 }}>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                    <FontAwesome6 name='location-dot' size={14} color={colors.royalBlue} />
-                                                    <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(2), fontWeight: '500', marginStart: responsiveFontSize(.5) }}>{t(`location`)}</Text>
-                                                </View>
-                                                <Text style={{ color: colors.blackOpacity(.8), fontSize: responsiveFontSize(1.8), fontWeight: '400' }}>{_item?.job_location}</Text>
-                                            </View>
-                                            <View style={{ flex: 1 }}>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                    <FontAwesome6 name='business-time' size={14} color={colors.royalBlue} />
-                                                    <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(2), fontWeight: '500', marginStart: responsiveFontSize(.5) }}>{t(`noOfJobs`)}</Text>
-                                                </View>
-                                                <Text style={{ color: colors.blackOpacity(.8), fontSize: responsiveFontSize(1.8), fontWeight: '400' }}>{_item?.Job_Management}</Text>
-                                            </View>
-                                        </View>
-                                        <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: responsiveFontSize(1) }}>
-                                            <View style={{ flex: 1.5 }}>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                    <FontAwesome name='trophy' size={14} color={colors.royalBlue} />
-                                                    <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(2), fontWeight: '500', marginStart: responsiveFontSize(.5) }}>{t(`experience`)}</Text>
-                                                </View>
-                                                <Text style={{ color: colors.blackOpacity(.8), fontSize: responsiveFontSize(1.8), fontWeight: '400' }}>{_item?.Required_Experience}</Text>
-                                            </View>
-                                            <View style={{ flex: 1 }}>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                    <FontAwesome name='id-card-o' size={14} color={colors.royalBlue} />
-                                                    <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(2), fontWeight: '500', marginStart: responsiveFontSize(.5) }}>{t(`jobId`)}</Text>
-                                                </View>
-                                                <Text style={{ color: colors.blackOpacity(.8), fontSize: responsiveFontSize(1.8), fontWeight: '400' }}>{_item?.job_id}</Text>
-                                            </View>
-                                        </View>
-                                        <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: responsiveFontSize(1) }}>
-                                            <View style={{ flex: 1.5 }}>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                    <FontAwesome name='calendar-o' size={14} color={colors.royalBlue} />
-                                                    <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(2), fontWeight: '500', marginStart: responsiveFontSize(.5) }}>{t(`postDate`)}</Text>
-                                                </View>
-                                                <Text style={{ color: colors.blackOpacity(.8), fontSize: responsiveFontSize(1.8), fontWeight: '400' }}>{moment(_item?.Created_at).format("DD-MM-YYYY")}</Text>
-                                            </View>
-                                            <View style={{ flex: 1 }}>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                    <FontAwesome name='calendar-minus-o' size={14} color={colors.royalBlue} />
-                                                    <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(2), fontWeight: '500', marginStart: responsiveFontSize(.5) }}>{t(`lastDate`)}</Text>
-                                                </View>
-                                                <Text style={{ color: colors.blackOpacity(.8), fontSize: responsiveFontSize(1.8), fontWeight: '400' }}>{_item?.Application_Deadline}</Text>
-                                            </View>
-                                        </View>
-                                        <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: responsiveFontSize(1) }}>
-                                            <View style={{ flex: 1.5 }}>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                    <FontAwesome6 name='car-rear' size={14} color={colors.royalBlue} />
-                                                    <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(2), fontWeight: '500', marginStart: responsiveFontSize(.5) }}>{t(`vehicleType`)}</Text>
-                                                </View>
-                                                <Text style={{ color: colors.blackOpacity(.8), fontSize: responsiveFontSize(1.8), fontWeight: '400' }}>{_item?.vehicle_type}</Text>
-                                            </View>
-                                            <View style={{ flex: 1 }}>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                    <FontAwesome6 name='child-reaching' size={14} color={colors.royalBlue} />
-                                                    <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(2), fontWeight: '500', marginStart: responsiveFontSize(.5) }}>{t(`preferredSkills`)}</Text>
-                                                </View>
-                                                <Text style={{ color: colors.blackOpacity(.8), fontSize: responsiveFontSize(1.8), fontWeight: '400' }}>{skills.join(", ")}</Text>
-                                            </View>
-                                        </View>
-                                        <Space height={responsiveHeight(1)} />
-                                        {_item?.transporter_mobile && item?.accept_reject_status === 'accepted' && <View style={{ alignItems: 'center', width: '100%' }}>
-                                            <TouchableOpacity
-                                                onPress={() => callToTransporter(_item)}
-                                                style={{
-                                                    paddingHorizontal: 20,
-                                                    height: responsiveHeight(4.5),
-                                                    backgroundColor: colors.green,
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    borderRadius: 5,
-                                                    flexDirection: 'row'
-                                                }}
-                                            >
-                                                <FontAwesome
-                                                    name="phone"
-                                                    size={responsiveFontSize(2)}
-                                                    color={colors.white}
-                                                    style={{ marginRight: responsiveFontSize(0.8) }}
-                                                />
-                                                <Text style={{ color: colors.white, fontSize: responsiveFontSize(1.8), fontWeight: '500' }}>
-                                                    {t(`callToTransporter`)}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        </View>}
-                                        <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: responsiveFontSize(1.4), borderTopColor: colors?.blackOpacity(.05), borderTopWidth: 1, paddingTop: responsiveFontSize(1) }}>
-                                            <View style={{ flex: 1.5 }}>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                    <Feather name='check-circle' size={14} color={colors.royalBlue} />
-                                                    <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(2), fontWeight: '500', marginStart: responsiveFontSize(.5) }}>{t('status')}</Text>
-                                                </View>
-                                                <Text style={{ color: colors.blackOpacity(.8), fontSize: responsiveFontSize(1.8), fontWeight: '500', textTransform: 'capitalize' }}>{item?.accept_reject_status}</Text>
-                                            </View>
-                                            <View style={{ flex: 1 }}>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                    <MaterialCommunityIcons name={"timer-outline"} size={20} color={colors.green} />
-                                                    <Text style={{ color: colors.green, fontSize: responsiveFontSize(2), fontWeight: '500', marginLeft: responsiveFontSize(.2) }}>{t(`applied`)}</Text>
-                                                </View>
-                                                <Text style={{ color: colors.green, fontSize: responsiveFontSize(1.8), fontWeight: '400', marginLeft: responsiveFontSize(.5) }}>{moment(item?.Created_at).format("DD-MM-YYYY")}</Text>
-                                            </View>
-                                        </View>
-                                        <Space height={responsiveHeight(1)} />
-                                    </View>
-                                );
-                            }}
-                            contentContainerStyle={{ paddingHorizontal: responsiveWidth(5), paddingBottom: responsiveHeight(5), paddingTop: responsiveHeight(2) }}
-                            keyExtractor={(item: any) => item.id.toString()}
-                            ListFooterComponent={() => {
-                                return (
-                                    <Space height={responsiveHeight(10)} />
-                                )
-                            }} />
-                    </View> : <View style={{ flex: 1, alignItems: 'center' }}>
-                        <Space height={responsiveHeight(20)} />
-                        <Image style={{ height: responsiveHeight(15), width: responsiveWidth(80), tintColor: colors.blackOpacity(.1) }} source={{ uri: 'https://truckmitr.com/public/images/preview.png' }} />
-                        <Text style={{ width: responsiveWidth(80), color: colors.blackOpacity(.9), fontSize: responsiveFontSize(1.8), fontWeight: '500', textAlign: 'center' }}>{t(`youHaventAppliedAnyJobs`)}</Text>
-                    </View>}
+            {/* Premium Header */}
+            <Animated.View style={{
+                opacity: headerOpacity,
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: responsiveWidth(4),
+                paddingVertical: responsiveHeight(1.5),
+                backgroundColor: colors.white,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.blackOpacity(0.05),
+            }}>
+                <Pressable
+                    onPress={_goback}
+                    hitSlop={hitSlop(15)}
+                    style={({ pressed }) => [{
+                        height: responsiveFontSize(4.5),
+                        width: responsiveFontSize(4.5),
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: colors.royalBlue + '10',
+                        borderRadius: responsiveFontSize(1.2),
+                        opacity: pressed ? 0.7 : 1,
+                    }]}
+                >
+                    <Ionicons name={'chevron-back'} size={22} color={colors.royalBlue} />
+                </Pressable>
+                <Text style={{
+                    flex: 1,
+                    fontSize: responsiveFontSize(2.3),
+                    color: colors.black,
+                    fontWeight: '700',
+                    textAlign: 'center',
+                    marginRight: responsiveFontSize(4.5), // Balance the back button
+                    letterSpacing: -0.3,
+                }}>
+                    {t(`appliedJobs`)}
+                </Text>
+            </Animated.View>
+
+            {/* Content */}
+            {loading ? (
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                    <ActivityIndicator size="large" color={colors.royalBlue} />
+                    <Text style={{
+                        marginTop: responsiveHeight(2),
+                        color: colors.blackOpacity(0.5),
+                        fontSize: responsiveFontSize(1.6)
+                    }}>
+                        {t('loading')}...
+                    </Text>
+                </View>
+            ) : appliedJobsList?.length ? (
+                <FlatList
+                    showsHorizontalScrollIndicator={false}
+                    showsVerticalScrollIndicator={false}
+                    data={appliedJobsList}
+                    renderItem={({ item, index }: any) => (
+                        <AppliedJobCard
+                            item={item}
+                            index={index}
+                            expandedJobs={expandedJobs}
+                            toggleExpand={toggleExpand}
+                            callToTransporter={callToTransporter}
+                            colors={colors}
+                            responsiveFontSize={responsiveFontSize}
+                            responsiveHeight={responsiveHeight}
+                            responsiveWidth={responsiveWidth}
+                            t={t}
+                        />
+                    )}
+                    contentContainerStyle={{
+                        paddingHorizontal: responsiveWidth(4),
+                        paddingTop: responsiveHeight(2),
+                        paddingBottom: responsiveHeight(5)
+                    }}
+                    keyExtractor={(item: any) => item.id.toString()}
+                />
+            ) : (
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                    <View style={{
+                        backgroundColor: colors.white,
+                        borderRadius: responsiveFontSize(2.5),
+                        padding: responsiveFontSize(4),
+                        alignItems: 'center',
+                        shadowColor: colors.black,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 12,
+                        elevation: 5,
+                        marginHorizontal: responsiveWidth(8)
+                    }}>
+                        <View style={{
+                            width: responsiveFontSize(10),
+                            height: responsiveFontSize(10),
+                            borderRadius: responsiveFontSize(5),
+                            backgroundColor: colors.royalBlue + '10',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginBottom: responsiveHeight(2)
+                        }}>
+                            <Ionicons name="briefcase-outline" size={responsiveFontSize(4)} color={colors.royalBlue} />
+                        </View>
+                        <Text style={{
+                            color: colors.black,
+                            fontSize: responsiveFontSize(2),
+                            fontWeight: '600',
+                            textAlign: 'center',
+                            marginBottom: responsiveFontSize(1)
+                        }}>
+                            {t('noJobsYet') || 'No Applications Yet'}
+                        </Text>
+                        <Text style={{
+                            color: colors.blackOpacity(0.5),
+                            fontSize: responsiveFontSize(1.6),
+                            fontWeight: '400',
+                            textAlign: 'center',
+                            lineHeight: responsiveFontSize(2.4)
+                        }}>
+                            {t(`youHaventAppliedAnyJobs`)}
+                        </Text>
+                    </View>
+                </View>
+            )}
+
             <ProfileIncompleteModal
                 visible={isJobAccepted()}
                 onClose={_goback}

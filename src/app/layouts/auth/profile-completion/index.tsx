@@ -33,12 +33,13 @@ import Animated, {
 import Svg, { Path, G, Circle, LinearGradient, Defs, Stop, Rect } from 'react-native-svg';
 import { useColor, useShadow, useResponsiveScale } from '@truckmitr/src/app/hooks';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { NavigatorParams } from '@truckmitr/stacks/stacks';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+import { NavigatorParams, STACKS } from '@truckmitr/stacks/stacks';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { userAction, userEditAction, userAuthenticatedAction } from '@truckmitr/src/redux/actions/user.action';
 import { useTranslation } from 'react-i18next';
+import Video from 'react-native-video';
 import { Space } from '@truckmitr/src/app/components';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -63,6 +64,31 @@ const TruckImages = {
     carCarrier: require('@truckmitr/src/assets/trucks/car_carrier.png'),
     container: require('@truckmitr/src/assets/trucks/container.png'),
     reefer: require('@truckmitr/src/assets/trucks/refregerator.png'),
+};
+
+// Voice file mapping for Hindi step descriptions - Profile Completion
+const DRIVER_VOICE_FILES: { [key: string]: any } = {
+    'dob': require('@truckmitr/src/assets/voice/step_dob.mp3'),
+    'gender': require('@truckmitr/src/assets/voice/step_gender.mp3'),
+    'education': require('@truckmitr/src/assets/voice/step_education.mp3'),
+    'vehicle': require('@truckmitr/src/assets/voice/step_vehicle.mp3'),
+    'experience': require('@truckmitr/src/assets/voice/step_experience.mp3'),
+    'license': require('@truckmitr/src/assets/voice/step_license_type.mp3'),
+    'endorsement': require('@truckmitr/src/assets/voice/step_preferences.mp3'),
+    'current_salary': require('@truckmitr/src/assets/voice/step_salary.mp3'),
+    'expected_salary': require('@truckmitr/src/assets/voice/step_salary.mp3'),
+    'avatar': require('@truckmitr/src/assets/voice/step_profile_photo.mp3'),
+    'id_numbers': require('@truckmitr/src/assets/voice/step_aadhar.mp3'),
+};
+
+const TRANSPORTER_VOICE_FILES: { [key: string]: any } = {
+    'year_of_exp': require('@truckmitr/src/assets/voice/step_experience_years.mp3'),
+    'fleet_size': require('@truckmitr/src/assets/voice/step_fleet_size.mp3'),
+    'industry_segment': require('@truckmitr/src/assets/voice/step_industry.mp3'),
+    'avg_km_run': require('@truckmitr/src/assets/voice/step_avg_km.mp3'),
+    'vehicle': require('@truckmitr/src/assets/voice/step_vehicle_transporter.mp3'),
+    'operational_segment': require('@truckmitr/src/assets/voice/step_preferences.mp3'),
+    'pan_gst': require('@truckmitr/src/assets/voice/step_pan_gst.mp3'),
 };
 
 const { width } = Dimensions.get('window');
@@ -295,7 +321,7 @@ const dummyVehicleTypes = [
 ];
 
 export default function ProfileCompletion() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const dispatch = useDispatch();
     const colors = useColor();
     const { responsiveHeight } = useResponsiveScale();
@@ -304,7 +330,6 @@ export default function ProfileCompletion() {
     const { userEdit, isTransporter, isDriver, user } = useSelector((state: any) => state?.user);
 
     const [currentStep, setCurrentStep] = useState(0);
-    const [showSuccess, setShowSuccess] = useState(false);
     const [datePickerOpen, setDatePickerOpen] = useState(false);
     const [profileModalOpen, setProfileModalOpen] = useState(false);
     const [userRole, setUserRole] = useState<'driver' | 'transporter'>('driver');
@@ -326,6 +351,10 @@ export default function ProfileCompletion() {
     const [commonStatesList, setCommonStatesList] = useState<any[]>([]);
     const [savedSignupData, setSavedSignupData] = useState<any>(null);
     const [finishing, setFinishing] = useState(false);
+
+    // Voice playback states
+    const [currentAudioSource, setCurrentAudioSource] = useState<any>(null);
+    const [isVoiceMuted, setIsVoiceMuted] = useState(false);
 
     // Emergency Selection Modal (handles both state and city now if needed)
     const [missingFieldModalOpen, setMissingFieldModalOpen] = useState(false);
@@ -491,70 +520,49 @@ export default function ProfileCompletion() {
 
         contentOpacity.value = withTiming(1, { duration: 400 });
         contentTranslateX.value = withSpring(0, { damping: 12 });
-    }, [currentStep]);
+
+        // Play voice for Hindi language only if not muted
+        if (i18n.language === 'hi' && !isVoiceMuted) {
+            playStepVoice();
+        }
+    }, [currentStep, i18n.language, isVoiceMuted]);
 
     const animatedContentStyle = useAnimatedStyle(() => ({
         opacity: contentOpacity.value,
         transform: [{ translateX: contentTranslateX.value }]
     }));
 
-    // ----------------------
-    // Restore Progress on Init
-    // ----------------------
-    useEffect(() => {
-        const restoreProgress = async () => {
-            try {
-                const savedState = await AsyncStorage.getItem('profile_completion_progress');
-                if (savedState) {
-                    const parsed = JSON.parse(savedState);
-                    console.log('Restoring saved profile progress step:', parsed.step);
+    const playStepVoice = () => {
+        if (isVoiceMuted) return;
 
-                    // Restore step
-                    if (parsed.step !== undefined) {
-                        setCurrentStep(parsed.step);
-                    }
+        try {
+            const stepId = STEPS[currentStep].id;
+            const VOICE_FILES = userRole === 'transporter' ? TRANSPORTER_VOICE_FILES : DRIVER_VOICE_FILES;
+            const voiceFile = VOICE_FILES[stepId];
 
-                    // Restore user role
-                    if (parsed.userRole) {
-                        setUserRole(parsed.userRole);
-                    }
+            if (voiceFile) {
+                // Stop any currently playing audio by setting to null first
+                setCurrentAudioSource(null);
 
-                    // Restore data - merge with existing to avoid overwriting newer Redux data if any
-                    if (parsed.userEdit) {
-                        dispatch(userEditAction({ ...userEdit, ...parsed.userEdit }));
-                    }
-                }
-            } catch (e) {
-                console.log('Error restoring profile progress', e);
+                // Small delay to ensure smooth transition
+                setTimeout(() => {
+                    setCurrentAudioSource(voiceFile);
+                }, 100);
+            } else {
+                console.log('No voice file found for step:', stepId);
             }
-        };
-        restoreProgress();
-    }, []);
+        } catch (error) {
+            console.log('Error playing voice:', error);
+        }
+    };
 
-    // ----------------------
-    // Save Progress on Change
-    // ----------------------
-    useEffect(() => {
-        const saveProgress = async () => {
-            try {
-                // Only save if we have meaningful data
-                if (currentStep > 0 || (userEdit && Object.keys(userEdit).length > 0)) {
-                    const StateToSave = {
-                        step: currentStep,
-                        userEdit: userEdit,
-                        userRole: userRole,
-                        timestamp: Date.now()
-                    };
-                    await AsyncStorage.setItem('profile_completion_progress', JSON.stringify(StateToSave));
-                }
-            } catch (e) {
-                console.log('Error saving profile progress', e);
-            }
-        };
-        // Debounce slightly or just save on every change
-        const timeout = setTimeout(saveProgress, 500);
-        return () => clearTimeout(timeout);
-    }, [currentStep, userEdit, userRole]);
+    const toggleVoiceMute = () => {
+        setIsVoiceMuted(!isVoiceMuted);
+        if (!isVoiceMuted) {
+            // If muting, stop any currently playing audio
+            setCurrentAudioSource(null);
+        }
+    };
 
     const handleNext = async () => {
         const step = STEPS[currentStep];
@@ -614,25 +622,269 @@ export default function ProfileCompletion() {
         dispatch(userEditAction({ ...userEdit, endorsement: current.join(', ') }));
     };
 
+    // Cleanup any old persistence data on mount
+    useEffect(() => {
+        const cleanup = async () => {
+            try {
+                await AsyncStorage.removeItem('profile_completion_progress');
+                console.log('Cleaned up old profile_completion_progress');
+            } catch (e) {
+                console.log('Cleanup error:', e);
+            }
+        };
+        cleanup();
+    }, []);
+
+    // Helper function to normalize corrupted array data (handles nested JSON strings)
+    const normalizeArrayField = (value: any): string[] => {
+        if (!value) return [];
+
+        // Handle numbers - convert to string array
+        if (typeof value === 'number') {
+            return [String(value)];
+        }
+
+        if (Array.isArray(value)) {
+            const flattened: string[] = [];
+            value.forEach((item: any) => {
+                if (typeof item === 'number') {
+                    const cleaned = String(item).trim();
+                    if (cleaned && !flattened.includes(cleaned)) flattened.push(cleaned);
+                } else if (typeof item === 'string') {
+                    try {
+                        const parsed = JSON.parse(item);
+                        if (Array.isArray(parsed)) {
+                            parsed.forEach((p: any) => {
+                                const cleaned = String(p).replace(/[\[\]"\\]/g, '').trim();
+                                if (cleaned && !flattened.includes(cleaned)) flattened.push(cleaned);
+                            });
+                        } else {
+                            const cleaned = String(parsed).replace(/[\[\]"\\]/g, '').trim();
+                            if (cleaned && !flattened.includes(cleaned)) flattened.push(cleaned);
+                        }
+                    } catch {
+                        const cleaned = item.replace(/[\[\]"\\]/g, '').trim();
+                        if (cleaned && !flattened.includes(cleaned)) flattened.push(cleaned);
+                    }
+                } else {
+                    const cleaned = String(item).trim();
+                    if (cleaned && !flattened.includes(cleaned)) flattened.push(cleaned);
+                }
+            });
+            return flattened;
+        }
+
+        if (typeof value === 'string') {
+            // First check if it's a simple comma-separated string (most common case)
+            if (!value.startsWith('[') && !value.startsWith('{')) {
+                return value.replace(/[\[\]"\\]/g, '').split(',').map((s: string) => s.trim()).filter(Boolean);
+            }
+
+            try {
+                const parsed = JSON.parse(value);
+                return normalizeArrayField(parsed);
+            } catch {
+                return value.replace(/[\[\]"\\]/g, '').split(',').map((s: string) => s.trim()).filter(Boolean);
+            }
+        }
+        return [];
+    };
+
     const submitProfile = async () => {
         setFinishing(true);
+        console.log('=== Profile Completion - Submitting to API ===');
+
         try {
-            // DUMMY SUBMISSION MODE ACTIVATED - Ignoring API calls regardless of missing data
-            console.log('Dummy Submission Activated - Skipping API Call');
+            const formData = new FormData();
 
-            // Simulate Network Delay
-            setTimeout(() => {
+            // Common fields for both roles
+            formData.append('name', userEdit?.name || user?.name || '');
+            formData.append('email', userEdit?.email || user?.email || '');
+            formData.append('mobile', userEdit?.mobile || user?.mobile || '');
+            formData.append('father_name', userEdit?.Father_Name || user?.Father_Name || '');
+
+            // DOB - format as d-m-Y (e.g., 29-12-2000)
+            if (userEdit?.DOB) {
+                formData.append('dob', moment(userEdit.DOB).format('DD-MM-YYYY'));
+            }
+
+            // Sex/Gender
+            formData.append('sex', userEdit?.Sex || '');
+
+            // Education
+            formData.append('highest_education', userEdit?.education || userEdit?.Highest_Education || '');
+
+            // Vehicle Type - Driver expects array, Transporter expects string
+            // Use helper to normalize corrupted data
+            const cleanVehicleTypes = normalizeArrayField(userEdit?.vehicle_type);
+            console.log('Cleaned Vehicle Types:', cleanVehicleTypes);
+
+            if (cleanVehicleTypes.length > 0) {
+                if (userRole === 'driver') {
+                    // Driver: API expects array format with vehicle_type[]
+                    cleanVehicleTypes.forEach((vt: string) => {
+                        formData.append('vehicle_type[]', vt.trim());
+                    });
+                } else {
+                    // Transporter: API expects string format
+                    formData.append('vehicle_type', cleanVehicleTypes.join(','));
+                }
+            }
+
+            // License Type
+            formData.append('type_of_license', userEdit?.Type_of_License || '');
+
+            // License Endorsements - API expects array
+            const endorsements = userEdit?.endorsement?.split(', ').filter(Boolean) || [];
+            if (endorsements.length > 0) {
+                endorsements.forEach((end: string) => {
+                    formData.append('licence_endorsement[]', end.trim());
+                });
+            }
+
+            // Driving Experience - API expects integer
+            const expMapping: { [key: string]: string } = {
+                'less_than_1': '0',
+                '1-2': '1',
+                '3-5': '3',
+                '6-10': '6',
+                '10+': '10'
+            };
+            formData.append('driving_experience', expMapping[userEdit?.Driving_Experience] || userEdit?.Driving_Experience || '0');
+
+            // Aadhar Number
+            formData.append('Aadhar_Number', userEdit?.Aadhar_Number || '');
+
+            // License Number
+            formData.append('license_number', userEdit?.License_Number || '');
+
+            // License Expiry Date - format as d-m-Y
+            if (userEdit?.Expiry_date_of_License) {
+                formData.append('expiry_date_of_license', moment(userEdit.Expiry_date_of_License).format('DD-MM-YYYY'));
+            } else {
+                // Default to 5 years from now if not set
+                formData.append('expiry_date_of_license', moment().add(5, 'years').format('DD-MM-YYYY'));
+            }
+
+            // Salary fields
+            formData.append('current_monthly_income', userEdit?.current_salary || userEdit?.Current_Monthly_Income || '');
+            formData.append('expected_monthly_income', userEdit?.expected_salary || userEdit?.Expected_Monthly_Income || '');
+
+            // PAN and GST
+            formData.append('pan_number', userEdit?.pan || userEdit?.PAN_Number || '');
+            formData.append('gst_number', userEdit?.gst || userEdit?.GST_Number || '');
+
+            // Address fields (from signup data or userEdit)
+            formData.append('address', userEdit?.address || savedSignupData?.address || '');
+            formData.append('city', userEdit?.city || savedSignupData?.city || '');
+            formData.append('pincode', userEdit?.pincode || savedSignupData?.pincode || '');
+            const stateValue = userEdit?.state_id || userEdit?.states || savedSignupData?.state || '';
+            formData.append('states', stateValue);
+            formData.append('state', stateValue);
+
+            // Profile photo
+            if (userEdit?.profilePath?.path && userEdit?.profilePath?.mime) {
+                formData.append('profile_photo', {
+                    uri: userEdit.profilePath.path,
+                    type: userEdit.profilePath.mime,
+                    name: userEdit.profilePath.filename || 'profile.jpg'
+                } as any);
+            }
+
+            // Aadhar photo
+            if (userEdit?.aadharImagePath?.path && userEdit?.aadharImagePath?.mime) {
+                formData.append('aadhar_photo', {
+                    uri: userEdit.aadharImagePath.path,
+                    type: userEdit.aadharImagePath.mime,
+                    name: userEdit.aadharImagePath.filename || 'aadhar.jpg'
+                } as any);
+            }
+
+            // Driving License photo
+            if (userEdit?.drivingLicensePath?.path && userEdit?.drivingLicensePath?.mime) {
+                formData.append('driving_license', {
+                    uri: userEdit.drivingLicensePath.path,
+                    type: userEdit.drivingLicensePath.mime,
+                    name: userEdit.drivingLicensePath.filename || 'license.jpg'
+                } as any);
+            }
+
+            // ===== TRANSPORTER-SPECIFIC FIELDS =====
+            if (userRole === 'transporter') {
+                formData.append('transport_name', userEdit?.transport_name || savedSignupData?.transport_name || '');
+                formData.append('year_of_establishment', userEdit?.year_of_establishment || userEdit?.establishment_year || '');
+                formData.append('fleet_size', userEdit?.fleet_size || '');
+                formData.append('average_km', userEdit?.avg_km_run || '');
+                formData.append('registered_id', userEdit?.registered_id || '');
+
+                // Operational Segment - API expects array
+                const opSegments = userEdit?.operational_segment?.split(',').filter(Boolean) || [];
+                if (opSegments.length > 0) {
+                    opSegments.forEach((seg: string) => {
+                        formData.append('operational_segment[]', seg.trim());
+                    });
+                }
+
+                // PAN Image for transporter
+                if (userEdit?.panImagePath?.path && userEdit?.panImagePath?.mime) {
+                    formData.append('pan_image', {
+                        uri: userEdit.panImagePath.path,
+                        type: userEdit.panImagePath.mime,
+                        name: userEdit.panImagePath.filename || 'pan.jpg'
+                    } as any);
+                }
+
+                // GST Certificate for transporter
+                if (userEdit?.gstCertificatePath?.path && userEdit?.gstCertificatePath?.mime) {
+                    formData.append('gst_certificate', {
+                        uri: userEdit.gstCertificatePath.path,
+                        type: userEdit.gstCertificatePath.mime,
+                        name: userEdit.gstCertificatePath.filename || 'gst.jpg'
+                    } as any);
+                }
+            }
+
+            console.log('=== Sending profile update request ===');
+            const response = await axiosInstance.post(END_POINTS.EDIT_PROFILE, formData);
+            console.log('=== Profile update response ===', response?.data);
+
+            if (response?.data?.status) {
+                showToast(response.data.message || t('profileUpdated') || 'Profile updated successfully!');
+
+                // Fetch updated profile
+                const profileResponse = await axiosInstance.get(END_POINTS.GET_PROFILE);
+                if (profileResponse?.data?.status) {
+                    dispatch(userAction(profileResponse.data));
+                }
+
+                // Clear saved signup data
+                await AsyncStorage.removeItem('signup_incomplete');
+
+                // Dispatch authenticated action
+                dispatch(userAuthenticatedAction(true));
+                console.log('=== Dispatch completed ===');
+
+                // Navigate to Main stack
+                navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: STACKS.MAIN }],
+                    })
+                );
+                console.log('=== Navigation reset completed ===');
+            } else {
+                // API returned error
+                showToast(response?.data?.message || t('updateFailed') || 'Profile update failed');
                 setFinishing(false);
-                setShowSuccess(true);
-                // Dispatch authenticated action after success animation
-                setTimeout(() => {
-                    dispatch(userAuthenticatedAction(true));
-                }, 2500);
-            }, 1500);
+            }
+        } catch (error: any) {
+            console.log('=== Profile update error ===', error);
+            console.log('Error response:', error?.response?.data);
 
-        } catch (error) {
-            console.log('Profile submission error:', error);
-            showToast('Failed to save profile. Please try again.');
+            // Show specific error message from API if available
+            const errorMessage = error?.response?.data?.message || error?.message || t('errorOccurred') || 'An error occurred';
+            showToast(errorMessage);
+            setFinishing(false);
         }
     };
 
@@ -878,6 +1130,9 @@ export default function ProfileCompletion() {
                 );
 
             case 'vehicle':
+                // Get current selections using normalizeArrayField to handle corrupted data
+                const currentVehicleSelections = normalizeArrayField(userEdit?.vehicle_type);
+
                 return (
                     <View style={styles.stepContainer}>
                         <Text style={styles.classicLabel}>{t('vehicleType')}</Text>
@@ -885,8 +1140,7 @@ export default function ProfileCompletion() {
                         <ScrollView showsVerticalScrollIndicator={false}>
                             <View style={styles.vehicleGrid}>
                                 {translatedVehicleTypes.map((vehicle) => {
-                                    const selectedVehicles = userEdit?.vehicle_type?.split(',') || [];
-                                    const isSelected = selectedVehicles.includes(vehicle.value);
+                                    const isSelected = currentVehicleSelections.includes(vehicle.value);
                                     return (
                                         <TouchableOpacity
                                             key={vehicle.value}
@@ -895,11 +1149,13 @@ export default function ProfileCompletion() {
                                                 isSelected && styles.vehicleTileSelected
                                             ]}
                                             onPress={() => {
-                                                let newSelection = [...selectedVehicles];
+                                                // Use normalizeArrayField to get clean current selections
+                                                const cleanSelections = normalizeArrayField(userEdit?.vehicle_type);
+                                                let newSelection: string[];
                                                 if (isSelected) {
-                                                    newSelection = newSelection.filter(v => v !== vehicle.value);
+                                                    newSelection = cleanSelections.filter(v => v !== vehicle.value);
                                                 } else {
-                                                    newSelection.push(vehicle.value);
+                                                    newSelection = [...cleanSelections, vehicle.value];
                                                 }
                                                 dispatch(userEditAction({ ...userEdit, vehicle_type: newSelection.filter(Boolean).join(',') }));
                                             }}
@@ -1308,68 +1564,6 @@ export default function ProfileCompletion() {
         }
     };
 
-    if (showSuccess) {
-        return (
-            <View style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
-                <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-                {/* Logo Section */}
-                <Animated.View entering={FadeInDown.duration(800).delay(300)} style={{ alignItems: 'center', marginTop: responsiveHeight(10) }}>
-                    <Text style={{ fontSize: 28, fontWeight: '700', color: '#246BFD', marginBottom: -4 }}>
-                        Welcome to
-                    </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                        <Text style={{ fontSize: 48, fontWeight: '900', color: '#246BFD', letterSpacing: -1.5 }}>truck</Text>
-                        <Text style={{ fontSize: 48, fontWeight: '900', color: '#F37021', letterSpacing: -1.5 }}>mitr</Text>
-                    </View>
-                    <Text style={{ fontSize: 13, color: '#666', marginTop: 4, letterSpacing: 0.5, fontStyle: 'normal' }}>
-                        India's Largest Trucking ecosystem
-                    </Text>
-                </Animated.View>
-
-                {/* Center Graphic */}
-                <Animated.View entering={ZoomIn.duration(1000).delay(500).springify()} style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <View style={{
-                        width: 240, height: 240, alignItems: 'center', justifyContent: 'center'
-                    }}>
-                        {/* Circle Background */}
-                        <View style={{
-                            position: 'absolute', width: 240, height: 240, borderRadius: 120,
-                            backgroundColor: '#F0F8FF', borderWidth: 1, borderColor: '#E3F2FD', opacity: 0.6
-                        }} />
-                        <View style={{
-                            position: 'absolute', width: 180, height: 180, borderRadius: 90,
-                            backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E3F2FD', opacity: 0.8
-                        }} />
-
-                        {/* Truck - Using Container Truck as placeholder for 'Trucking Ecosystem' */}
-                        <Image
-                            source={TruckImages.container}
-                            style={{ width: 160, height: 110 }}
-                            resizeMode="contain"
-                        />
-                    </View>
-                </Animated.View>
-
-                {/* Bottom Loading */}
-                <Animated.View
-                    entering={FadeInUp.duration(800).delay(1000)}
-                    style={{ marginBottom: responsiveHeight(8), width: '85%', alignSelf: 'center', alignItems: 'center' }}
-                >
-                    <View style={{ width: '100%', height: 6, backgroundColor: '#F0F0F0', borderRadius: 3, marginBottom: 16, overflow: 'hidden' }}>
-                        <Animated.View
-                            entering={FadeInDown.duration(2000)}
-                            style={{ width: '70%', height: '100%', backgroundColor: '#246BFD', borderRadius: 3 }}
-                        />
-                    </View>
-
-                    <Text style={{ fontSize: 15, color: '#333', fontWeight: '500' }}>Your profile is being created...</Text>
-                    {/* Dots animation could be added here */}
-                </Animated.View>
-            </View>
-        );
-    }
-
     return (
         <View style={[styles.container, { backgroundColor: '#F8F9FA' }]}>
             <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
@@ -1396,14 +1590,51 @@ export default function ProfileCompletion() {
                 showsVerticalScrollIndicator={false}
             >
                 <Animated.View style={animatedContentStyle}>
-                    <Text style={styles.stepTitle}>{t(STEPS[currentStep].title)} <Text style={{ color: 'red' }}>*</Text></Text>
-                    <Text style={styles.stepSubtitle}>{t(STEPS[currentStep].subtitle)}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.stepTitle}>{t(STEPS[currentStep].title)} <Text style={{ color: 'red' }}>*</Text></Text>
+                            <Text style={styles.stepSubtitle}>{t(STEPS[currentStep].subtitle)}</Text>
+                        </View>
+                        {i18n.language === 'hi' && ((userRole === 'driver' && DRIVER_VOICE_FILES[STEPS[currentStep].id]) || (userRole === 'transporter' && TRANSPORTER_VOICE_FILES[STEPS[currentStep].id])) && (
+                            <TouchableOpacity
+                                onPress={toggleVoiceMute}
+                                style={{
+                                    width: 44,
+                                    height: 44,
+                                    borderRadius: 22,
+                                    backgroundColor: isVoiceMuted ? '#999' : '#246BFD',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <Ionicons name={isVoiceMuted ? "volume-mute" : "volume-high"} size={24} color="white" />
+                            </TouchableOpacity>
+                        )}
+                    </View>
 
                     <View style={styles.divider} />
 
                     {renderStepContent()}
                 </Animated.View>
             </ScrollView>
+
+            {/* Hidden audio player for voice guidance */}
+            {i18n.language === 'hi' && currentAudioSource && (
+                <Video
+                    source={currentAudioSource}
+                    paused={false}
+                    volume={1.0}
+                    playInBackground={false}
+                    playWhenInactive={false}
+                    ignoreSilentSwitch="ignore"
+                    onEnd={() => { setCurrentAudioSource(null); }}
+                    onError={(error) => {
+                        console.log('Audio error:', error);
+                        setCurrentAudioSource(null);
+                    }}
+                    style={{ height: 0, width: 0, position: 'absolute' }}
+                />
+            )}
 
             {/* --- Classic Footer --- */}
             <View style={[styles.footer, { paddingBottom: safeAreaInsets.bottom + 20 }]}>

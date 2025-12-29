@@ -13,9 +13,7 @@ type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorP
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
-import { END_POINTS, STATICS } from '@truckmitr/src/utils/config';
-import axios from 'axios';
-import { encode } from 'base-64';
+import { END_POINTS } from '@truckmitr/src/utils/config';
 import { useDispatch, useSelector } from 'react-redux';
 import { subscriptionDetailsAction } from '@truckmitr/src/redux/actions/user.action';
 import moment from 'moment';
@@ -81,74 +79,61 @@ export default function PaymentSuccess() {
         setEmailPopupVisible(false);
     };
 
-    const _capturedPayment = async () => {
+    const _syncSubscriptionStatus = async () => {
         setIsLoading(true);
-        const paymentId = route?.params?.data?.razorpay_payment_id;
-        const key_id = STATICS?.RAYZORPAY_KEY_ID;
-        const key_secret = STATICS?.RAYZORPAY_SECRET;
-        const authToken = encode(`${key_id}:${key_secret}`);
-        const bodyRow = {
-            amount: route?.params?.options?.amount,
-            currency: 'INR',
-        };
         try {
-            const response = await axios.get(`https://api.razorpay.com/v1/payments/${paymentId}`, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Basic ${authToken}`,
-                },
-            });
-            if (response?.data?.status === "captured") {
-                // Convert the created_at timestamp (in seconds) to a Date object
-                const startTimestamp = response?.data?.created_at;
-                const startDate = new Date(startTimestamp * 1000); // convert to milliseconds
-                // Add 1 year to the start date
-                const endDate = new Date(startDate);
-                if (isDriver) {
-                    endDate.setFullYear(endDate.getFullYear() + 1);
-                } else {
-                    endDate.setMonth(endDate.getMonth() + 3);
-                }
-                // Convert end date to Unix timestamp (in seconds)
-                const endTimestamp = Math.floor(endDate.getTime() / 1000);
+            // Get subscription details from backend
+            // The webhook will have already processed the payment
+            const response = await axiosInstance.get(END_POINTS.PAYMENT_SUBSCRIPTION_DETAILS);
 
-                // Clone and extend response.data
-                const paymentDetails = {
-                    ...response.data,
-                    membership_amount: isDriver ? 499 : 999
-                };
+            if (response?.data?.status) {
+                dispatch(subscriptionDetailsAction(response?.data?.data));
 
-                let bodyFormData = new FormData();
-                bodyFormData.append('unique_id', user?.unique_id);
-                bodyFormData.append('start_at', startTimestamp);
-                bodyFormData.append('end_at', endTimestamp);
-                bodyFormData.append('amount', route?.params?.options?.amount);
-                bodyFormData.append('payment_id', paymentId);
-                bodyFormData.append('order_id', route?.params?.options?.order_id);
-                bodyFormData.append('payment_status', response?.data?.status);
-                bodyFormData.append('payment_details', JSON.stringify(paymentDetails));
-                bodyFormData.append('payment_type', 'subscription');
-                const response2 = await axiosInstance.post(END_POINTS.PAYMENT_SUBSCRIPTION_CAPTURE, bodyFormData);
-                if (response2?.data?.data?.email_required) {
+                // Check if email is required
+                if (response?.data?.email_required) {
                     setEmailPopupVisible(true);
                 }
-                if (response2?.data?.status) {
-                    const subscriptionDetails: any = await axiosInstance.get(END_POINTS?.PAYMENT_SUBSCRIPTION_DETAILS);
-                    if (subscriptionDetails?.data?.status) {
-                        dispatch(subscriptionDetailsAction(subscriptionDetails?.data?.data))
+            }
+
+            // Also try to sync the payment (fallback if webhook hasn't processed yet)
+            const subscriptionId = route?.params?.data?.razorpay_subscription_id;
+            const paymentId = route?.params?.data?.razorpay_payment_id;
+
+            if (subscriptionId && paymentId) {
+                try {
+                    let syncFormData = new FormData();
+                    syncFormData.append('subscription_id', subscriptionId);
+                    syncFormData.append('payment_id', paymentId);
+                    syncFormData.append('payment_type', 'subscription');
+
+                    const syncResponse = await axiosInstance.post(END_POINTS.PAYMENT_SUBSCRIPTION_CAPTURE, syncFormData);
+
+                    if (syncResponse?.data?.email_required) {
+                        setEmailPopupVisible(true);
                     }
+
+                    // Refresh subscription details after sync
+                    if (syncResponse?.data?.status) {
+                        const updatedDetails = await axiosInstance.get(END_POINTS.PAYMENT_SUBSCRIPTION_DETAILS);
+                        if (updatedDetails?.data?.status) {
+                            dispatch(subscriptionDetailsAction(updatedDetails?.data?.data));
+                        }
+                    }
+                } catch (syncError) {
+                    // Sync might fail if already processed by webhook - that's okay
+                    console.log('Payment sync note:', syncError);
                 }
             }
         } catch (error: any) {
-            console.error('Capture error:', error.response?.data || error.message);
+            console.error('Subscription status error:', error.response?.data || error.message);
         } finally {
             setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        _capturedPayment()
-    }, [])
+        _syncSubscriptionStatus();
+    }, []);
 
 
     return (

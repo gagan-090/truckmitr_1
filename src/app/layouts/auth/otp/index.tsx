@@ -1,4 +1,4 @@
-import { ActivityIndicator, Animated, BackHandler, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, AppState, Platform, Clipboard, PermissionsAndroid } from 'react-native';
+import { ActivityIndicator, Animated, BackHandler, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, AppState, Clipboard, Dimensions, Easing, Image } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { useColor, useResponsiveScale, useShadow, useStatusBarStyle } from '@truckmitr/hooks/index';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -23,6 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppEventsLogger } from 'react-native-fbsdk-next';
 import messaging from '@react-native-firebase/messaging';
 import RNOtpVerify from 'react-native-otp-verify';
+
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 
 type OtpRouteParams = {
@@ -35,6 +36,8 @@ type OtpRouteParams = {
     };
     flow: string
 };
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const Otp = () => {
     const { t } = useTranslation();
@@ -53,36 +56,86 @@ const Otp = () => {
     const [error, seterror] = useState<string | null>(null);
     const otpInputs = useRef<Array<TextInput | null>>([]);
     const [focusedField, setFocusedField] = useState<number | null>(null);
-    const [opacity] = useState(new Animated.Value(1));
-    const [timer, setTimer] = useState(20);
+    const [timer, setTimer] = useState(30);
     const [loading, setloading] = useState(false);
     const [autoVerificationAttempted, setAutoVerificationAttempted] = useState(false);
-    let timeoutId = useRef<any>(null);
     const appState = useRef(AppState.currentState);
+
+    // Animation values
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(30)).current;
+    const shakeAnim = useRef(new Animated.Value(0)).current;
+    const inputAnimations = useRef(otp.map(() => ({
+        scale: new Animated.Value(1),
+    }))).current;
+
+    // Entrance animations
+    useEffect(() => {
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 500,
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 500,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, []);
+
+    // Shake animation for errors
+    const triggerShakeAnimation = () => {
+        shakeAnim.setValue(0);
+        Animated.sequence([
+            Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
+            Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
+            Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
+            Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
+            Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
+        ]).start();
+    };
+
+    // Fill animation for each input when OTP is auto-filled
+    const animateAutoFill = () => {
+        inputAnimations.forEach((anim, index) => {
+            setTimeout(() => {
+                Animated.sequence([
+                    Animated.spring(anim.scale, {
+                        toValue: 1.15,
+                        friction: 5,
+                        tension: 100,
+                        useNativeDriver: true,
+                    }),
+                    Animated.spring(anim.scale, {
+                        toValue: 1,
+                        friction: 8,
+                        tension: 80,
+                        useNativeDriver: true,
+                    }),
+                ]).start();
+            }, index * 60);
+        });
+    };
 
     useEffect(() => {
         const backHandler = BackHandler.addEventListener("hardwareBackPress", () => true);
         return () => backHandler.remove();
     }, []);
 
-
     /**
      * SMS Auto fill
      */
-
     useEffect(() => {
         const setupOtpListener = async () => {
-            // Request SMS permissions on Android
-            // SMS Permission request removed for Google Play Policy compliance.
-            // SMS Retriever API does not require runtime permissions.
-
             getHash();
             startListeningForOtp();
         };
 
         setupOtpListener();
 
-        // Cleanup listener on unmount
         return () => {
             RNOtpVerify.removeListener();
         };
@@ -91,22 +144,10 @@ const Otp = () => {
     const getHash = () =>
         RNOtpVerify.getHash()
             .then((hash) => {
-                console.log('========================================');
-                console.log('📱 APP HASH FOR SMS RETRIEVER API');
-                console.log('========================================');
-                console.log('Hash Array:', hash);
-                if (hash && hash.length > 0) {
-                    console.log('✅ Your App Hash:', hash[0]);
-                    console.log('');
-                    console.log('📧 SMS Format Required:');
-                    console.log(`<#> Your OTP for TruckMitr login is 123456. Valid for 10 minutes. Do not share this code. TruckMitr ${hash[0]}`);
-                    console.log('');
-                    console.log('⚠️  Backend team must use this hash in SMS!');
-                }
-                console.log('========================================');
+                console.log('App Hash:', hash);
             })
             .catch((error) => {
-                console.log('❌ Error getting hash:', error);
+                console.log('Error getting hash:', error);
             });
 
     const startListeningForOtp = () =>
@@ -121,27 +162,21 @@ const Otp = () => {
 
     const otpHandler = (message: string) => {
         console.log('SMS received:', message);
-        if (!message) {
-            console.log('No message content');
-            return;
-        }
+        if (!message) return;
         const match = /(\d{6})/.exec(message);
         if (match && match[1]) {
             const extractedOtp = match[1];
-            console.log('OTP extracted:', extractedOtp);
             setOtp(extractedOtp.split(""));
+            animateAutoFill();
             RNOtpVerify.removeListener();
             Keyboard.dismiss();
-        } else {
-            console.log('No 6-digit OTP found in message');
+            showToast(t('otpAutoDetected'));
         }
     };
 
     useEffect(() => {
-        // Set up app state listener for iOS clipboard check
         const subscription = AppState.addEventListener('change', nextAppState => {
             if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-                // App has come to the foreground, check clipboard for OTP
                 checkClipboardForOtp();
             }
             appState.current = nextAppState;
@@ -164,13 +199,14 @@ const Otp = () => {
     // Check if OTP is complete and valid, then auto-verify
     useEffect(() => {
         const fullOtp = otp.join('');
-        if (fullOtp.length === otp.length && /^\d+$/.test(fullOtp) && !autoVerificationAttempted) {
-            setloading(true)
-            // Auto-verify after a short delay to allow user to see the entered OTP
+        const isComplete = fullOtp.length === otp.length && /^\d+$/.test(fullOtp);
+
+        if (isComplete && !autoVerificationAttempted) {
+            setloading(true);
             const autoVerifyTimeout = setTimeout(() => {
                 setAutoVerificationAttempted(true);
                 verifyOtp();
-            }, 800);
+            }, 600);
 
             return () => clearTimeout(autoVerifyTimeout);
         }
@@ -178,17 +214,14 @@ const Otp = () => {
 
     const checkClipboardForOtp = async () => {
         try {
-            // For iOS, check the clipboard for OTP
             const clipboardContent = await Clipboard.getString();
             const otpMatch = clipboardContent.match(/\b\d{6}\b/);
             if (otpMatch) {
                 const extractedOtp = otpMatch[0];
                 if (extractedOtp.length === otp.length) {
-                    const otpArray = extractedOtp.split('');
-                    setOtp(otpArray);
+                    setOtp(extractedOtp.split(''));
+                    animateAutoFill();
                     Keyboard.dismiss();
-
-                    // Show toast notification
                     showToast(t('otpAutoDetected'));
                 }
             }
@@ -197,23 +230,32 @@ const Otp = () => {
         }
     };
 
-    const startFadeOutAnimation = () => {
-        opacity.setValue(1);
-        Animated.timing(opacity, {
-            toValue: 0,
-            duration: 1000,
-            useNativeDriver: true,
-        }).start();
-    };
-
-    useEffect(() => {
-        timeoutId.current = setTimeout(() => {
-            startFadeOutAnimation();
-        }, 7000);
-        return () => clearTimeout(timeoutId.current);
-    }, []);
-
     const handleOtpChange = (index: number, text: string) => {
+        // Handle paste - if text has multiple digits, distribute them
+        if (text.length > 1) {
+            const digits = text.replace(/\D/g, '').slice(0, 6);
+            if (digits.length > 0) {
+                const newOtp = [...otp];
+                digits.split('').forEach((digit, i) => {
+                    if (index + i < 6) {
+                        newOtp[index + i] = digit;
+                    }
+                });
+                setOtp(newOtp);
+                seterror(null);
+
+                const nextEmptyIndex = newOtp.findIndex((d, i) => i >= index && d === '');
+                if (nextEmptyIndex !== -1) {
+                    otpInputs.current[nextEmptyIndex]?.focus();
+                } else {
+                    otpInputs.current[5]?.focus();
+                    Keyboard.dismiss();
+                }
+                animateAutoFill();
+                return;
+            }
+        }
+
         if (/^[0-9]*$/.test(text)) {
             seterror(null);
             setOtp(prevState => {
@@ -226,6 +268,24 @@ const Otp = () => {
                 }
                 return updatedOtp;
             });
+
+            // Animate the input on change
+            if (text) {
+                Animated.sequence([
+                    Animated.spring(inputAnimations[index].scale, {
+                        toValue: 1.1,
+                        friction: 5,
+                        tension: 100,
+                        useNativeDriver: true,
+                    }),
+                    Animated.spring(inputAnimations[index].scale, {
+                        toValue: 1,
+                        friction: 8,
+                        tension: 80,
+                        useNativeDriver: true,
+                    }),
+                ]).start();
+            }
         }
     };
 
@@ -248,14 +308,20 @@ const Otp = () => {
         setFocusedField(index);
     };
 
+    const handleInputBlur = (index: number) => () => {
+        if (focusedField === index) {
+            setFocusedField(null);
+        }
+    };
+
     const verifyOtp = async () => {
         const fullOtp = otp.join('');
         if (fullOtp.length < otp.length) {
             seterror(t("pleaseEnterCompleteOtp"));
+            triggerShakeAnimation();
             return;
         }
 
-        // Prevent multiple calls
         if (loading) return;
 
         seterror(null);
@@ -282,12 +348,9 @@ const Otp = () => {
                 showToast(t('otpVerifiedSuccessfully'))
                 if (response?.data?.token) {
                     let token = response?.data?.token;
-                    console.log("🔹 Raw Token received:", token);
 
-                    // Remove 'Bearer ' if present to avoid double prefix in interceptor
                     if (token.startsWith('Bearer ')) {
                         token = token.replace('Bearer ', '');
-                        console.log("🔹 Token cleaned (Bearer removed):", token);
                     }
 
                     await AsyncStorage.removeItem('signup_incomplete');
@@ -313,17 +376,12 @@ const Otp = () => {
                         await analytics().logEvent('login', eventParams);
                         AppEventsLogger.logEvent('fb_mobile_login', eventParams)
                     } else {
-                        // Reserved Firebase event
                         await analytics().logEvent('sign_up', { method: 'mobile_otp' });
-
-                        // Your custom extended event
                         await analytics().logEvent('user_signup', eventParams);
-
                         AppEventsLogger.logEvent('fb_mobile_complete_registration', { method: 'mobile_otp' });
                         AppEventsLogger.logEvent('user_signup', eventParams);
                     }
 
-                    // 🧠 Set userId and properties
                     await analytics().setUserId(userinfo.unique_id || '');
                     await analytics().setUserProperties({
                         user_id: String(userinfo.id),
@@ -334,65 +392,47 @@ const Otp = () => {
                         login_method: 'mobile_otp',
                     });
 
-                    console.log("🔹 Saving token to storage...");
                     await saveUserData(token);
-                    console.log("🔹 Token saved. Marking session as active...");
-
-                    // Mark session as active immediately to prevent re-initialization
                     await AsyncStorage.setItem('app_session_active', 'true');
 
-                    console.log("🔹 Fetching profile...");
-
                     try {
-                        // Add a small delay to ensure backend has processed the token
                         await new Promise<void>(resolve => setTimeout(() => resolve(), 300));
 
-                        // Explicitly pass token to avoid race condition with AsyncStorage
-                        // Also skip global logout to prevent crash if 401
                         const profile: any = await axiosInstance.get(END_POINTS?.GET_PROFILE, {
                             headers: {
                                 Authorization: `Bearer ${token}`,
                                 'X-Skip-Global-Logout': 'true'
                             }
                         });
-                        console.log("🔹 Profile fetch status:", profile?.status, profile?.data?.status);
 
                         if (profile?.data?.status) {
-                            console.log("🔹 Profile fetched successfully. Dispatching actions...");
                             dispatch(userAction(profile?.data))
-
-                            // For new signups, navigate to profile completion screen
+                            // For new signups, navigate to congratulations screen first
                             if (flow !== 'login') {
-                                console.log("🔹 New signup - navigating to Profile Completion...");
-                                navigation.navigate(STACKS.PROFILE_COMPLETION as any);
+                                console.log("🔹 New signup - navigating to Congratulations...");
+                                navigation.navigate(STACKS.CONGRATULATIONS as any, {
+                                    userData: response?.data?.user,
+                                    message: response?.data?.message || 'You have been successfully registered.'
+                                });
                             } else {
-                                // Dispatch authentication immediately for login
-                                console.log("🔹 Login - Dispatching userAuthenticatedAction(true)");
                                 dispatch(userAuthenticatedAction(true))
                             }
 
-                            // Setup notifications after successful login
                             setupFirebaseNotifications();
                         } else {
-                            console.error("❌ Profile fetch failed (status false):", profile?.data);
-                            // If 401, we might want to show a specific error
                             if (profile?.status === 401 || profile?.status === 403) {
                                 showToast("Session invalid. Please try logging in again.");
-                                // Clean up
                                 await AsyncStorage.removeItem('app_session_active');
-                                await saveUserData(''); // Clear token
+                                await saveUserData('');
                             } else {
                                 showToast("Failed to fetch profile details.");
                             }
                         }
                     } catch (profileError: any) {
-                        console.error("❌ Error fetching profile in OTP:", profileError);
                         if (profileError?.response?.status === 401 || profileError?.response?.status === 403) {
-                            console.log("⚠️ 401/403 caught in OTP. Token might be invalid or not yet active.");
                             showToast("Authentication failed. Please retry.");
-                            // Clean up
                             await AsyncStorage.removeItem('app_session_active');
-                            await saveUserData(''); // Clear token
+                            await saveUserData('');
                         } else {
                             showToast("Error fetching profile: " + (profileError?.message || "Unknown error"));
                         }
@@ -402,13 +442,14 @@ const Otp = () => {
                 }
             } else {
                 seterror(response?.data?.message);
-                setAutoVerificationAttempted(false); // Reset to allow retry
+                triggerShakeAnimation();
+                setAutoVerificationAttempted(false);
             }
         } catch (error: any) {
-            console.log("Verify OTP error:", error);
             showToast(error?.message || "Verification failed")
             seterror(error?.message || "Verification failed");
-            setAutoVerificationAttempted(false); // Reset to allow retry
+            triggerShakeAnimation();
+            setAutoVerificationAttempted(false);
         } finally {
             setloading(false);
         }
@@ -416,7 +457,6 @@ const Otp = () => {
 
     const _pressResendOtp = async () => {
         if (timer === 0) {
-            // Add resend OTP functionality if needed
             setloading(true);
             try {
                 if (flow === 'login') {
@@ -424,8 +464,9 @@ const Otp = () => {
                     if (response?.data?.success) {
                         showToast(t(`otpSentSuccessfully`));
                         navigation.navigate(STACKS.OTP as any, { formData: { mobile: formData?.mobile }, flow: 'login' });
-                        setTimer(20); // Reset timer after resending OTP
-                        setAutoVerificationAttempted(false); // Reset auto verification
+                        setTimer(30);
+                        setAutoVerificationAttempted(false);
+                        setOtp(['', '', '', '', '', '']);
                     } else {
                         seterror(response?.data?.message);
                     }
@@ -435,14 +476,14 @@ const Otp = () => {
                         showToast(t(`otpSentSuccessfully`));
                         const formPayload = { name: formData?.name, mobile: formData?.mobile, email: formData?.email, role: formData?.role, states: formData?.states };
                         navigation.navigate('otp' as any, { formData: formPayload });
-                        setTimer(20); // Reset timer after resending OTP
-                        setAutoVerificationAttempted(false); // Reset auto verification
+                        setTimer(30);
+                        setAutoVerificationAttempted(false);
+                        setOtp(['', '', '', '', '', '']);
                     } else {
                         seterror(response?.data?.message);
                     }
                 }
             } catch (error: any) {
-                console.log('Login API error:', error);
                 showToast(error);
             } finally {
                 setloading(false);
@@ -454,120 +495,263 @@ const Otp = () => {
         navigation.goBack();
     };
 
+    const getInputStyle = (index: number) => {
+        const isFilled = otp[index] !== '';
+        const isFocused = focusedField === index;
+        const hasError = !!error;
+
+        return {
+            borderColor: hasError
+                ? colors.error
+                : isFilled
+                    ? colors.royalBlue
+                    : isFocused
+                        ? colors.royalBlue
+                        : colors.blackOpacity(0.15),
+            borderWidth: isFocused || isFilled ? 2 : 1.5,
+            backgroundColor: isFocused ? colors.royalBlueOpacity(0.03) : colors.white,
+        };
+    };
+
     return (
         <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-            <View style={{ flex: 1, alignItems: 'center', backgroundColor: colors.white }}>
+            <View style={[styles.container, { backgroundColor: colors.white }]}>
                 <Space height={safeAreaInsets.top} />
-                <View style={{ width: '100%', padding: responsiveWidth(3) }}>
+
+                {/* Header */}
+                <View style={styles.headerContainer}>
                     <TouchableOpacity
                         hitSlop={hitSlop(10)}
                         onPress={_goback}
-                        style={{
-                            height: responsiveFontSize(4),
-                            width: responsiveFontSize(4),
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            backgroundColor: colors.white,
-                            borderRadius: 100,
-                        }}>
+                        style={[styles.backButton, { backgroundColor: colors.blackOpacity(0.05) }]}>
                         <Ionicons name={'chevron-back'} size={24} color={colors.royalBlue} />
                     </TouchableOpacity>
                 </View>
-                <Space height={responsiveHeight(6)} />
-                <View style={{ width: '100%', alignItems: 'center', padding: responsiveFontSize(2) }}>
-                    <Text style={{ color: colors.blackOpacity(1), fontSize: responsiveFontSize(2.8), fontWeight: '600' }}>{t(`OtpVerification`)}</Text>
-                    <Space height={responsiveHeight(1)} />
-                    <Text style={{ color: colors.blackOpacity(0.6), fontSize: responsiveFontSize(1.8), textAlign: 'center' }}>
-                        {t(`weHaveSentVerificationCode`)}{'\n'}
-                        <Text style={{ color: colors.black, fontWeight: '600' }}>{`+91-${formData?.mobile}`}</Text>
-                    </Text>
-                </View>
-                <Space height={responsiveHeight(5)} />
-                {/* OTP Input Fields */}
-                <View>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: responsiveWidth(90) }}>
-                        {otp.map((digit, index) => (
-                            <TextInput
-                                key={index}
-                                ref={(el: any) => (otpInputs.current[index] = el)}
-                                style={[
-                                    {
-                                        height: responsiveHeight(7),
-                                        width: responsiveHeight(6),
-                                        backgroundColor: colors.white,
-                                        color: error ? colors.error : colors.blackOpacity(1),
-                                        fontSize: responsiveFontSize(3.2),
-                                        fontWeight: '600',
-                                        borderRadius: 6,
-                                        borderColor: error ? colors.error : colors.blackOpacity(0.2),
-                                        borderWidth: 1,
-                                        textAlign: 'center',
-                                    },
-                                    shadow,
-                                ]}
-                                keyboardType="number-pad"
-                                textContentType="oneTimeCode"
-                                autoComplete="sms-otp"
-                                selectionColor={colors.royalBlue}
-                                maxLength={1}
-                                value={digit}
-                                onChangeText={text => handleOtpChange(index, text)}
-                                onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent.key)}
-                                onFocus={handleInputFocus(index)}
-                            />
-                        ))}
+
+                {/* Main Content */}
+                <Animated.View
+                    style={[
+                        styles.contentContainer,
+                        {
+                            opacity: fadeAnim,
+                            transform: [{ translateY: slideAnim }]
+                        }
+                    ]}>
+
+                    {/* Logo */}
+                    <View style={styles.logoWrapper}>
+                        <Image
+                            source={require('@truckmitr/src/assets/bootsplash/splash.png')}
+                            style={styles.logo}
+                            resizeMode="contain"
+                        />
                     </View>
-                    {error ? (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: responsiveHeight(1) }}>
-                            <MaterialIcons name="error" size={14} color={colors.error} />
-                            <Text style={{ color: colors.error, fontSize: responsiveFontSize(1.7), marginLeft: responsiveFontSize(0.5) }}>
+
+                    <Space height={responsiveHeight(4)} />
+
+                    {/* Title */}
+                    <Text style={[styles.title, { color: colors.blackOpacity(0.85) }]}>
+                        {t(`OtpVerification`)}
+                    </Text>
+
+                    <Space height={responsiveHeight(1)} />
+
+                    {/* Subtitle */}
+                    <Text style={[styles.subtitle, { color: colors.blackOpacity(0.5) }]}>
+                        {t(`weHaveSentVerificationCode`)}
+                    </Text>
+
+                    <Space height={responsiveHeight(5)} />
+
+                    {/* OTP Input Fields */}
+                    <Animated.View style={{ transform: [{ translateX: shakeAnim }] }}>
+                        <View style={styles.otpContainer}>
+                            {otp.map((digit, index) => (
+                                <Animated.View
+                                    key={index}
+                                    style={[
+                                        styles.otpInputWrapper,
+                                        { transform: [{ scale: inputAnimations[index].scale }] }
+                                    ]}>
+                                    <TextInput
+                                        ref={(el: any) => (otpInputs.current[index] = el)}
+                                        style={[
+                                            styles.otpInput,
+                                            getInputStyle(index),
+                                            { color: error ? colors.error : colors.royalBlue },
+                                        ]}
+                                        keyboardType="number-pad"
+                                        textContentType="oneTimeCode"
+                                        autoComplete="sms-otp"
+                                        selectionColor={colors.royalBlue}
+                                        maxLength={1}
+                                        value={digit}
+                                        onChangeText={text => handleOtpChange(index, text)}
+                                        onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent.key)}
+                                        onFocus={handleInputFocus(index)}
+                                        onBlur={handleInputBlur(index)}
+                                    />
+                                </Animated.View>
+                            ))}
+                        </View>
+                    </Animated.View>
+
+                    {/* Error Message */}
+                    {error && (
+                        <View style={styles.errorContainer}>
+                            <MaterialIcons name="error-outline" size={16} color={colors.error} />
+                            <Text style={[styles.errorText, { color: colors.error }]}>
                                 {error}
                             </Text>
                         </View>
-                    ) : null}
-                </View>
-                <Space height={responsiveHeight(6)} />
-                <TouchableOpacity
-                    onPress={verifyOtp}
-                    disabled={loading}
-                    activeOpacity={0.7}
-                    style={{
-                        height: responsiveHeight(6),
-                        width: responsiveWidth(90),
-                        borderRadius: 100,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        overflow: 'hidden',
-                        opacity: loading ? 0.6 : 1,
-                    }}>
-                    <LinearGradient start={{ x: 1, y: 0 }} end={{ x: 0, y: 0 }} style={{ ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center' }} colors={['#3D5EE1', '#18A9B3']}>
-                        {loading ? (
-                            <ActivityIndicator color={colors.white} size="small" />
-                        ) : (
-                            <Text style={{ color: colors.white, fontSize: responsiveFontSize(2), fontWeight: '500' }}>{t(`verify`)}</Text>
-                        )}
-                    </LinearGradient>
-                </TouchableOpacity>
-                <Space height={responsiveHeight(5)} />
-                <Animated.Text style={{ color: '#0073e6', fontSize: responsiveFontSize(1.6), opacity }}>{t(`checkTextMessagesYourOtp`)}</Animated.Text>
-                <Space height={responsiveHeight(1)} />
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.8), fontWeight: '600' }}>
-                        {t(`didntGetTheOtp`)}{' '}
-                        <Text style={{ color: timer ? colors.blackOpacity(0.4) : colors.royalBlue, fontSize: responsiveFontSize(1.8), fontWeight: '500' }}>
-                            {timer ? `${t(`resendSmsIn`)} ${timer}s` : ''}
+                    )}
+
+                    <Space height={responsiveHeight(5)} />
+
+                    {/* Verify Button */}
+                    <TouchableOpacity
+                        onPress={verifyOtp}
+                        disabled={loading}
+                        activeOpacity={0.85}
+                        style={[styles.verifyButton, { opacity: loading ? 0.7 : 1 }]}>
+                        <LinearGradient
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            colors={[colors.royalBlue, '#0a5a9e']}
+                            style={styles.gradientButton}>
+                            {loading ? (
+                                <ActivityIndicator color={colors.white} size="small" />
+                            ) : (
+                                <Text style={styles.verifyButtonText}>{t(`verify`)}</Text>
+                            )}
+                        </LinearGradient>
+                    </TouchableOpacity>
+
+                    <Space height={responsiveHeight(4)} />
+
+                    {/* Resend Section */}
+                    <View style={styles.resendSection}>
+                        <Text style={[styles.resendLabel, { color: colors.blackOpacity(0.5) }]}>
+                            {t(`didntGetTheOtp`)}{' '}
                         </Text>
-                    </Text>
-                    {!timer ? (
-                        <TouchableOpacity onPress={_pressResendOtp} activeOpacity={0.7}>
-                            <Text style={{ color: timer ? colors.blackOpacity(0.4) : colors.royalBlue, fontSize: responsiveFontSize(1.9), fontWeight: '600' }}>{t(`resendSms`)}</Text>
-                        </TouchableOpacity>
-                    ) : null}
-                </View>
-                <Space height={responsiveHeight(2)} />
+                        {timer > 0 ? (
+                            <Text style={[styles.timerText, { color: colors.blackOpacity(0.4) }]}>
+                                {t(`resendSmsIn`)} {timer}s
+                            </Text>
+                        ) : (
+                            <TouchableOpacity onPress={_pressResendOtp} activeOpacity={0.7}>
+                                <Text style={[styles.resendButtonText, { color: colors.royalBlue }]}>
+                                    {t(`resendSms`)}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </Animated.View>
             </View>
         </TouchableWithoutFeedback>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    headerContainer: {
+        width: '100%',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+    },
+    backButton: {
+        height: 44,
+        width: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 12,
+    },
+    contentContainer: {
+        flex: 1,
+        alignItems: 'center',
+        paddingHorizontal: 24,
+    },
+    logoWrapper: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    logo: {
+        width: SCREEN_WIDTH * 0.5,
+        height: 80,
+    },
+    title: {
+        fontSize: 26,
+        fontWeight: '700',
+        textAlign: 'center',
+        letterSpacing: -0.3,
+    },
+    subtitle: {
+        fontSize: 15,
+        textAlign: 'center',
+        lineHeight: 22,
+        paddingHorizontal: 20,
+    },
+    otpContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 12,
+    },
+    otpInputWrapper: {
+        // wrapper for animation
+    },
+    otpInput: {
+        height: 56,
+        width: 48,
+        borderRadius: 12,
+        textAlign: 'center',
+        fontSize: 24,
+        fontWeight: '700',
+    },
+    errorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 16,
+        gap: 6,
+    },
+    errorText: {
+        fontSize: 13,
+        fontWeight: '500',
+    },
+    verifyButton: {
+        width: '100%',
+    },
+    gradientButton: {
+        height: 54,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    verifyButtonText: {
+        color: '#FFFFFF',
+        fontSize: 17,
+        fontWeight: '600',
+        letterSpacing: 0.3,
+    },
+    resendSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+    },
+    resendLabel: {
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    timerText: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    resendButtonText: {
+        fontSize: 14,
+        fontWeight: '700',
+    },
+});
 
 export default Otp;

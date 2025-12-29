@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     View,
     Text,
@@ -10,16 +10,26 @@ import {
     ScrollView,
     ActivityIndicator,
     StatusBar,
+    Dimensions,
+    TouchableWithoutFeedback,
+    AccessibilityInfo,
 } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
     withSpring,
     withTiming,
+    withRepeat,
+    withSequence,
+    withDelay,
+    Easing,
     ZoomIn,
     FadeInDown,
     FadeInUp,
+    FadeIn,
+    SlideInUp,
 } from 'react-native-reanimated';
+import Svg, { Circle, Path, G, Defs, LinearGradient as SvgGradient, Stop, Rect } from 'react-native-svg';
 import { useColor, useResponsiveScale, useStatusBarStyle } from '@truckmitr/src/app/hooks';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CommonActions, useNavigation } from '@react-navigation/native';
@@ -31,7 +41,7 @@ import { Space } from '@truckmitr/src/app/components';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Feather from 'react-native-vector-icons/Feather';
-import DatePicker from 'react-native-date-picker';
+import { Calendar } from 'react-native-calendars';
 import moment from 'moment';
 import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
 import { END_POINTS } from '@truckmitr/src/utils/config';
@@ -55,16 +65,17 @@ type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorP
 
 // --- Job Steps Configuration ---
 const JOB_STEPS = [
-    { id: 'job_title', title: 'jobTitle', subtitle: 'enterJobTitle', field: 'job_title', required: true, icon: 'briefcase-outline' },
-    { id: 'job_location', title: 'jobLocation', subtitle: 'selectJobLocation', field: 'job_location', required: true, icon: 'location-outline' },
-    { id: 'vehicle_type', title: 'vehicleType', subtitle: 'selectVehicleType', field: 'vehicle_type', required: true, icon: 'car-outline' },
-    { id: 'experience', title: 'experienceInYears', subtitle: 'selectExperience', field: 'Required_Experience', required: true, icon: 'time-outline' },
-    { id: 'salary_range', title: 'salaryRange', subtitle: 'selectSalaryRange', field: 'Salary_Range', required: true, icon: 'cash-outline' },
-    { id: 'license_type', title: 'typeOfLicense', subtitle: 'selectLicenseType', field: 'Type_of_License', required: true, icon: 'card-outline' },
-    { id: 'preferred_skills', title: 'preferredSkills', subtitle: 'Select Preferred Skills', field: 'Preferred_Skills', required: true, icon: 'construct-outline' },
-    { id: 'deadline', title: 'applicationDeadline', subtitle: 'Select Deadline', field: 'Application_Deadline', required: true, icon: 'calendar-outline' },
-    { id: 'drivers_count', title: 'numberOfDrivers', subtitle: 'Enter Drivers Count', field: 'Job_Management', required: true, icon: 'people-outline' },
-    { id: 'job_description', title: 'Job Description', subtitle: 'Write Description', field: 'Job_Description', required: true, icon: 'document-text-outline' },
+    { id: 'job_title', title: 'jobTitle', subtitle: 'enterJobTitleHint', field: 'job_title', required: true, icon: 'briefcase-outline' },
+    { id: 'job_location', title: 'jobLocation', subtitle: 'selectJobLocationHint', field: 'job_location', required: true, icon: 'location-outline' },
+    { id: 'vehicle_type', title: 'vehicleType', subtitle: 'selectVehicleTypeHint', field: 'vehicle_type', required: true, icon: 'car-outline' },
+    { id: 'experience', title: 'experienceInYears', subtitle: 'selectExperienceHint', field: 'Required_Experience', required: true, icon: 'time-outline' },
+    { id: 'salary_range', title: 'salaryRange', subtitle: 'selectSalaryRangeHint', field: 'Salary_Range', required: true, icon: 'cash-outline' },
+    { id: 'license_type', title: 'typeOfLicense', subtitle: 'selectLicenseTypeHint', field: 'Type_of_License', required: true, icon: 'card-outline' },
+    { id: 'preferred_skills', title: 'preferredSkills', subtitle: 'selectPreferredSkillsHint', field: 'Preferred_Skills', required: true, icon: 'construct-outline' },
+    { id: 'deadline', title: 'applicationDeadline', subtitle: 'selectDeadlineHint', field: 'Application_Deadline', required: true, icon: 'calendar-outline' },
+    { id: 'drivers_count', title: 'numberOfDrivers', subtitle: 'enterDriversCountHint', field: 'Job_Management', required: true, icon: 'people-outline' },
+    { id: 'job_description', title: 'jobDescriptionTitle', subtitle: 'writeDescriptionHint', field: 'Job_Description', required: true, icon: 'document-text-outline' },
+    { id: 'job_summary', title: 'jobSummary', subtitle: 'reviewJobDetailsHint', field: null, required: false, icon: 'checkbox-outline' },
 ];
 
 // Data Arrays
@@ -80,11 +91,11 @@ const vehicleTypes = [
 ];
 
 const drivingExperienceArray = [
-    { label: '1-5 years', value: '1-5' },
-    { label: '5-10 years', value: '5-10' },
-    { label: '10-15 years', value: '10-15' },
-    { label: '15-20 years', value: '15-20' },
-    { label: '20+ years', value: '20+' },
+    { labelKey: 'exp1to5Years', label: '1-5 years', value: '1-5' },
+    { labelKey: 'exp5to10Years', label: '5-10 years', value: '5-10' },
+    { labelKey: 'exp10to15Years', label: '10-15 years', value: '10-15' },
+    { labelKey: 'exp15to20Years', label: '15-20 years', value: '15-20' },
+    { labelKey: 'exp20PlusYears', label: '20+ years', value: '20+' },
 ];
 
 const salaryRanges = [
@@ -136,12 +147,75 @@ export default function AddJob() {
     const [checkBoxSelect, setCheckBoxSelect] = useState<boolean>(true);
     const [availableFreeJob, setAvailableFreeJob] = useState<boolean>(false);
     const [showSecondJobPopup, setShowSecondJobPopup] = useState<boolean>(false);
+    const [calendarMonth, setCalendarMonth] = useState(moment().format('YYYY-MM-DD'));
+    const [yearPickerOpen, setYearPickerOpen] = useState(false);
 
-    // Fade animation for content transition
+    // ===== ACCESSIBILITY: REDUCED MOTION SUPPORT =====
+    const [reduceMotion, setReduceMotion] = useState(false);
+
+    useEffect(() => {
+        AccessibilityInfo.isReduceMotionEnabled().then(enabled => {
+            setReduceMotion(enabled);
+        });
+    }, []);
+
+    // Animation config based on accessibility
+    const animationConfig = useMemo(() => ({
+        duration: reduceMotion ? 0 : 400,
+        springDamping: reduceMotion ? 100 : 15,
+        springStiffness: reduceMotion ? 1000 : 100,
+    }), [reduceMotion]);
+
+    // ===== PREMIUM ANIMATIONS =====
+    // Screen entrance animation
+    const screenOpacity = useSharedValue(0);
+    const screenTranslateY = useSharedValue(reduceMotion ? 0 : 30);
+
+    // Content transition animation
     const contentOpacity = useSharedValue(1);
     const contentTranslateX = useSharedValue(0);
+    const contentScale = useSharedValue(1);
+
+    // Progress bar animation
+    const progressWidth = useSharedValue(0);
+
+    // Button animation
+    const buttonScale = useSharedValue(1);
+
+    // Card animation
+    const cardScale = useSharedValue(reduceMotion ? 1 : 0.95);
+    const cardOpacity = useSharedValue(0);
+
+    // ===== BACKGROUND GRADIENT SHIMMER =====
+    const bgGradientOffset = useSharedValue(0);
+
+    useEffect(() => {
+        if (!reduceMotion) {
+            bgGradientOffset.value = withRepeat(
+                withTiming(1, { duration: 3000, easing: Easing.inOut(Easing.ease) }),
+                -1,
+                true
+            );
+        }
+    }, [reduceMotion]);
+
+    const animatedBackgroundStyle = useAnimatedStyle(() => ({
+        opacity: reduceMotion ? 0 : 0.03,
+        transform: [{ translateX: bgGradientOffset.value * 100 }]
+    }));
 
     const progressPercent = ((currentStep + 1) / JOB_STEPS.length) * 100;
+
+    // Initial screen entrance
+    useEffect(() => {
+        if (!reduceMotion) {
+            screenOpacity.value = withTiming(1, { duration: 500, easing: Easing.out(Easing.cubic) });
+            screenTranslateY.value = withSpring(0, { damping: 15, stiffness: 100 });
+        } else {
+            screenOpacity.value = 1;
+            screenTranslateY.value = 0;
+        }
+    }, [reduceMotion]);
 
     // Load locations
     useEffect(() => {
@@ -175,17 +249,261 @@ export default function AddJob() {
         }
     };
 
-    // Staggered entrance animation
+    // Animate progress bar
     useEffect(() => {
+        progressWidth.value = withTiming(progressPercent, {
+            duration: 600,
+            easing: Easing.bezier(0.4, 0.0, 0.2, 1)
+        });
+    }, [progressPercent]);
+
+    // ===== PROGRESS BAR SHIMMER EFFECT =====
+    const shimmerOpacity = useSharedValue(0.8);
+
+    useEffect(() => {
+        shimmerOpacity.value = withRepeat(
+            withSequence(
+                withTiming(1, { duration: 800 }),
+                withTiming(0.8, { duration: 800 })
+            ),
+            -1,
+            true
+        );
+    }, []);
+
+    const animatedShimmerStyle = useAnimatedStyle(() => ({
+        opacity: shimmerOpacity.value
+    }));
+
+    // Step transition animation with horizontal slide
+    useEffect(() => {
+        // Fade out and slide
         contentOpacity.value = 0;
-        contentTranslateX.value = 20;
-        contentOpacity.value = withTiming(1, { duration: 400 });
-        contentTranslateX.value = withSpring(0, { damping: 12 });
+        contentTranslateX.value = 50;
+        contentScale.value = 0.95;
+
+        // Fade in and slide back
+        contentOpacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) });
+        contentTranslateX.value = withSpring(0, { damping: 20, stiffness: 90 });
+        contentScale.value = withSpring(1, { damping: 15, stiffness: 100 });
+
+        // Card entrance animation
+        cardOpacity.value = 0;
+        cardScale.value = 0.9;
+        cardOpacity.value = withDelay(100, withTiming(1, { duration: 400 }));
+        cardScale.value = withDelay(100, withSpring(1, { damping: 12, stiffness: 100 }));
     }, [currentStep]);
+
+    const animatedScreenStyle = useAnimatedStyle(() => ({
+        opacity: screenOpacity.value,
+        transform: [{ translateY: screenTranslateY.value }]
+    }));
 
     const animatedContentStyle = useAnimatedStyle(() => ({
         opacity: contentOpacity.value,
-        transform: [{ translateX: contentTranslateX.value }]
+        transform: [
+            { translateX: contentTranslateX.value },
+            { scale: contentScale.value }
+        ]
+    }));
+
+    const animatedProgressStyle = useAnimatedStyle(() => ({
+        width: `${progressWidth.value}%`
+    }));
+
+    const animatedCardStyle = useAnimatedStyle(() => ({
+        opacity: cardOpacity.value,
+        transform: [{ scale: cardScale.value }]
+    }));
+
+    const animatedButtonStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: buttonScale.value }]
+    }));
+
+    // ===== ICON PULSE ANIMATION =====
+    const iconScale = useSharedValue(1);
+    const iconRotate = useSharedValue(0);
+
+    useEffect(() => {
+        // Pulse and rotate icon on step change
+        iconScale.value = 0.5;
+        iconRotate.value = -180;
+
+        iconScale.value = withSequence(
+            withSpring(1.2, { damping: 8, stiffness: 150 }),
+            withSpring(1, { damping: 10, stiffness: 100 })
+        );
+        iconRotate.value = withSpring(0, { damping: 12, stiffness: 80 });
+    }, [currentStep]);
+
+    const animatedIconStyle = useAnimatedStyle(() => ({
+        transform: [
+            { scale: iconScale.value },
+            { rotate: `${iconRotate.value}deg` }
+        ]
+    }));
+
+    // ===== VALIDATION SHAKE ANIMATION =====
+    const shakeTranslateX = useSharedValue(0);
+
+    const triggerShake = () => {
+        shakeTranslateX.value = withSequence(
+            withTiming(-10, { duration: 50 }),
+            withTiming(10, { duration: 50 }),
+            withTiming(-10, { duration: 50 }),
+            withTiming(10, { duration: 50 }),
+            withTiming(0, { duration: 50 })
+        );
+    };
+
+    const animatedShakeStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: shakeTranslateX.value }]
+    }));
+
+    // ===== HEADER SLIDE-IN ANIMATION =====
+    const headerTranslateY = useSharedValue(-50);
+    const headerOpacity = useSharedValue(0);
+
+    useEffect(() => {
+        headerOpacity.value = withDelay(100, withTiming(1, { duration: 400 }));
+        headerTranslateY.value = withDelay(100, withSpring(0, { damping: 15, stiffness: 100 }));
+    }, []);
+
+    const animatedHeaderStyle = useAnimatedStyle(() => ({
+        opacity: headerOpacity.value,
+        transform: [{ translateY: headerTranslateY.value }]
+    }));
+
+    // ===== FOOTER SLIDE-UP ANIMATION =====
+    const footerTranslateY = useSharedValue(100);
+    const footerOpacity = useSharedValue(0);
+
+    useEffect(() => {
+        footerOpacity.value = withDelay(300, withTiming(1, { duration: 400 }));
+        footerTranslateY.value = withDelay(300, withSpring(0, { damping: 15, stiffness: 100 }));
+    }, []);
+
+    const animatedFooterStyle = useAnimatedStyle(() => ({
+        opacity: footerOpacity.value,
+        transform: [{ translateY: footerTranslateY.value }]
+    }));
+
+    // ===== STEP COUNTER ANIMATION =====
+    const counterScale = useSharedValue(1);
+
+    useEffect(() => {
+        counterScale.value = withSequence(
+            withSpring(1.3, { damping: 8, stiffness: 200 }),
+            withSpring(1, { damping: 10, stiffness: 150 })
+        );
+    }, [currentStep]);
+
+    const animatedCounterStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: counterScale.value }]
+    }));
+
+    // ===== SELECTION TILE ANIMATION =====
+    const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
+    const tileScale = useSharedValue(1);
+    const tileGlow = useSharedValue(0);
+
+    const animateTileSelection = (tileId: string) => {
+        setSelectedTileId(tileId);
+
+        // Bounce effect
+        tileScale.value = withSequence(
+            withSpring(1.1, { damping: 6, stiffness: 200 }),
+            withSpring(1, { damping: 8, stiffness: 150 })
+        );
+
+        // Glow pulse
+        tileGlow.value = withSequence(
+            withTiming(1, { duration: 200 }),
+            withDelay(300, withTiming(0, { duration: 400 }))
+        );
+    };
+
+    const createTileAnimationStyle = (tileId: string, isSelected: boolean) => {
+        return useAnimatedStyle(() => {
+            const isAnimating = selectedTileId === tileId;
+            return {
+                transform: [{ scale: isAnimating ? tileScale.value : 1 }],
+                shadowOpacity: isAnimating ? tileGlow.value * 0.3 : (isSelected ? 0.15 : 0.08),
+            };
+        });
+    };
+
+    // ===== STAGGERED LIST ANIMATION =====
+    const createStaggeredAnimation = (index: number) => {
+        const opacity = useSharedValue(0);
+        const translateY = useSharedValue(20);
+        const scale = useSharedValue(0.9);
+
+        useEffect(() => {
+            const delay = index * 80; // 80ms stagger between items
+
+            opacity.value = withDelay(delay, withTiming(1, { duration: 400 }));
+            translateY.value = withDelay(delay, withSpring(0, { damping: 15, stiffness: 100 }));
+            scale.value = withDelay(delay, withSpring(1, { damping: 12, stiffness: 120 }));
+        }, [currentStep]);
+
+        return useAnimatedStyle(() => ({
+            opacity: opacity.value,
+            transform: [
+                { translateY: translateY.value },
+                { scale: scale.value }
+            ]
+        }));
+    };
+
+    // ===== INPUT FOCUS GLOW ANIMATION =====
+    const [focusedInput, setFocusedInput] = useState<string | null>(null);
+    const inputGlow = useSharedValue(0);
+    const inputBorderColor = useSharedValue(0);
+
+    const handleInputFocus = (inputId: string) => {
+        setFocusedInput(inputId);
+        inputGlow.value = withSpring(1, { damping: 15, stiffness: 100 });
+        inputBorderColor.value = withTiming(1, { duration: 200 });
+    };
+
+    const handleInputBlur = () => {
+        setFocusedInput(null);
+        inputGlow.value = withSpring(0, { damping: 15, stiffness: 100 });
+        inputBorderColor.value = withTiming(0, { duration: 200 });
+    };
+
+    const createInputAnimationStyle = (inputId: string) => {
+        return useAnimatedStyle(() => {
+            const isFocused = focusedInput === inputId;
+            return {
+                shadowOpacity: isFocused ? inputGlow.value * 0.25 : 0,
+                shadowRadius: isFocused ? 8 : 0,
+                borderColor: isFocused ? '#246BFD' : '#CED4DA',
+            };
+        });
+    };
+
+    // ===== SUCCESS CHECKMARK ANIMATION =====
+    const checkmarkScale = useSharedValue(0);
+    const checkmarkRotate = useSharedValue(-90);
+
+    const animateCheckmark = () => {
+        checkmarkScale.value = 0;
+        checkmarkRotate.value = -90;
+
+        checkmarkScale.value = withSequence(
+            withSpring(1.2, { damping: 6, stiffness: 200 }),
+            withSpring(1, { damping: 10, stiffness: 150 })
+        );
+        checkmarkRotate.value = withSpring(0, { damping: 12, stiffness: 100 });
+    };
+
+    const animatedCheckmarkStyle = useAnimatedStyle(() => ({
+        transform: [
+            { scale: checkmarkScale.value },
+            { rotate: `${checkmarkRotate.value}deg` }
+        ]
     }));
 
     const handleNext = async () => {
@@ -194,10 +512,12 @@ export default function AddJob() {
         // Validation
         if (step.id === 'preferred_skills') {
             if (!addJob?.Preferred_Skills || addJob.Preferred_Skills.length === 0) {
+                triggerShake();
                 showToast(t('pleaseSelectAtLeastOne') || 'Please select at least one skill');
                 return;
             }
         } else if (step.field && !addJob?.[step.field]) {
+            triggerShake();
             showToast(t('pleaseEnterAllRequiredDetails') || 'Please fill in this field');
             return;
         }
@@ -281,11 +601,14 @@ export default function AddJob() {
                 setTimeout(() => {
                     navigation.dispatch(
                         CommonActions.reset({
-                            index: 0,
-                            routes: [{
-                                name: STACKS.BOTTOM_TAB,
-                                state: { index: 0, routes: [{ name: STACKS.HOME }] },
-                            }],
+                            index: 1,
+                            routes: [
+                                {
+                                    name: STACKS.BOTTOM_TAB,
+                                    state: { index: 0, routes: [{ name: STACKS.HOME }] },
+                                },
+                                { name: STACKS.VIEW_JOBS },
+                            ],
                         })
                     );
                     dispatch(jobAddAction(null));
@@ -310,11 +633,11 @@ export default function AddJob() {
                     <View style={styles.stepContainer}>
                         <Text style={styles.classicLabel}>{t('jobTitle') || 'Job Title'}</Text>
                         <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
-                            {t('Enter a clear and descriptive job title') || 'Enter a clear and descriptive job title'}
+                            {t('jobTitleHintDetail') || 'Enter a clear and descriptive job title'}
                         </Text>
                         <TextInput
                             style={[styles.classicInput, styles.largeInput]}
-                            placeholder={t('e.g. Long Haul Truck Driver for Interstate Routes') || "e.g. Long Haul Truck Driver for Interstate Routes"}
+                            placeholder={t('jobTitlePlaceholder') || "e.g. Long Haul Truck Driver for Interstate Routes"}
                             placeholderTextColor="#999"
                             value={addJob?.job_title || ''}
                             onChangeText={(text) => dispatch(jobAddAction({ ...addJob, job_title: text }))}
@@ -328,14 +651,14 @@ export default function AddJob() {
                     <View style={styles.stepContainer}>
                         <Text style={styles.classicLabel}>{t('jobLocation') || 'Job Location'}</Text>
                         <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
-                            {t('Select the state where the job is located') || 'Select the state where the job is located'}
+                            {t('jobLocationHintDetail') || 'Select the state where the job is located'}
                         </Text>
                         <TouchableOpacity
                             style={styles.classicBox}
                             onPress={() => setLocationModalOpen(true)}
                         >
                             <Text style={[styles.classicBoxText, !addJob?.job_location && { color: '#999' }]}>
-                                {addJob?.job_location || t('Tap to Select Location') || 'Tap to select location'}
+                                {addJob?.job_location || t('tapToSelectLocation') || 'Tap to select location'}
                             </Text>
                             <Ionicons name="chevron-down" size={20} color="#246BFD" />
                         </TouchableOpacity>
@@ -347,7 +670,7 @@ export default function AddJob() {
                     <View style={styles.stepContainer}>
                         <Text style={styles.classicLabel}>{t('vehicleType') || 'Vehicle Type'}</Text>
                         <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
-                            {t('Select the type of vehicle required for this job') || 'Select the type of vehicle required for this job'}
+                            {t('vehicleTypeHintDetail') || 'Select the type of vehicle required for this job'}
                         </Text>
                         <ScrollView showsVerticalScrollIndicator={false}>
                             <View style={styles.vehicleGrid}>
@@ -390,9 +713,9 @@ export default function AddJob() {
             case 'experience':
                 return (
                     <View style={styles.stepContainer}>
-                        <Text style={styles.classicLabel}>{t('Experience Required') || 'Experience Required'}</Text>
+                        <Text style={styles.classicLabel}>{t('experienceRequired') || 'Experience Required'}</Text>
                         <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
-                            {t('Select the minimum experience required') || 'Select the minimum experience required'}
+                            {t('selectExperienceHintDetail') || 'Select the minimum experience required'}
                         </Text>
                         <View style={styles.gridContainer}>
                             {drivingExperienceArray.map((exp) => (
@@ -408,7 +731,7 @@ export default function AddJob() {
                                         styles.experienceTileText,
                                         addJob?.Required_Experience === exp.value && styles.experienceTileTextSelected
                                     ]}>
-                                        {exp.label}
+                                        {t(exp.labelKey) || exp.label}
                                     </Text>
                                 </TouchableOpacity>
                             ))}
@@ -419,9 +742,9 @@ export default function AddJob() {
             case 'salary_range':
                 return (
                     <View style={styles.stepContainer}>
-                        <Text style={styles.classicLabel}>{t('Salary Range') || 'Salary Range'}</Text>
+                        <Text style={styles.classicLabel}>{t('salaryRange') || 'Salary Range'}</Text>
                         <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
-                            {t('Select the monthly salary range for this position') || 'Select the monthly salary range for this position'}
+                            {t('selectSalaryHintDetail') || 'Select the monthly salary range for this position'}
                         </Text>
                         <View style={styles.gridContainer}>
                             {salaryRanges.map((salary) => (
@@ -451,9 +774,9 @@ export default function AddJob() {
             case 'license_type':
                 return (
                     <View style={styles.stepContainer}>
-                        <Text style={styles.classicLabel}>{t('Type of License') || 'Type of License'}</Text>
+                        <Text style={styles.classicLabel}>{t('typeOfLicense') || 'Type of License'}</Text>
                         <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
-                            {t('Select the license type required for this job') || 'Select the license type required for this job'}
+                            {t('selectLicenseHintDetail') || 'Select the license type required for this job'}
                         </Text>
                         <View>
                             {licenseTypes.map((license) => {
@@ -486,9 +809,9 @@ export default function AddJob() {
             case 'preferred_skills':
                 return (
                     <View style={styles.stepContainer}>
-                        <Text style={styles.classicLabel}>{t('Preferred Skills') || 'Preferred Skills'}</Text>
+                        <Text style={styles.classicLabel}>{t('preferredSkills') || 'Preferred Skills'}</Text>
                         <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
-                            {t('Select all skills that apply to this job') || 'Select all skills that apply to this job'}
+                            {t('selectSkillsHintDetail') || 'Select all skills that apply to this job'}
                         </Text>
                         <View style={styles.skillsGrid}>
                             {operationalSegments.map((skill) => {
@@ -523,37 +846,141 @@ export default function AddJob() {
                 );
 
             case 'deadline':
-                const deadlineDate = addJob?.Application_Deadline ? new Date(addJob.Application_Deadline) : moment().toDate();
+                const deadlineDate = addJob?.Application_Deadline ? new Date(addJob.Application_Deadline) : null;
+                const selectedDateString = deadlineDate ? moment(deadlineDate).format('YYYY-MM-DD') : '';
+                const currentMonthName = moment(calendarMonth).format('MMMM YYYY');
+                const currentYear = moment(calendarMonth).year();
+                const minYear = moment().year();
+                const maxYear = moment().year() + 5;
+                const years = [];
+                for (let y = minYear; y <= maxYear; y++) {
+                    years.push(y);
+                }
+
                 return (
                     <View style={styles.stepContainer}>
-                        <Text style={styles.classicLabel}>{t('Application Deadline') || 'Application Deadline'}</Text>
+                        <Text style={styles.classicLabel}>{t('applicationDeadline') || 'Application Deadline'}</Text>
                         <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
-                            {t('Set the last date to accept applications') || 'Set the last date to accept applications'}
+                            {t('selectDeadlineHintDetail') || 'Set the last date to accept applications'}
                         </Text>
-                        <TouchableOpacity
-                            style={styles.classicBox}
-                            onPress={() => setDatePickerOpen(true)}
-                        >
+                        <View style={styles.classicBox}>
                             <Text style={[styles.classicBoxText, !addJob?.Application_Deadline && { color: '#999' }]}>
                                 {addJob?.Application_Deadline
                                     ? moment(deadlineDate).format('DD MMMM YYYY')
                                     : t('selectFromCalendarBelow') || 'Tap to select date'}
                             </Text>
                             <Ionicons name="calendar" size={20} color="#246BFD" />
-                        </TouchableOpacity>
-                        <Space height={12} />
-                        <DatePicker
-                            mode='date'
-                            theme='light'
-                            date={deadlineDate}
-                            minimumDate={new Date()}
-                            maximumDate={moment().add(150, "years").toDate()}
-                            onDateChange={(date) => {
-                                dispatch(jobAddAction({ ...addJob, Application_Deadline: date }));
-                            }}
-                            modal={false}
-                            style={{ alignSelf: 'center' }}
-                        />
+                        </View>
+                        <Space height={8} />
+                        <View style={styles.inlineCalendarContainer}>
+                            {/* Custom Header with Year Picker */}
+                            <View style={styles.calendarHeader}>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        const prevMonth = moment(calendarMonth).subtract(1, 'month').format('YYYY-MM-DD');
+                                        setCalendarMonth(prevMonth);
+                                    }}
+                                    style={styles.calendarArrow}
+                                >
+                                    <Ionicons name="chevron-back" size={24} color="#246BFD" />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    onPress={() => setYearPickerOpen(true)}
+                                    style={styles.yearPickerButton}
+                                >
+                                    <Text style={styles.calendarHeaderText}>{currentMonthName}</Text>
+                                    <Ionicons name="caret-down" size={16} color="#246BFD" style={{ marginLeft: 4 }} />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        const nextMonth = moment(calendarMonth).add(1, 'month').format('YYYY-MM-DD');
+                                        setCalendarMonth(nextMonth);
+                                    }}
+                                    style={styles.calendarArrow}
+                                >
+                                    <Ionicons name="chevron-forward" size={24} color="#246BFD" />
+                                </TouchableOpacity>
+                            </View>
+
+                            <Calendar
+                                key={calendarMonth}
+                                current={calendarMonth}
+                                minDate={moment().format('YYYY-MM-DD')}
+                                hideArrows={true}
+                                hideDayNames={false}
+                                onDayPress={(day: any) => {
+                                    const selectedDate = new Date(day.dateString);
+                                    dispatch(jobAddAction({ ...addJob, Application_Deadline: selectedDate }));
+                                }}
+                                onMonthChange={(month: any) => {
+                                    setCalendarMonth(month.dateString);
+                                }}
+                                markedDates={{
+                                    [selectedDateString]: {
+                                        selected: true,
+                                        selectedColor: '#246BFD',
+                                    }
+                                }}
+                                theme={{
+                                    backgroundColor: 'transparent',
+                                    calendarBackground: 'transparent',
+                                    textSectionTitleColor: '#666',
+                                    selectedDayBackgroundColor: '#246BFD',
+                                    selectedDayTextColor: '#ffffff',
+                                    todayTextColor: '#246BFD',
+                                    dayTextColor: '#333',
+                                    textDisabledColor: '#ccc',
+                                    dotColor: '#246BFD',
+                                    selectedDotColor: '#ffffff',
+                                    arrowColor: '#246BFD',
+                                    monthTextColor: '#333',
+                                    textDayFontWeight: '500',
+                                    textMonthFontWeight: '800',
+                                    textDayHeaderFontWeight: '600',
+                                    textDayFontSize: 16,
+                                    textMonthFontSize: 16,
+                                    textDayHeaderFontSize: 14,
+                                }}
+                                style={{ borderRadius: 10, width: '100%' }}
+                                renderHeader={() => null}
+                            />
+                        </View>
+
+                        {/* Year Picker Modal */}
+                        <Modal visible={yearPickerOpen} transparent animationType="fade">
+                            <TouchableWithoutFeedback onPress={() => setYearPickerOpen(false)}>
+                                <View style={styles.yearPickerOverlay}>
+                                    <View style={styles.yearPickerContainer}>
+                                        <Text style={styles.yearPickerTitle}>{t('selectYear') || 'Select Year'}</Text>
+                                        <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={true}>
+                                            {years.map((year) => (
+                                                <TouchableOpacity
+                                                    key={year}
+                                                    style={[
+                                                        styles.yearPickerItem,
+                                                        currentYear === year && styles.yearPickerItemSelected
+                                                    ]}
+                                                    onPress={() => {
+                                                        const newDate = moment(calendarMonth).year(year).format('YYYY-MM-DD');
+                                                        setCalendarMonth(newDate);
+                                                        setYearPickerOpen(false);
+                                                    }}
+                                                >
+                                                    <Text style={[
+                                                        styles.yearPickerItemText,
+                                                        currentYear === year && styles.yearPickerItemTextSelected
+                                                    ]}>
+                                                        {year}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </ScrollView>
+                                    </View>
+                                </View>
+                            </TouchableWithoutFeedback>
+                        </Modal>
                     </View>
                 );
 
@@ -562,7 +989,7 @@ export default function AddJob() {
                     <View style={styles.stepContainer}>
                         <Text style={styles.classicLabel}>{t('numberOfDrivers') || 'Number of Drivers'}</Text>
                         <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
-                            {t('How many drivers do you need for this job?') || 'How many drivers do you need for this job?'}
+                            {t('driversCountHintDetail') || 'How many drivers do you need for this job?'}
                         </Text>
                         <TextInput
                             style={styles.classicInput}
@@ -578,9 +1005,9 @@ export default function AddJob() {
             case 'job_description':
                 return (
                     <View style={styles.stepContainer}>
-                        <Text style={styles.classicLabel}>{t('Job Description') || 'Job Description'}</Text>
+                        <Text style={styles.classicLabel}>{t('jobDescriptionTitle') || 'Job Description'}</Text>
                         <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
-                            {t('Describe the job responsibilities and requirements') || 'Describe the job responsibilities and requirements'}
+                            {t('jobDescriptionHintDetail') || 'Describe the job responsibilities and requirements'}
                         </Text>
                         <TextInput
                             style={[styles.classicInput, { height: 150, textAlignVertical: 'top', paddingTop: 12 }]}
@@ -590,33 +1017,209 @@ export default function AddJob() {
                             value={addJob?.Job_Description || ''}
                             onChangeText={(text) => dispatch(jobAddAction({ ...addJob, Job_Description: text }))}
                         />
-                        <Space height={16} />
-                        {/* Consent Checkbox */}
-                        <TouchableOpacity
-                            activeOpacity={0.8}
-                            onPress={() => setCheckBoxSelect(!checkBoxSelect)}
-                            style={styles.checkboxContainer}
-                        >
-                            <View style={[
-                                styles.checkbox,
-                                {
-                                    backgroundColor: checkBoxSelect ? '#246BFD' : 'transparent',
-                                    borderColor: checkBoxSelect ? '#246BFD' : '#ADB5BD'
-                                }
-                            ]}>
-                                {checkBoxSelect && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
-                            </View>
-                            <Text style={styles.checkboxText}>
-                                {t('iAgreeToTruckMitr') || 'I agree to TruckMitr '}
-                                <Text
-                                    onPress={() => navigation.navigate(STACKS?.TRANSPORTER_CONSENT)}
-                                    style={{ color: '#246BFD', fontWeight: '600' }}
-                                >
-                                    {t('transporterConsent') || 'Transporter Consent'}
-                                </Text>
-                                {t('addJobPolicy') || ' policy for adding jobs.'}
+                    </View>
+                );
+
+            case 'job_summary':
+                const getSalaryLabel = (value: string) => {
+                    return salaryRanges.find(s => s.value === value)?.label || value;
+                };
+                const getExperienceLabel = (value: string) => {
+                    const exp = drivingExperienceArray.find(e => e.value === value);
+                    return exp ? (t(exp.labelKey) || exp.label) : value;
+                };
+                const getLicenseLabel = (value: string) => {
+                    return licenseTypes.find(l => l.value === value)?.label || value;
+                };
+                const getVehicleImage = (value: string) => {
+                    return vehicleTypes.find(v => v.value === value)?.image || null;
+                };
+
+                return (
+                    <View style={styles.summaryContainer}>
+                        {/* Header Section */}
+                        <View style={styles.summaryHeader}>
+                            <Text style={styles.summaryHeaderTitle}>{t('reviewYourJob') || 'Review Your Job'}</Text>
+                            <Text style={styles.summaryHeaderSubtitle}>
+                                {t('reviewJobDetailsMessage') || 'Please review all the details before posting your job'}
                             </Text>
-                        </TouchableOpacity>
+                        </View>
+
+                        {/* Job Title Card */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryCardHeader}>
+                                <View style={[styles.summaryIconContainer, { backgroundColor: '#E8F4FD' }]}>
+                                    <Ionicons name="briefcase" size={18} color="#246BFD" />
+                                </View>
+                                <Text style={styles.summaryCardTitle}>{t('jobTitle') || 'Job Title'}</Text>
+                            </View>
+                            <Text style={styles.summaryCardValue}>{addJob?.job_title || '-'}</Text>
+                        </View>
+
+                        {/* Location & Vehicle Row */}
+                        <View style={styles.summaryRow}>
+                            <View style={[styles.summaryCard, styles.summaryCardHalf]}>
+                                <View style={styles.summaryCardHeader}>
+                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#E8F8F0' }]}>
+                                        <Ionicons name="location" size={18} color="#10B981" />
+                                    </View>
+                                    <Text style={styles.summaryCardTitle}>{t('location') || 'Location'}</Text>
+                                </View>
+                                <Text style={styles.summaryCardValue}>{addJob?.job_location || '-'}</Text>
+                            </View>
+                            <View style={[styles.summaryCard, styles.summaryCardHalf]}>
+                                <View style={styles.summaryCardHeader}>
+                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#FEF3E8' }]}>
+                                        <Ionicons name="car" size={18} color="#F59E0B" />
+                                    </View>
+                                    <Text style={styles.summaryCardTitle}>{t('vehicle') || 'Vehicle'}</Text>
+                                </View>
+                                {getVehicleImage(addJob?.vehicle_type) && (
+                                    <Image
+                                        source={getVehicleImage(addJob?.vehicle_type)}
+                                        style={styles.summaryVehicleImage}
+                                        resizeMode="contain"
+                                    />
+                                )}
+                                <Text style={[styles.summaryCardValue, { fontSize: 11, marginTop: 4 }]}>
+                                    {addJob?.vehicle_type || '-'}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Experience & Salary Row */}
+                        <View style={styles.summaryRow}>
+                            <View style={[styles.summaryCard, styles.summaryCardHalf]}>
+                                <View style={styles.summaryCardHeader}>
+                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#F3E8FF' }]}>
+                                        <Ionicons name="time" size={18} color="#8B5CF6" />
+                                    </View>
+                                    <Text style={styles.summaryCardTitle}>{t('experience') || 'Experience'}</Text>
+                                </View>
+                                <Text style={styles.summaryCardValue}>
+                                    {getExperienceLabel(addJob?.Required_Experience) || '-'}
+                                </Text>
+                            </View>
+                            <View style={[styles.summaryCard, styles.summaryCardHalf]}>
+                                <View style={styles.summaryCardHeader}>
+                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#E8FDF0' }]}>
+                                        <Ionicons name="cash" size={18} color="#059669" />
+                                    </View>
+                                    <Text style={styles.summaryCardTitle}>{t('salary') || 'Salary'}</Text>
+                                </View>
+                                <Text style={styles.summaryCardValue}>
+                                    {getSalaryLabel(addJob?.Salary_Range) || '-'}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* License & Drivers Count Row */}
+                        <View style={styles.summaryRow}>
+                            <View style={[styles.summaryCard, styles.summaryCardHalf]}>
+                                <View style={styles.summaryCardHeader}>
+                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#FEE8E8' }]}>
+                                        <Ionicons name="card" size={18} color="#EF4444" />
+                                    </View>
+                                    <Text style={styles.summaryCardTitle}>{t('license') || 'License'}</Text>
+                                </View>
+                                <Text style={styles.summaryCardValue}>
+                                    {getLicenseLabel(addJob?.Type_of_License) || '-'}
+                                </Text>
+                            </View>
+                            <View style={[styles.summaryCard, styles.summaryCardHalf]}>
+                                <View style={styles.summaryCardHeader}>
+                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#E8F0FE' }]}>
+                                        <Ionicons name="people" size={18} color="#3B82F6" />
+                                    </View>
+                                    <Text style={styles.summaryCardTitle}>{t('drivers') || 'Drivers'}</Text>
+                                </View>
+                                <Text style={styles.summaryCardValue}>
+                                    {addJob?.Job_Management || '-'}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Deadline Card */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryCardHeader}>
+                                <View style={[styles.summaryIconContainer, { backgroundColor: '#FFF3E8' }]}>
+                                    <Ionicons name="calendar" size={18} color="#F97316" />
+                                </View>
+                                <Text style={styles.summaryCardTitle}>{t('applicationDeadline') || 'Application Deadline'}</Text>
+                            </View>
+                            <Text style={styles.summaryCardValue}>
+                                {addJob?.Application_Deadline
+                                    ? moment(addJob.Application_Deadline).format('DD MMMM YYYY')
+                                    : '-'
+                                }
+                            </Text>
+                        </View>
+
+                        {/* Skills Card */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryCardHeader}>
+                                <View style={[styles.summaryIconContainer, { backgroundColor: '#E8F4FD' }]}>
+                                    <Ionicons name="construct" size={18} color="#246BFD" />
+                                </View>
+                                <Text style={styles.summaryCardTitle}>{t('preferredSkills') || 'Preferred Skills'}</Text>
+                            </View>
+                            <View style={styles.summarySkillsContainer}>
+                                {(addJob?.Preferred_Skills || []).map((skill: string, index: number) => {
+                                    const skillData = operationalSegments.find(s => s.label === skill);
+                                    return (
+                                        <View key={index} style={styles.summarySkillChip}>
+                                            <Text style={{ fontSize: 12 }}>{skillData?.emoji || '📋'}</Text>
+                                            <Text style={styles.summarySkillText}>{skill}</Text>
+                                        </View>
+                                    );
+                                })}
+                            </View>
+                        </View>
+
+                        {/* Description Card */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryCardHeader}>
+                                <View style={[styles.summaryIconContainer, { backgroundColor: '#F3E8FF' }]}>
+                                    <Ionicons name="document-text" size={18} color="#8B5CF6" />
+                                </View>
+                                <Text style={styles.summaryCardTitle}>{t('jobDescriptionTitle') || 'Job Description'}</Text>
+                            </View>
+                            <Text style={[styles.summaryCardValue, styles.summaryDescription]}>
+                                {addJob?.Job_Description || '-'}
+                            </Text>
+                        </View>
+
+                        {/* Consent Checkbox */}
+                        <View style={styles.summaryConsentContainer}>
+                            <TouchableOpacity
+                                activeOpacity={0.8}
+                                onPress={() => setCheckBoxSelect(!checkBoxSelect)}
+                                style={styles.checkboxContainer}
+                            >
+                                <View style={[
+                                    styles.checkbox,
+                                    {
+                                        backgroundColor: checkBoxSelect ? '#246BFD' : 'transparent',
+                                        borderColor: checkBoxSelect ? '#246BFD' : '#ADB5BD'
+                                    }
+                                ]}>
+                                    {checkBoxSelect && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
+                                </View>
+                                <Text style={styles.checkboxText}>
+                                    {t('iAgreeToTruckMitr') || 'I agree to TruckMitr '}
+                                    <Text
+                                        onPress={() => navigation.navigate(STACKS?.TRANSPORTER_CONSENT)}
+                                        style={{ color: '#246BFD', fontWeight: '600' }}
+                                    >
+                                        {t('transporterConsent') || 'Transporter Consent'}
+                                    </Text>
+                                    {t('addJobPolicy') || ' policy for adding jobs.'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Bottom Spacing */}
+                        <Space height={20} />
                     </View>
                 );
 
@@ -627,75 +1230,168 @@ export default function AddJob() {
 
     if (showSuccess) {
         return (
-            <View style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
+            <View style={[styles.container, styles.successContainer]}>
                 <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-                <Animated.View entering={FadeInDown.duration(800).delay(300)} style={{ alignItems: 'center', marginTop: responsiveHeight(10) }}>
-                    <Text style={{ fontSize: 28, fontWeight: '700', color: '#246BFD', marginBottom: -4 }}>
-                        {t('success') || 'Success!'}
-                    </Text>
-                    <Text style={{ fontSize: 16, color: '#666', marginTop: 8 }}>
-                        {addJob?.id ? t('jobUpdatedSuccessfully') || 'Job updated successfully!' : t('jobPostedSuccessfully') || 'Job posted successfully!'}
-                    </Text>
-                </Animated.View>
-                <Animated.View entering={ZoomIn.duration(1000).delay(500).springify()} style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <View style={{ width: 240, height: 240, alignItems: 'center', justifyContent: 'center' }}>
-                        <View style={{
-                            position: 'absolute', width: 240, height: 240, borderRadius: 120,
-                            backgroundColor: '#F0F8FF', borderWidth: 1, borderColor: '#E3F2FD', opacity: 0.6
-                        }} />
-                        <View style={{
-                            position: 'absolute', width: 180, height: 180, borderRadius: 90,
-                            backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E3F2FD', opacity: 0.8
-                        }} />
-                        <View style={{
-                            width: 100, height: 100, borderRadius: 50, backgroundColor: '#246BFD',
-                            justifyContent: 'center', alignItems: 'center'
-                        }}>
-                            <Ionicons name="checkmark" size={60} color="white" />
-                        </View>
-                    </View>
-                </Animated.View>
-                <Animated.View
-                    entering={FadeInUp.duration(800).delay(1000)}
-                    style={{ marginBottom: responsiveHeight(8), width: '85%', alignSelf: 'center', alignItems: 'center' }}
-                >
-                    <View style={{ width: '100%', height: 6, backgroundColor: '#F0F0F0', borderRadius: 3, marginBottom: 16, overflow: 'hidden' }}>
+
+                {/* Confetti Background */}
+                <View style={styles.confettiContainer}>
+                    {[...Array(20)].map((_, i) => (
                         <Animated.View
-                            entering={FadeInDown.duration(2000)}
-                            style={{ width: '100%', height: '100%', backgroundColor: '#246BFD', borderRadius: 3 }}
+                            key={i}
+                            entering={FadeIn.delay(i * 100).duration(500)}
+                            style={[
+                                styles.confettiPiece,
+                                {
+                                    left: `${Math.random() * 100}%`,
+                                    top: `${Math.random() * 60}%`,
+                                    backgroundColor: [colors.royalBlue, '#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3'][i % 5],
+                                    transform: [{ rotate: `${Math.random() * 360}deg` }],
+                                    width: 8 + Math.random() * 8,
+                                    height: 8 + Math.random() * 8,
+                                }
+                            ]}
+                        />
+                    ))}
+                </View>
+
+                {/* Main Content */}
+                <View style={styles.successContent}>
+                    {/* Animated Success Icon with SVG */}
+                    <Animated.View
+                        entering={ZoomIn.duration(800).springify()}
+                        style={styles.successIconWrapper}
+                    >
+                        {/* Outer Pulsing Ring */}
+                        <Animated.View
+                            entering={FadeIn.delay(300)}
+                            style={styles.pulseRingOuter}
+                        />
+
+                        {/* Middle Ring */}
+                        <Animated.View
+                            entering={FadeIn.delay(400)}
+                            style={styles.pulseRingMiddle}
+                        />
+
+                        {/* Inner Circle with Checkmark */}
+                        <View style={[styles.successIconInner, { backgroundColor: colors.royalBlue }]}>
+                            <Svg width="60" height="60" viewBox="0 0 24 24">
+                                <Path
+                                    d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"
+                                    fill="white"
+                                />
+                            </Svg>
+                        </View>
+                    </Animated.View>
+
+                    {/* Success Text */}
+                    <Animated.View
+                        entering={SlideInUp.delay(600).duration(600).springify()}
+                        style={styles.successTextContainer}
+                    >
+                        <Text style={styles.successTitle}>
+                            {addJob?.id
+                                ? `🎉 ${t('jobUpdatedTitle') || 'Job Updated!'}`
+                                : `🎉 ${t('jobPostedTitle') || 'Job Posted!'}`
+                            }
+                        </Text>
+                        <Text style={styles.successSubtitle}>
+                            {addJob?.id
+                                ? t('jobUpdatedMessage') || 'Your job listing has been updated successfully'
+                                : t('jobPostedMessage') || 'Your job is now live and visible to drivers'
+                            }
+                        </Text>
+                    </Animated.View>
+
+                    {/* Decorative Truck SVG */}
+                    <Animated.View
+                        entering={FadeInUp.delay(800).duration(600)}
+                        style={styles.truckIconContainer}
+                    >
+                        <Svg width="120" height="70" viewBox="0 0 120 70">
+                            {/* Truck Body */}
+                            <Rect x="5" y="20" width="70" height="35" rx="4" fill={colors.royalBlue} />
+                            {/* Cargo Lines */}
+                            <Rect x="15" y="30" width="50" height="3" rx="1.5" fill="white" opacity="0.5" />
+                            <Rect x="15" y="38" width="35" height="3" rx="1.5" fill="white" opacity="0.5" />
+                            {/* Cabin */}
+                            <Path d="M75 28 L95 28 L100 38 L100 55 L75 55 Z" fill={colors.royalBlue} />
+                            {/* Window */}
+                            <Path d="M78 32 L92 32 L96 38 L78 38 Z" fill="#87CEEB" />
+                            {/* Wheels */}
+                            <Circle cx="25" cy="58" r="8" fill="#333" />
+                            <Circle cx="25" cy="58" r="4" fill="#666" />
+                            <Circle cx="85" cy="58" r="8" fill="#333" />
+                            <Circle cx="85" cy="58" r="4" fill="#666" />
+                            {/* Headlight */}
+                            <Rect x="98" y="45" width="4" height="6" rx="1" fill="#FFE66D" />
+                        </Svg>
+                    </Animated.View>
+
+                    {/* Stats Card */}
+                    <Animated.View
+                        entering={FadeInUp.delay(1000).duration(600)}
+                        style={styles.statsCard}
+                    >
+                        <View style={styles.statItem}>
+                            <Ionicons name="briefcase" size={24} color={colors.royalBlue} />
+                            <Text style={styles.statValue}>{addJob?.job_title || t('job') || 'Job'}</Text>
+                            <Text style={styles.statLabel}>{t('posted') || 'Posted'}</Text>
+                        </View>
+                        <View style={styles.statDivider} />
+                        <View style={styles.statItem}>
+                            <Ionicons name="location" size={24} color={colors.royalBlue} />
+                            <Text style={styles.statValue}>{addJob?.job_location || t('location') || 'Location'}</Text>
+                            <Text style={styles.statLabel}>{t('location') || 'Location'}</Text>
+                        </View>
+                    </Animated.View>
+                </View>
+
+                {/* Bottom Progress */}
+                <Animated.View
+                    entering={FadeInUp.delay(1200).duration(600)}
+                    style={styles.successBottomSection}
+                >
+                    <View style={styles.progressBarWrapper}>
+                        <Animated.View
+                            entering={FadeIn.delay(1400).duration(2000)}
+                            style={styles.progressBarFill}
                         />
                     </View>
-                    <Text style={{ fontSize: 15, color: '#333', fontWeight: '500' }}>
-                        {t('redirectingToHome') || 'Redirecting to home...'}
-                    </Text>
+                    <View style={styles.redirectRow}>
+                        <ActivityIndicator size="small" color={colors.royalBlue} />
+                        <Text style={styles.redirectText}>
+                            {t('redirectingToHome') || 'Taking you to dashboard...'}
+                        </Text>
+                    </View>
                 </Animated.View>
             </View>
         );
     }
 
     return (
-        <View style={[styles.container, { backgroundColor: '#F8F9FA' }]}>
+        <Animated.View style={[styles.container, { backgroundColor: '#F8F9FA' }, animatedScreenStyle]}>
             <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
             <Space height={safeAreaInsets.top} />
 
             {/* Header */}
-            <View style={styles.header}>
+            <Animated.View style={[styles.header, animatedHeaderStyle]}>
                 <TouchableOpacity onPress={handleBack} style={styles.navBtn}>
                     <Ionicons name="arrow-back" size={24} color="#333" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{addJob?.id ? t('editJob') : t('addJob')}</Text>
                 <View style={styles.navBtn} />
-            </View>
+            </Animated.View>
 
 
 
             {/* Progress Info */}
             <View style={styles.progressInfo}>
-                <Text style={styles.progressText}>
+                <Animated.Text style={[styles.progressText, animatedCounterStyle]}>
                     {t('step') || 'Step'} {currentStep + 1} {t('of') || 'of'} {JOB_STEPS.length}
-                </Text>
+                </Animated.Text>
                 <View style={styles.progressBarContainer}>
-                    <View style={[styles.progressBar, { width: `${progressPercent}%` }]} />
+                    <Animated.View style={[styles.progressBar, animatedProgressStyle, animatedShimmerStyle]} />
                 </View>
             </View>
 
@@ -706,37 +1402,47 @@ export default function AddJob() {
                 showsVerticalScrollIndicator={false}
             >
                 <Animated.View style={animatedContentStyle}>
-                    <View style={styles.stepHeader}>
-                        <View style={[styles.stepIconContainer, { backgroundColor: '#246BFD' }]}>
+                    <Animated.View style={[styles.stepHeader, animatedCardStyle]}>
+                        <Animated.View style={[styles.stepIconContainer, { backgroundColor: '#246BFD' }, animatedIconStyle]}>
                             <Ionicons name={JOB_STEPS[currentStep].icon as any} size={24} color="white" />
-                        </View>
+                        </Animated.View>
                         <View style={styles.stepHeaderText}>
                             <Text style={styles.stepTitle}>
-                                {t(JOB_STEPS[currentStep].title)} <Text style={{ color: 'red' }}>*</Text>
+                                {t(JOB_STEPS[currentStep].title)} {JOB_STEPS[currentStep].required && <Text style={{ color: 'red' }}>*</Text>}
                             </Text>
                             <Text style={styles.stepSubtitle}>{t(JOB_STEPS[currentStep].subtitle)}</Text>
                         </View>
-                    </View>
+                    </Animated.View>
 
                     <View style={styles.divider} />
 
-                    {renderStepContent()}
+                    <Animated.View style={animatedShakeStyle}>
+                        {renderStepContent()}
+                    </Animated.View>
                 </Animated.View>
             </ScrollView>
 
             {/* Footer */}
-            <View style={[styles.footer, { paddingBottom: safeAreaInsets.bottom + 20 }]}>
+            <Animated.View style={[styles.footer, { paddingBottom: safeAreaInsets.bottom + 20 }, animatedFooterStyle]}>
                 <TouchableOpacity
                     style={styles.classicButton}
                     onPress={handleNext}
                     disabled={finishing}
+                    onPressIn={() => {
+                        buttonScale.value = withSpring(0.95, { damping: 10, stiffness: 300 });
+                    }}
+                    onPressOut={() => {
+                        buttonScale.value = withSpring(1, { damping: 10, stiffness: 300 });
+                    }}
                 >
-                    <LinearGradient
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={StyleSheet.absoluteFillObject}
-                        colors={['#084489', '#0c78f0']}
-                    />
+                    <Animated.View style={[StyleSheet.absoluteFillObject, animatedButtonStyle]}>
+                        <LinearGradient
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={StyleSheet.absoluteFillObject}
+                            colors={['#084489', '#0c78f0']}
+                        />
+                    </Animated.View>
                     {finishing ? (
                         <ActivityIndicator color="white" />
                     ) : (
@@ -748,7 +1454,7 @@ export default function AddJob() {
                         </View>
                     )}
                 </TouchableOpacity>
-            </View>
+            </Animated.View>
 
             {/* Location Modal */}
             <Modal visible={locationModalOpen} transparent animationType="slide">
@@ -835,13 +1541,159 @@ export default function AddJob() {
                     </View>
                 </View>
             </Modal>
-        </View>
+        </Animated.View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    // Success Screen Styles
+    successContainer: {
+        backgroundColor: '#FFFFFF',
+    },
+    confettiContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        overflow: 'hidden',
+    },
+    confettiPiece: {
+        position: 'absolute',
+        borderRadius: 2,
+    },
+    successContent: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+    },
+    successIconWrapper: {
+        width: 180,
+        height: 180,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 24,
+    },
+    pulseRingOuter: {
+        position: 'absolute',
+        width: 180,
+        height: 180,
+        borderRadius: 90,
+        backgroundColor: '#D8E4ED',
+        opacity: 0.5,
+    },
+    pulseRingMiddle: {
+        position: 'absolute',
+        width: 140,
+        height: 140,
+        borderRadius: 70,
+        backgroundColor: '#C5D5E8',
+        opacity: 0.7,
+    },
+    successIconInner: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+        shadowColor: '#084489',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+        elevation: 12,
+    },
+    successTextContainer: {
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    successTitle: {
+        fontSize: 28,
+        fontWeight: '800',
+        color: '#1A1A2E',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    successSubtitle: {
+        fontSize: 15,
+        color: '#666',
+        textAlign: 'center',
+        lineHeight: 22,
+        paddingHorizontal: 20,
+    },
+    truckIconContainer: {
+        marginVertical: 16,
+        opacity: 0.9,
+    },
+    statsCard: {
+        flexDirection: 'row',
+        backgroundColor: '#F8F9FA',
+        borderRadius: 16,
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        marginTop: 16,
+        width: '100%',
+        maxWidth: 320,
+        alignItems: 'center',
+        justifyContent: 'space-around',
+        borderWidth: 1,
+        borderColor: '#E9ECEF',
+    },
+    statItem: {
+        alignItems: 'center',
+        flex: 1,
+    },
+    statValue: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#1A1A2E',
+        marginTop: 6,
+        textAlign: 'center',
+    },
+    statLabel: {
+        fontSize: 11,
+        color: '#6C757D',
+        marginTop: 2,
+    },
+    statDivider: {
+        width: 1,
+        height: 40,
+        backgroundColor: '#DEE2E6',
+        marginHorizontal: 16,
+    },
+    successBottomSection: {
+        paddingHorizontal: 24,
+        paddingBottom: 40,
+        alignItems: 'center',
+    },
+    progressBarWrapper: {
+        width: '100%',
+        height: 6,
+        backgroundColor: '#E9ECEF',
+        borderRadius: 3,
+        overflow: 'hidden',
+        marginBottom: 16,
+    },
+    progressBarFill: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#084489',
+        borderRadius: 3,
+    },
+    redirectRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    redirectText: {
+        fontSize: 14,
+        color: '#6C757D',
+        fontWeight: '500',
+        marginLeft: 8,
     },
     header: {
         flexDirection: 'row',
@@ -1158,15 +2010,15 @@ const styles = StyleSheet.create({
     },
     classicButton: {
         height: 54,
-        borderRadius: 12,
+        borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden',
-        shadowColor: "#084489",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 6,
+        shadowColor: "#246BFD",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.4,
+        shadowRadius: 10,
+        elevation: 8,
     },
     classicButtonText: {
         color: 'white',
@@ -1284,5 +2136,183 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontWeight: '600',
         fontSize: 15,
+    },
+    // Calendar Styles
+    inlineCalendarContainer: {
+        backgroundColor: '#F8F9FC',
+        borderRadius: 16,
+        padding: 16,
+        marginTop: 8,
+    },
+    calendarHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+        paddingHorizontal: 8,
+    },
+    calendarArrow: {
+        padding: 8,
+        borderRadius: 20,
+        backgroundColor: '#E8F0FE',
+    },
+    yearPickerButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        backgroundColor: '#E8F0FE',
+    },
+    calendarHeaderText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#1A1A2E',
+    },
+    yearPickerOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    yearPickerContainer: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 20,
+        width: '80%',
+        maxHeight: '60%',
+    },
+    yearPickerTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#1A1A2E',
+        textAlign: 'center',
+        marginBottom: 16,
+    },
+    yearPickerItem: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        marginVertical: 2,
+    },
+    yearPickerItemSelected: {
+        backgroundColor: '#E8F0FE',
+    },
+    yearPickerItemText: {
+        fontSize: 16,
+        color: '#333',
+        textAlign: 'center',
+    },
+    yearPickerItemTextSelected: {
+        color: '#246BFD',
+        fontWeight: '600',
+    },
+    // Job Summary Styles
+    summaryContainer: {
+        width: '100%',
+    },
+    summaryHeader: {
+        marginBottom: 20,
+    },
+    summaryHeaderTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#212529',
+        marginBottom: 6,
+    },
+    summaryHeaderSubtitle: {
+        fontSize: 13,
+        color: '#6C757D',
+        lineHeight: 20,
+    },
+    summaryConsentContainer: {
+        marginTop: 20,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: '#E9ECEF',
+    },
+    summaryCard: {
+        backgroundColor: 'white',
+        borderRadius: 14,
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#E9ECEF',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    summaryCardHalf: {
+        flex: 1,
+        marginHorizontal: 5,
+    },
+    summaryRow: {
+        flexDirection: 'row',
+        marginHorizontal: -5,
+        marginBottom: 0,
+    },
+    summaryCardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    summaryIconContainer: {
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    summaryCardTitle: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#6C757D',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        flex: 1,
+    },
+    summaryCardValue: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#212529',
+        marginLeft: 48,
+        lineHeight: 22,
+    },
+    summaryVehicleImage: {
+        width: '100%',
+        height: 45,
+        marginTop: 4,
+        marginBottom: 4,
+    },
+    summarySkillsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginLeft: 48,
+        marginTop: 0,
+    },
+    summarySkillChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F0F5FF',
+        borderRadius: 20,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        marginRight: 8,
+        marginBottom: 8,
+    },
+    summarySkillText: {
+        fontSize: 12,
+        color: '#246BFD',
+        fontWeight: '500',
+        marginLeft: 5,
+    },
+    summaryDescription: {
+        fontSize: 14,
+        lineHeight: 22,
+        color: '#495057',
+        fontWeight: '400',
     },
 });

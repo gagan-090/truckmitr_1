@@ -10,6 +10,7 @@ export type NavigatorParams = {
     preferredColor: undefined
     paymentSuccess: any
     signup: undefined
+    congratulations: any
     profileCompletion: undefined
     phone: undefined;
     countries: undefined;
@@ -104,6 +105,7 @@ export const STACKS = {
     PREFERRED_COLOR: 'preferredColor',
     PAYMENT_SUCCESS: 'paymentSuccess',
     SIGNUP: 'signup',
+    CONGRATULATIONS: 'congratulations',
     PROFILE_COMPLETION: 'profileCompletion',
     PHONE: 'phone',
     COUNTRIES: 'countries',

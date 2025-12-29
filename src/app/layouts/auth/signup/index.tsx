@@ -22,11 +22,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 
-const roleData = [
-    { label: 'Driver', value: 'driver' },
-    { label: 'Transporter', value: 'transporter' },
-];
-
 export default function Signup() {
     const { t } = useTranslation();
     const colors = useColor();
@@ -39,7 +34,7 @@ export default function Signup() {
     const [name, setName] = useState<string>('');
     const [email, setEmail] = useState<string>('');
     const [mobile, setMobile] = useState<string>('');
-    const [role, setRole] = useState<string>('');
+    const [role, setRole] = useState<string>('driver'); // Default to driver
     const [state, setState] = useState<string>(''); // Selected state
     const [code, setCode] = useState<string>(''); // Selected state
     const [checkBoxSelect, setCheckBoxSelect] = useState<boolean>(false);
@@ -172,191 +167,251 @@ export default function Signup() {
             contentContainerStyle={{ flexGrow: 1, backgroundColor: colors.white }}
             keyboardShouldPersistTaps="handled"
             enableOnAndroid={true}
+            showsVerticalScrollIndicator={false}
             extraScrollHeight={10}>
             <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
                 <View style={{ flex: 1, alignItems: 'center', backgroundColor: colors.white }}>
                     <Space height={safeAreaInsets.top} />
-                    <View style={{ width: '100%', padding: responsiveWidth(3) }}>
+
+                    {/* Header */}
+                    <View style={{ width: '100%', paddingHorizontal: responsiveWidth(4), paddingVertical: responsiveHeight(1) }}>
                         <TouchableOpacity
                             hitSlop={hitSlop(10)}
                             onPress={_goback}
                             style={{
-                                height: responsiveFontSize(4),
-                                width: responsiveFontSize(4),
+                                height: 44,
+                                width: 44,
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                backgroundColor: colors.white,
-                                borderRadius: 100,
+                                backgroundColor: colors.blackOpacity(0.05),
+                                borderRadius: 12,
                             }}>
                             <Ionicons name="chevron-back" size={24} color={colors.royalBlue} />
                         </TouchableOpacity>
                     </View>
-                    <Space height={responsiveHeight(3)} />
-                    <View style={{ width: responsiveWidth(90), alignItems: 'center' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={{ color: colors.black, fontSize: responsiveFontSize(3.2), fontWeight: '600' }}>{t(`welcomeToTruckMitr`)}</Text>
-                        </View>
+
+                    <Space height={responsiveHeight(2)} />
+
+                    {/* Title Section */}
+                    <View style={{ width: '100%', alignItems: 'center', paddingHorizontal: responsiveWidth(5) }}>
+                        <Text style={{
+                            color: colors.black,
+                            fontSize: responsiveFontSize(3.5),
+                            fontWeight: '700',
+                            textAlign: 'center',
+                            letterSpacing: -0.5
+                        }}>
+                            {t(`welcomeToTruckMitr`)}
+                        </Text>
+                        <Space height={responsiveHeight(1)} />
                         <Text
                             style={{
-                                width: responsiveWidth(70),
-                                color: colors.blackOpacity(0.6),
+                                width: responsiveWidth(80),
+                                color: colors.blackOpacity(0.5),
                                 fontSize: responsiveFontSize(1.8),
                                 textAlign: 'center',
-                            }}>{t(`enterTheDetailsToCreateAnAccount`)}</Text>
+                                lineHeight: responsiveFontSize(2.4)
+                            }}>
+                            {t(`enterTheDetailsToCreateAnAccount`)}
+                        </Text>
                     </View>
-                    <Space height={responsiveHeight(2)} />
-                    <View style={{ width: '100%', paddingHorizontal: responsiveWidth(5), paddingVertical: responsiveWidth(2.5) }}>
-                        {/* Role Dropdown */}
-                        <View>
-                            <Text style={{ fontSize: responsiveFontSize(1.8), color: colors.black, fontWeight: '500', marginLeft: responsiveFontSize(0.5) }}>{t(`role`)} <Text style={{ color: 'red' }}>*</Text></Text>
-                            <Dropdown
-                                style={{
-                                    height: responsiveHeight(6.7),
-                                    paddingHorizontal: responsiveFontSize(1.5),
-                                    borderRadius: 10,
-                                    borderColor: colors.blackOpacity(0.5),
-                                    borderWidth: 1,
-                                    marginTop: responsiveFontSize(0.5),
-                                }}
-                                containerStyle={{ borderRadius: 10, backgroundColor: colors.white, ...shadow }}
-                                itemTextStyle={{ color: colors.blackOpacity(0.8) }}
-                                placeholderStyle={{
-                                    fontSize: responsiveFontSize(1.9),
-                                    color: colors.blackOpacity(0.7),
-                                    fontWeight: '400',
-                                }}
-                                selectedTextStyle={{
-                                    color: colors.blackOpacity(1),
-                                    fontSize: responsiveFontSize(2),
-                                    fontWeight: '400',
-                                }}
-                                iconStyle={{ height: responsiveFontSize(2.8), width: responsiveFontSize(2.8) }}
-                                data={roleData}
-                                maxHeight={300}
-                                labelField="label"
-                                valueField="value"
-                                placeholder={t("selectRole")}
-                                value={role}
-                                onChange={item => {
-                                    setRole(item.value);
-                                    setErrors((prevData) => ({
-                                        ...prevData,
-                                        role: undefined,
-                                    }));
-                                }}
-                            />
+
+                    <Space height={responsiveHeight(4)} />
+
+                    {/* Form Container */}
+                    <View style={{ width: '100%', paddingHorizontal: responsiveWidth(6) }}>
+
+                        {/* Role Selection Toggle */}
+                        <View style={{ marginBottom: responsiveHeight(2.5) }}>
+                            <Text style={{
+                                fontSize: responsiveFontSize(1.8),
+                                color: colors.black,
+                                fontWeight: '600',
+                                marginLeft: responsiveFontSize(0.5),
+                                marginBottom: responsiveHeight(1)
+                            }}>
+                                {t(`iAmA`)}
+                            </Text>
+                            <View style={{
+                                flexDirection: 'row',
+                                backgroundColor: colors.blackOpacity(0.04), // Subtle gray
+                                borderRadius: 14,
+                                padding: 4,
+                                height: responsiveHeight(6.5)
+                            }}>
+                                <TouchableOpacity
+                                    activeOpacity={0.8}
+                                    onPress={() => setRole('driver')}
+                                    style={{
+                                        flex: 1,
+                                        backgroundColor: role === 'driver' ? colors.white : 'transparent',
+                                        borderRadius: 12,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        ...(role === 'driver' ? shadow : {}),
+                                        borderWidth: role === 'driver' ? 0.5 : 0,
+                                        borderColor: colors.blackOpacity(0.05)
+                                    }}
+                                >
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                        <MaterialCommunityIcons
+                                            name="steering"
+                                            size={20}
+                                            color={role === 'driver' ? colors.royalBlue : colors.blackOpacity(0.5)}
+                                        />
+                                        <Text style={{
+                                            color: role === 'driver' ? colors.royalBlue : colors.blackOpacity(0.5),
+                                            fontWeight: '600',
+                                            fontSize: responsiveFontSize(1.9)
+                                        }}>
+                                            {t('driver')}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    activeOpacity={0.8}
+                                    onPress={() => setRole('transporter')}
+                                    style={{
+                                        flex: 1,
+                                        backgroundColor: role === 'transporter' ? colors.white : 'transparent',
+                                        borderRadius: 12,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        ...(role === 'transporter' ? shadow : {}),
+                                        borderWidth: role === 'transporter' ? 0.5 : 0,
+                                        borderColor: colors.blackOpacity(0.05)
+                                    }}
+                                >
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                        <MaterialCommunityIcons
+                                            name="truck-fast"
+                                            size={20}
+                                            color={role === 'transporter' ? colors.royalBlue : colors.blackOpacity(0.5)}
+                                        />
+                                        <Text style={{
+                                            color: role === 'transporter' ? colors.royalBlue : colors.blackOpacity(0.5),
+                                            fontWeight: '600',
+                                            fontSize: responsiveFontSize(1.9)
+                                        }}>
+                                            {t('transporter')}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            </View>
                             {errors.role && (
-                                <Text style={{ color: 'red', fontSize: responsiveFontSize(1.6), marginTop: 4 }}>{errors.role}</Text>
+                                <Text style={{ color: 'red', fontSize: responsiveFontSize(1.6), marginTop: 4, marginLeft: 4 }}>{errors.role}</Text>
                             )}
                         </View>
-                        <Space height={responsiveHeight(1.5)} />
 
                         {/* Name Input */}
-                        <PaperTextInput
-                            mode="outlined"
-                            label={<Text>{t(`name`)} <Text style={{ color: 'red' }}>*</Text></Text>}
-                            value={name}
-                            onChangeText={(text) => {
-                                setName(text)
-                                setErrors((prevData) => ({
-                                    ...prevData,
-                                    name: undefined,
-                                }));
-                            }}
-                            keyboardType="default"
-                            theme={{ colors: { primary: colors.royalBlue, background: colors.white, onSurface: colors.black } }}
-                            style={{ backgroundColor: colors.transparent }}
-                            outlineStyle={{ borderRadius: 10 }}
-                        />
-                        {errors.name && (
-                            <Text style={{ color: 'red', fontSize: responsiveFontSize(1.6), marginTop: 4 }}>{errors.name}</Text>
-                        )}
-                        <Space height={responsiveHeight(1.5)} />
-
-                        {/* E-mail Input */}
-                        <PaperTextInput
-                            mode="outlined"
-                            label={t(`e-mail`)}
-                            value={email}
-                            onChangeText={(text) => {
-                                const lower = text.toLowerCase();
-                                setEmail(lower)
-                                setErrors((prevData) => ({
-                                    ...prevData,
-                                    email: undefined,
-                                }));
-                            }}
-                            keyboardType="email-address"
-                            theme={{ colors: { primary: colors.royalBlue, background: colors.white, onSurface: colors.black } }}
-                            style={{ backgroundColor: colors.transparent }}
-                            outlineStyle={{ borderRadius: 10 }}
-                        />
-                        {errors.email && (
-                            <Text style={{ color: 'red', fontSize: responsiveFontSize(1.6), marginTop: 4 }}>{errors.email}</Text>
-                        )}
-                        <Space height={responsiveHeight(1.5)} />
-
-                        {/* Mobile Input */}
-                        <PaperTextInput
-                            left={<PaperTextInput.Affix text="+91" textStyle={{ color: colors.black }} />}
-                            mode="outlined"
-                            label={<Text>{t(`mobile`)} <Text style={{ color: 'red' }}>*</Text></Text>}
-                            value={mobile}
-                            onChangeText={(text) => {
-                                setMobile(text)
-                                setErrors((prevData) => ({
-                                    ...prevData,
-                                    mobile: undefined,
-                                }));
-                            }}
-                            maxLength={10}
-                            keyboardType="phone-pad"
-                            theme={{ colors: { primary: colors.royalBlue, background: colors.white, onSurface: colors.black } }}
-                            style={{ backgroundColor: colors.transparent }}
-                            outlineStyle={{ borderRadius: 10 }}
-                        />
-                        {errors.mobile && (
-                            <Text style={{ color: 'red', fontSize: responsiveFontSize(1.6), marginTop: 4 }}>{errors.mobile}</Text>
-                        )}
-                        {role == 'driver' && <>
-                            <Space height={responsiveHeight(1.5)} />
+                        <View style={{ marginBottom: responsiveHeight(2) }}>
                             <PaperTextInput
                                 mode="outlined"
-                                label={t(`referralCode`)}
-                                value={code}
+                                label={<Text>{t(`name`)} <Text style={{ color: colors.error }}>*</Text></Text>}
+                                value={name}
                                 onChangeText={(text) => {
-                                    setCode(text)
+                                    setName(text)
+                                    setErrors((prevData) => ({ ...prevData, name: undefined }));
                                 }}
-                                theme={{ colors: { primary: colors.royalBlue } }}
-                                style={{ backgroundColor: colors.transparent }}
-                                outlineStyle={{ borderRadius: 10 }}
-                            /> </>}
-                        <Space height={responsiveHeight(1.5)} />
-                        {/* State Dropdown using fetched locations */}
-                        <View>
-                            <Text style={{ fontSize: responsiveFontSize(1.8), color: colors.black, fontWeight: '500', marginLeft: responsiveFontSize(0.5) }}>{t(`state`)} <Text style={{ color: 'red' }}>*</Text></Text>
+                                keyboardType="default"
+                                theme={{ colors: { primary: colors.royalBlue, background: colors.white, onSurface: colors.black } }}
+                                style={{ backgroundColor: colors.white }}
+                                outlineStyle={{ borderRadius: 12, borderColor: errors.name ? colors.error : colors.blackOpacity(0.2) }}
+                            />
+                            {errors.name && (
+                                <Text style={{ color: colors.error, fontSize: responsiveFontSize(1.6), marginTop: 4, marginLeft: 4 }}>{errors.name}</Text>
+                            )}
+                        </View>
+
+                        {/* Mobile Input */}
+                        <View style={{ marginBottom: responsiveHeight(2) }}>
+                            <PaperTextInput
+                                left={<PaperTextInput.Affix text="+91" textStyle={{ color: colors.black }} />}
+                                mode="outlined"
+                                label={<Text>{t(`mobile`)} <Text style={{ color: colors.error }}>*</Text></Text>}
+                                value={mobile}
+                                onChangeText={(text) => {
+                                    setMobile(text)
+                                    setErrors((prevData) => ({ ...prevData, mobile: undefined }));
+                                }}
+                                maxLength={10}
+                                keyboardType="phone-pad"
+                                theme={{ colors: { primary: colors.royalBlue, background: colors.white, onSurface: colors.black } }}
+                                style={{ backgroundColor: colors.white }}
+                                outlineStyle={{ borderRadius: 12, borderColor: errors.mobile ? colors.error : colors.blackOpacity(0.2) }}
+                            />
+                            {errors.mobile && (
+                                <Text style={{ color: colors.error, fontSize: responsiveFontSize(1.6), marginTop: 4, marginLeft: 4 }}>{errors.mobile}</Text>
+                            )}
+                        </View>
+
+                        {/* E-mail Input */}
+                        <View style={{ marginBottom: responsiveHeight(2) }}>
+                            <PaperTextInput
+                                mode="outlined"
+                                label={t(`e-mail`)}
+                                value={email}
+                                onChangeText={(text) => {
+                                    const lower = text.toLowerCase();
+                                    setEmail(lower)
+                                    setErrors((prevData) => ({ ...prevData, email: undefined }));
+                                }}
+                                keyboardType="email-address"
+                                theme={{ colors: { primary: colors.royalBlue, background: colors.white, onSurface: colors.black } }}
+                                style={{ backgroundColor: colors.white }}
+                                outlineStyle={{ borderRadius: 12, borderColor: errors.email ? colors.error : colors.blackOpacity(0.2) }}
+                            />
+                            {errors.email && (
+                                <Text style={{ color: colors.error, fontSize: responsiveFontSize(1.6), marginTop: 4, marginLeft: 4 }}>{errors.email}</Text>
+                            )}
+                        </View>
+
+                        {/* Referral Code (Driver only) */}
+                        {role == 'driver' && (
+                            <View style={{ marginBottom: responsiveHeight(2) }}>
+                                <PaperTextInput
+                                    mode="outlined"
+                                    label={t(`referralCode`)}
+                                    value={code}
+                                    onChangeText={(text) => setCode(text)}
+                                    theme={{ colors: { primary: colors.royalBlue, background: colors.white, onSurface: colors.black } }}
+                                    style={{ backgroundColor: colors.white }}
+                                    outlineStyle={{ borderRadius: 12, borderColor: colors.blackOpacity(0.2) }}
+                                />
+                            </View>
+                        )}
+
+                        {/* State Dropdown */}
+                        <View style={{ marginBottom: responsiveHeight(2.5) }}>
+                            <Text style={{
+                                fontSize: responsiveFontSize(1.6),
+                                color: colors.blackOpacity(0.6),
+                                fontWeight: '500',
+                                marginLeft: responsiveFontSize(0.5),
+                                marginBottom: 6
+                            }}>
+                                {t(`state`)} <Text style={{ color: colors.error }}>*</Text>
+                            </Text>
                             <Dropdown
                                 style={{
-                                    height: responsiveHeight(6.7),
-                                    paddingHorizontal: responsiveFontSize(1.5),
-                                    borderRadius: 10,
-                                    borderColor: colors.blackOpacity(0.5),
+                                    height: 56,
+                                    paddingHorizontal: 16,
+                                    borderRadius: 12,
+                                    borderColor: errors.state ? colors.error : colors.blackOpacity(0.2),
                                     borderWidth: 1,
-                                    marginTop: responsiveFontSize(0.5),
+                                    backgroundColor: colors.white,
                                 }}
-                                containerStyle={{ borderRadius: 10, backgroundColor: colors.white, ...shadow }}
-                                itemTextStyle={{ color: colors.blackOpacity(0.8) }}
+                                containerStyle={{ borderRadius: 12, backgroundColor: colors.white, ...shadow, marginTop: 4 }}
+                                itemTextStyle={{ color: colors.black }}
                                 placeholderStyle={{
                                     fontSize: responsiveFontSize(1.9),
-                                    color: colors.blackOpacity(0.7),
-                                    fontWeight: '400',
+                                    color: colors.blackOpacity(0.5),
                                 }}
                                 selectedTextStyle={{
-                                    color: colors.blackOpacity(1),
+                                    color: colors.black,
                                     fontSize: responsiveFontSize(2),
-                                    fontWeight: '400',
                                 }}
-                                iconStyle={{ height: responsiveFontSize(2.8), width: responsiveFontSize(2.8) }}
+                                iconStyle={{ height: 24, width: 24, tintColor: colors.blackOpacity(0.5) }}
                                 data={locations.length ? locations.map(item => ({ label: item.name, value: item.id.toString() })) : []}
                                 dropdownPosition="auto"
                                 maxHeight={300}
@@ -367,67 +422,79 @@ export default function Signup() {
                                 value={state}
                                 onChange={item => {
                                     setState(item.value);
-                                    setErrors((prevData) => ({
-                                        ...prevData,
-                                        state: undefined,
-                                    }));
+                                    setErrors((prevData) => ({ ...prevData, state: undefined }));
                                 }}
                             />
                             {errors.state && (
-                                <Text style={{ color: 'red', fontSize: responsiveFontSize(1.6), marginTop: 4 }}>{errors.state}</Text>
+                                <Text style={{ color: colors.error, fontSize: responsiveFontSize(1.6), marginTop: 4, marginLeft: 4 }}>{errors.state}</Text>
                             )}
                         </View>
-                        <Space height={responsiveHeight(2)} />
-                        <View style={{ flexDirection: 'row' }}>
-                            <TouchableOpacity activeOpacity={1} onPress={_onpressCheckBox}>
+
+                        {/* Checkbox */}
+                        <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                            <TouchableOpacity activeOpacity={0.7} onPress={_onpressCheckBox} style={{ marginTop: 2 }}>
                                 <MaterialCommunityIcons
                                     name={checkBoxSelect ? 'checkbox-marked' : 'checkbox-blank-outline'}
                                     size={24}
-                                    color={colors.royalBlue}
+                                    color={checkBoxSelect ? colors.royalBlue : colors.blackOpacity(0.4)}
                                 />
                             </TouchableOpacity>
-                            <Text style={{ color: colors.blackOpacity(0.7), marginStart: responsiveFontSize(1) }}>
+                            <Text style={{ color: colors.blackOpacity(0.7), marginStart: responsiveFontSize(1.5), fontSize: responsiveFontSize(1.7), lineHeight: 22, flex: 1 }}>
                                 {t(`iAgreeToTruckMitr`)}
-                                <Text onPress={() => navigation.navigate(STACKS?.TERMS)} style={{ color: colors.royalBlue, fontWeight: '500' }}> {t(`termsOfUse`)}</Text> {t('and')}{'\n'}
-                                <Text onPress={() => navigation.navigate(STACKS?.PRIVACY)} style={{ color: colors.royalBlue, fontWeight: '500' }}>{t(`privacyPolicy`)}</Text>.
+                                <Text onPress={() => navigation.navigate(STACKS?.TERMS)} style={{ color: colors.royalBlue, fontWeight: '600' }}> {t(`termsOfUse`)}</Text> {t('and')}{'\n'}
+                                <Text onPress={() => navigation.navigate(STACKS?.PRIVACY)} style={{ color: colors.royalBlue, fontWeight: '600' }}>{t(`privacyPolicy`)}</Text>.
                             </Text>
                         </View>
-                        {errors.checkBox && (<View style={{ flexDirection: 'row', marginTop: responsiveHeight(1) }}>
-                            <MaterialIcons name="error" size={14} color={colors.error} style={{ marginTop: responsiveFontSize(.3) }} />
-                            <Text style={{ color: colors.error, fontSize: responsiveFontSize(1.7), marginLeft: responsiveFontSize(0.5) }}>
-                                {errors.checkBox}
-                            </Text>
-                        </View>)}
+                        {errors.checkBox && (
+                            <View style={{ flexDirection: 'row', marginTop: responsiveHeight(1), marginLeft: 4 }}>
+                                <MaterialIcons name="error" size={14} color={colors.error} style={{ marginTop: 2 }} />
+                                <Text style={{ color: colors.error, fontSize: responsiveFontSize(1.6), marginLeft: 4 }}>
+                                    {errors.checkBox}
+                                </Text>
+                            </View>
+                        )}
                     </View>
+
                     <Space height={responsiveHeight(4)} />
+
+                    {/* Submit Button */}
                     <TouchableOpacity
                         onPress={onSignUpPress}
-                        activeOpacity={0.7}
+                        activeOpacity={0.8}
                         style={{
-                            height: responsiveHeight(6),
-                            width: responsiveWidth(90),
-                            borderRadius: 100,
-                            alignItems: 'center',
-                            justifyContent: 'center',
+                            height: 56,
+                            width: responsiveWidth(88),
+                            borderRadius: 16,
                             overflow: 'hidden',
+                            ...shadow
                         }}>
-                        <LinearGradient start={{ x: 1, y: 0 }} end={{ x: 0, y: 0 }} style={StyleSheet.absoluteFill} colors={imageColorGradient} />
-                        {loading ? (
-                            <ActivityIndicator color={colors.white} size="small" />
-                        ) : (
-                            <Text style={{ color: colors.white, fontSize: responsiveFontSize(2), fontWeight: '500' }}>{t(`registerNow`)}</Text>
-                        )}
+                        <LinearGradient
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+                            colors={imageColorGradient}
+                        >
+                            {loading ? (
+                                <ActivityIndicator color={colors.white} size="small" />
+                            ) : (
+                                <Text style={{ color: colors.white, fontSize: responsiveFontSize(2.1), fontWeight: '600', letterSpacing: 0.5 }}>
+                                    {t(`registerNow`)}
+                                </Text>
+                            )}
+                        </LinearGradient>
                     </TouchableOpacity>
-                    <Space height={responsiveHeight(2)} />
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+
+                    <Space height={responsiveHeight(3)} />
+
+                    {/* Login Link */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: responsiveHeight(5) }}>
                         <Text style={{ color: colors.blackOpacity(0.6), fontSize: responsiveFontSize(1.9), fontWeight: '400' }}>
                             {t(`alreadyRegistered`)}{' '}
                         </Text>
                         <TouchableOpacity onPress={_navigateLogin}>
-                            <Text style={{ color: colors.azureBlue, fontSize: responsiveFontSize(2), fontWeight: '600' }}>{t(`login`)}</Text>
+                            <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(2), fontWeight: '700' }}>{t(`login`)}</Text>
                         </TouchableOpacity>
                     </View>
-                    <Space height={responsiveHeight(10)} />
                 </View>
             </TouchableWithoutFeedback>
         </KeyboardAwareScrollView>

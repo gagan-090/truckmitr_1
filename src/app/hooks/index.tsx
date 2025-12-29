@@ -5,11 +5,14 @@ import useStatusBarStyle from "@truckmitr/hooks/statusBarStyle"
 import { useImage } from "@truckmitr/hooks/images"
 // import { useFont } from "@truckmitr/hooks/fonts"
 import useShadow from "@truckmitr/hooks/shadow"
+import { useSubscription } from "@truckmitr/hooks/useSubscription"
 
-export { useResponsiveScale, 
-    useColor, 
+export {
+    useResponsiveScale,
+    useColor,
     useImage,
     useStatusBarStyle,
-    useShadow
+    useShadow,
+    useSubscription
     // useToast, useStatusBarStyle, useImage, useFont, useShadow
- }
+}

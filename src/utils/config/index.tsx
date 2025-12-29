@@ -2,7 +2,7 @@
 export const BASE_URL = `https://development.truckmitr.com/`
 // export const BASE_URL = `https://truckmitr.com/`
 // export const BASE_URL = `http://192.168.1.41:8000/`
-
+// export const BASE_URL = `http://192.168.29.246:8000/`
 export const STATICS = {
     // RAYZORPAY_KEY_ID: 'rzp_live_sZcCjZPcBGzMSm',  // live
     // RAYZORPAY_SECRET: 'Jo14oUIoX75fb0WJejakbRvQ', // live
@@ -41,6 +41,7 @@ export const END_POINTS = {
     ATTEMPT_QUIZ: `api/quiz/attempt`,
     QUIZ_RESULT: `api/quiz/result`,
     REATE_US: `api/rate-us`,
+
     DELETE_ACCOUNT: `api/delete-account`,
     PRIVACY_POLICY: `api/privacy-policy`,
     TERMS_AND_CONDITIONS: `api/terms-and-conditions`,
@@ -62,6 +63,8 @@ export const END_POINTS = {
 
     PAYMENT_SUBSCRIPTION_CAPTURE: `api/payment/subscription/capture`,
     PAYMENT_SUBSCRIPTION_DETAILS: `api/payment/subscription/details`,
+    PAYMENT_SUBSCRIPTION_CREATE: `api/subscription/create`,
+    SUBSCRIPTION_PLANS: (role: string) => `api/subscription/plans?role=${role}`,
 
     PUBLIC_SAVE_FCM_TOKEN: `api/public/save-fcm-token`,
     TRUCKMITRBANNERS: "api/banners",
