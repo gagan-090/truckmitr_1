@@ -1,4 +1,3 @@
-
 import messaging, {
     FirebaseMessagingTypes,
     AuthorizationStatus,
@@ -327,29 +326,32 @@ const attachNotificationListeners = () => {
     //     console.log('----------------------------------------------------');
     // });
 
-    messaging().onNotificationOpenedApp(msg => {
-        console.log('Message:', JSON.stringify(msg, null, 2));
-        notificationShown = false;
-        // You can add navigation logic here based on msg.data
-        handleNotificationNavigation(msg?.data);
-        console.log('-------------------------------------------------------------------');
+    messaging().onNotificationOpenedApp(async msg => {
+        console.log('🟡 BG notification tap:', msg?.data);
+
+        if (msg?.data) {
+            await AsyncStorage.setItem(
+                PENDING_NOTIFICATION_KEY,
+                JSON.stringify(msg.data)
+            );
+        }
     });
 
-    // messaging()
-    //     .getInitialNotification()
-    //     .then(async msg => {
-    //         if (msg) {
-    //             console.log('--- App launched from quit by tapping notification (getInitialNotification) ---');
-    //             console.log('Message:', JSON.stringify(msg, null, 2));
-    //             notificationShown = false;
-    //             handleNotificationNavigation(msg?.data);
-    //             // You can add navigation logic here based on msg.data
-    //             // handleNotificationNavigation(msg?.data);
-    //             console.log('---------------------------------------------------------------------');
-    //         } else {
-    //             console.log('No initial notification found (app launched normally).');
-    //         }
-    //     });
+    messaging()
+        .getInitialNotification()
+        .then(async msg => {
+            if (msg) {
+                console.log('--- App launched from quit by tapping notification (getInitialNotification) ---');
+                console.log('Message:', JSON.stringify(msg, null, 2));
+                notificationShown = false;
+                handleNotificationNavigation(msg?.data);
+                // You can add navigation logic here based on msg.data
+                // handleNotificationNavigation(msg?.data);
+                console.log('---------------------------------------------------------------------');
+            } else {
+                console.log('No initial notification found (app launched normally).');
+            }
+        });
 
     // messaging()
     //     .getInitialNotification()
@@ -364,25 +366,16 @@ const attachNotificationListeners = () => {
     //         }
     //     });
 
-    messaging()
-        .getInitialNotification()
-        .then(async msg => {
-            if (msg?.data) {
-                console.log('🚀 Kill mode notification received:', msg.data);
-
-                if (navigationRef.current) {
-                    console.log('✅ Navigation ready, handling immediately');
-                    handleNotificationNavigation(msg.data);
-                } else {
-                    console.log('⏳ Navigation NOT ready, saving to storage');
-                    const storageData = { ...msg.data, timestamp: Date.now() };
-                    await AsyncStorage.setItem(
-                        PENDING_NOTIFICATION_KEY,
-                        JSON.stringify(storageData)
-                    );
-                }
-            }
-        });
+    // messaging()
+    //     .getInitialNotification()
+    //     .then(async msg => {
+    //         if (msg?.data) {
+    //             await AsyncStorage.setItem(
+    //                 PENDING_NOTIFICATION_KEY,
+    //                 JSON.stringify(msg.data)
+    //             );
+    //         }
+    //     });
 
 
     notifee.onForegroundEvent(({ type, detail }) => {
@@ -410,33 +403,17 @@ export const resetNotificationFlag = () => {
     notificationNavigationHandled = false;
 };
 
-// Update type to include timestamp for internal storage
 export const consumePendingNotificationNavigation = async () => {
-    try {
-        const raw = await AsyncStorage.getItem(PENDING_NOTIFICATION_KEY);
-        if (!raw) return;
+    const raw = await AsyncStorage.getItem(PENDING_NOTIFICATION_KEY);
 
-        const parsedData = JSON.parse(raw);
-        const { timestamp, ...data } = parsedData;
+    if (!raw) return;
 
-        // Check if notification is stale (older than 5 minutes)
-        const isStale = Date.now() - (timestamp || 0) > 5 * 60 * 1000;
+    const data: NotificationData = JSON.parse(raw);
 
-        // Always clear the data to prevent loops
-        await AsyncStorage.removeItem(PENDING_NOTIFICATION_KEY);
+    // ❌ do NOT keep it
+    await AsyncStorage.removeItem(PENDING_NOTIFICATION_KEY);
 
-        if (isStale) {
-            console.log('⏳ Pending notification is stale, ignoring...');
-            return;
-        }
-
-        console.log('🚀 Consuming pending notification:', data);
-        handleNotificationNavigation(data);
-    } catch (e) {
-        console.error('Error consuming pending notification:', e);
-        await AsyncStorage.removeItem(PENDING_NOTIFICATION_KEY);
-    }
+    handleNotificationNavigation(data);
 };
-
 
 

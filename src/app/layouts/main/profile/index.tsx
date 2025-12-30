@@ -39,6 +39,9 @@ import analytics from '@react-native-firebase/analytics';
 import { AppEventsLogger } from 'react-native-fbsdk-next';
 import RNFetchBlob from 'react-native-blob-util';
 import LinearGradient from 'react-native-linear-gradient';
+import { openOverlayPermission } from '@truckmitr/src/utils/permissions/appearOnTopPermission';
+import { ZegoSendCallInvitationButton } from '@zegocloud/zego-uikit-prebuilt-call-rn';
+import { startVideoCall } from '@truckmitr/src/utils/zegoService';
 
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 
@@ -991,7 +994,33 @@ export default function Profile() {
             onPress={_navigateProfileEdit}
           />
         </CardContainer>
+        {/* <TouchableOpacity 
+onPress={()=>{
+  openOverlayPermission()
+  console.log('pressed');
+  
+}}
+>
+  <Text>Enable Appear on Top</Text>
+</TouchableOpacity> */}
 
+        {/* <ZegoSendCallInvitationButton
+          invitees={[{ userID: 'TM2512UPDR23435', userName: '"Abhishek"' }]}
+          isVideoCall={true}
+          resourceID={"TruckMitr"} // Please fill in the resource ID name that has been configured in the ZEGOCLOUD's console here.
+        /> */}
+        <ZegoSendCallInvitationButton
+          invitees={[{ userID: 'TM2512UPDR23435', userName: 'Abhishek' }]}
+          isVideoCall={true}
+          resourceID="TruckMitr"
+          text="Call Driver"
+          backgroundColor={colors.white}
+          textColor={colors.royalBlue}
+          width={160}
+          height={48}
+          borderRadius={12}
+          // borderColor={colors.royalBlue}
+        />
         {/* General Section */}
         <SectionHeader title={t('general')} />
         <CardContainer>

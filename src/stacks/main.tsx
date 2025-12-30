@@ -15,12 +15,22 @@ import VerificationDriversByTransporter from '../app/layouts/main/transporter-ve
 import Verification from '../app/layouts/main/verification/verification-screen';
 import DriverDocumentUploadScreen from '../app/layouts/main/transporter-verification/drivers-document-upload-screen';
 import PaymentHistoryScreen from '../app/layouts/main/transporter-verification/payment-history-screen';
+import { ZegoUIKitPrebuiltCallInCallScreen, ZegoUIKitPrebuiltCallWaitingScreen } from '@zegocloud/zego-uikit-prebuilt-call-rn';
+import { useSelector } from 'react-redux';
+import { initializeZeegoService } from '../utils/zegoService';
 
 const Stack = createNativeStackNavigator();
 
 export default function Main() {
   const hasSetupNotifications = React.useRef(false);
   const [isMounted, setIsMounted] = React.useState(false);
+  const hasInitZego = React.useRef(false);
+  const { user, isAuthenticated } = useSelector((state: any) => state.user);
+
+  console.log('user------------', user);
+  console.log('isAuthenticated------------', isAuthenticated);
+
+
 
   // Mark component as mounted after a delay
   useEffect(() => {
@@ -70,6 +80,33 @@ export default function Main() {
 
     return () => clearTimeout(timeoutId);
   }, [isMounted]);
+
+  useEffect(() => {
+    if (!isMounted) return;
+    if (!isAuthenticated || !user) return;
+
+    if (hasInitZego.current) {
+      console.log('Zego already initialized, skipping...');
+      return;
+    }
+
+    const initZego = async () => {
+      try {
+        console.log('🚀 Initializing Zego Call Service...');
+        await initializeZeegoService({
+          userID: user.unique_id,
+          userName: user.name ?? 'User',
+        });
+
+        hasInitZego.current = true;
+      } catch (e) {
+        console.error('❌ Zego init error:', e);
+      }
+    };
+
+    initZego();
+  }, [isMounted, isAuthenticated, user]);
+
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -129,6 +166,18 @@ export default function Main() {
       <Stack.Screen name={STACKS.REFERRAL} component={Referral} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.VERIFIED_DRIVERS_DOCUMENTS_UPLOAD} component={DriverDocumentUploadScreen} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.PAYMENT_HISTORY_SCREEN} component={PaymentHistoryScreen} options={{ animation: 'fade' }} />
+      <Stack.Screen
+        options={{ headerShown: false }}
+        // DO NOT change the name 
+        name="ZegoUIKitPrebuiltCallWaitingScreen"
+        component={ZegoUIKitPrebuiltCallWaitingScreen}
+      />
+      <Stack.Screen
+        options={{ headerShown: false }}
+        // DO NOT change the name
+        name="ZegoUIKitPrebuiltCallInCallScreen"
+        component={ZegoUIKitPrebuiltCallInCallScreen}
+      />
     </Stack.Navigator>
   )
 }

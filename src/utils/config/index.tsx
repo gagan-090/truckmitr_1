@@ -35,6 +35,7 @@ export const END_POINTS = {
     RECOMMENDED_JOBS: `api/jobs/recommended-jobs`,
     ALL_JOBS_AND_SEARCH: (payload: any) => `api/jobs/all?search=${payload}`,
     JOBS_FILTER: (payload: any) => `api/jobs/filter?salary=${payload?.salary}&experience=${payload?.experience || ``}&job_location=${payload?.jobLocation || ``}`,
+    JOB_THAT_SUITS_YOU: `api/jobs-suits/jobs-by-state`, 
     APPLIED_JOBS: `api/jobs/applied-jobs`,
     APPLY_JOB: (payload: any) => `api/jobs/apply-jobs/${payload}`,
     QUIZ_LIST: `api/quiz/list`,

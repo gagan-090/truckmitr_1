@@ -23,9 +23,9 @@ export default function Language() {
     const LANGUAGES = [
         { name: 'हिन्दी', title: i18n.t(`hindi`), code: 'hi', },        // Hindi
         { name: 'English', title: i18n.t(`english`), code: 'en' },      // English
-        { name: 'Hinglish', title: i18n.t(`hinglish`), code: 'hn' },     // Hinglish (custom/mixed language – no native script)
-        { name: 'ਪੰਜਾਬੀ', title: i18n.t(`punjabi`), code: 'pa' },       // Punjabi
-        { name: 'اردو', title: i18n.t(`urdu`), code: 'ur' },         // Urdu
+        // { name: 'Hinglish', title: i18n.t(`hinglish`), code: 'hn' },     // Hinglish (custom/mixed language – no native script)
+        // { name: 'ਪੰਜਾਬੀ', title: i18n.t(`punjabi`), code: 'pa' },       // Punjabi
+        // { name: 'اردو', title: i18n.t(`urdu`), code: 'ur' },         // Urdu
     ];
 
     const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
@@ -58,7 +58,7 @@ export default function Language() {
                     {i18n.t('language_description')}
                 </Text>
                 <Space height={responsiveHeight(4)} />
-                <FlatList
+                {/* <FlatList
                     data={LANGUAGES}
                     renderItem={({ item, index }) => {
                         const isSelected = selectedLanguage === item.name;
@@ -88,12 +88,82 @@ export default function Language() {
                     }}
                     style={{ width: '100%' }}
                     keyExtractor={(item, index) => index.toString()}
-                />
+                /> */}
+
+                <View
+                    style={{
+                        width: '100%',
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        marginTop: responsiveHeight(2),
+                    }}
+                >
+                    {LANGUAGES.map(item => {
+                        const isSelected = selectedLanguage === item.name;
+
+                        return (
+                            <TouchableOpacity
+                                key={item.code}
+                                onPress={_selectLanguage(item)}
+                                activeOpacity={0.8}
+                                style={{
+                                    width: '47%',
+                                    paddingVertical: responsiveHeight(2.2),
+                                    paddingHorizontal: responsiveWidth(3),
+                                    borderRadius: 12,
+                                    backgroundColor: isSelected
+                                        ? colors.royalBlue
+                                        : colors.royalBlueOpacity(0.06),
+                                    borderWidth: 1,
+                                    borderColor: isSelected
+                                        ? colors.royalBlue
+                                        : colors.royalBlueOpacity(0.3),
+                                    alignItems: 'center',
+                                }}
+                            >
+                                {/* Radio Icon */}
+                                {/* <Ionicons
+                                    name={isSelected ? 'radio-button-on' : 'radio-button-off'}
+                                    size={22}
+                                    color={isSelected ? colors.white : colors.royalBlue}
+                                    style={{ marginBottom: responsiveHeight(1) }}
+                                /> */}
+
+                                {/* Language Name */}
+                                <Text
+                                    style={{
+                                        fontSize: responsiveFontSize(2.2),
+                                        fontWeight: '600',
+                                        color: isSelected ? colors.white : colors.royalBlue,
+                                    }}
+                                >
+                                    {item.name}
+                                </Text>
+
+                                {/* Subtitle */}
+                                <Text
+                                    style={{
+                                        fontSize: responsiveFontSize(1.6),
+                                        marginTop: responsiveHeight(0.4),
+                                        color: isSelected
+                                            ? colors.whiteOpacity(0.9)
+                                            : colors.royalBlueOpacity(0.8),
+                                        textAlign: 'center',
+                                    }}
+                                >
+                                    {item.title}
+                                    {isSelected ? ' (device)' : ''}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+
             </View>
             <Space height={responsiveHeight(1)} />
-            <Text style={{ width: responsiveWidth(80), color: colors.blackOpacity(.7), fontSize: responsiveFontSize(1.8), fontWeight: '500', textAlign: 'center', marginTop: responsiveFontSize(.5), textDecorationLine: 'underline', alignSelf: 'center' }}>
+            {/* <Text style={{ width: responsiveWidth(80), color: colors.blackOpacity(.7), fontSize: responsiveFontSize(1.8), fontWeight: '500', textAlign: 'center', marginTop: responsiveFontSize(.5), textDecorationLine: 'underline', alignSelf: 'center' }}>
                 {i18n.t('moreLanguagesComingSoon')}
-            </Text>
+            </Text> */}
             <Space style={{ flex: 1 }} />
             <View style={{ backgroundColor: colors.royalBlue }}>
                 <Text style={{ color: colors.white, fontSize: responsiveFontSize(1.6), textAlign: 'center', margin: responsiveFontSize(1.5) }}>
