@@ -1,14 +1,18 @@
 import analytics from '@react-native-firebase/analytics';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useColor, useResponsiveScale, useShadow } from '@truckmitr/src/app/hooks';
+import { Space } from '@truckmitr/src/app/components';
+import { isIOS } from '@truckmitr/src/app/functions';
+import {
+  useColor,
+  useResponsiveScale,
+  useShadow
+} from '@truckmitr/src/app/hooks';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
 import { subscriptionModalAction } from '@truckmitr/src/redux/actions/user.action';
 import { NavigatorParams, STACKS } from '@truckmitr/src/stacks/stacks';
 import { STATICS } from '@truckmitr/src/utils/config';
-import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
-import { END_POINTS } from '@truckmitr/src/utils/config';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -20,610 +24,410 @@ import {
   Text,
   TouchableOpacity,
   View,
-  LayoutAnimation,
-  Platform,
-  UIManager,
 } from 'react-native';
-import RenderHtml from 'react-native-render-html';
 import { AppEventsLogger } from 'react-native-fbsdk-next';
 import RazorpayCheckout from 'react-native-razorpay';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import LinearGradient from 'react-native-linear-gradient';
 import { useDispatch, useSelector } from 'react-redux';
+import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
+import { END_POINTS } from '@truckmitr/src/utils/config';
 import Animated, {
+  useSharedValue,
   useAnimatedStyle,
   withTiming,
-  useSharedValue,
-  withSpring,
   interpolate,
   Extrapolation,
-  runOnJS,
-  FadeIn,
-  FadeOut,
+  Easing,
 } from 'react-native-reanimated';
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = SCREEN_WIDTH * 0.50;
+const CARD_SPACING = 14;
+const SNAP_INTERVAL = CARD_WIDTH + CARD_SPACING;
 
 type NavigatorProp = NativeStackNavigationProp<
   NavigatorParams,
   keyof NavigatorParams
 >;
 
-// --- Constants & Colors ---
-const COLORS = {
-  background: '#FAFBFC',
-  white: '#FFFFFF',
-  text: '#1A202C',
-  textMuted: '#718096',
-  border: '#E2E8F0',
-  primary: '#4F46E5', // Indigo
-  success: '#10B981', // Emerald
-  warning: '#F59E0B', // Amber
-  danger: '#EF4444', // Red
-  base: '#6B7280',
+interface SubscriptionPlan {
+  id: number;
+  name: string;
+  amount: number;
+  duration_months: number;
+  razorpay_months: number;
+  razorpay_plan_id: string;
+  tier: 'base' | 'semi-premium' | 'premium';
+  category: string;
+  tagline: string;
+  badge: string;
+  benefits: string[];
+  verificationRequired: string[];
+  verificationOptional: string[];
+  trustMessage: string;
+  edgeCaseNote?: string;
+  isPopular?: boolean;
+  isBestValue?: boolean;
+}
+
+// Design system colors per specification
+const DESIGN_COLORS = {
+  background: '#F8FAFC',
+  text: '#0F172A',
+  textSecondary: '#64748B',
+  base: '#64748B',
+  baseLight: '#94A3B8',
   verified: '#3B82F6',
+  verifiedLight: '#60A5FA',
   trusted: '#F59E0B',
-  verifiedBg: '#EFF6FF',
-  trustedBg: '#FFFBEB',
-  baseBg: '#F9FAFB',
-  overlay: 'rgba(0, 0, 0, 0.5)',
+  trustedLight: '#FBBF24',
+  white: '#FFFFFF',
+  border: '#E2E8F0',
 };
 
-// --- Plan Data Configuration ---
-const PLAN_DATA = [
-  {
-    id: 99,
+// Driver plan tiers configuration
+const DRIVER_PLAN_CONFIG: Record<number, Partial<SubscriptionPlan>> = {
+  99: {
     tier: 'base',
-    name: 'JOB READY',
-    subtitle: 'DRIVER',
-    tagline: 'Start your journey',
+    category: 'Job Ready Driver',
+    tagline: 'Job Ready',
     badge: '🚛',
-    price: 99,
-    duration: 'year',
-    intro: 'Best for drivers who want to explore jobs on their own',
     benefits: [
-      'Create your driver profile',
-      'Browse and apply for job opportunities',
-      'Contact transporters via in-app calling',
-      'Access basic training & guidance',
-      'Stay job-ready and visible',
+      'Apply to 5 jobs only',
+      'Access to 3 training modules',
+      'First training module free',
+      'Profile shown as Standard Driver',
+      'Limited visibility to transporters',
     ],
-    ctaText: 'Get Started',
-    color: COLORS.base,
-    bgColor: COLORS.baseBg,
-    gradient: ['#6B7280', '#9CA3AF'],
+    verificationRequired: [],
+    verificationOptional: [],
+    trustMessage: 'Upgrade to unlock more job opportunities and verified trust',
   },
-  {
-    id: 199,
-    tier: 'verified',
-    name: 'VERIFIED',
-    subtitle: 'DRIVER',
-    tagline: 'Stand out with trust',
+  199: {
+    tier: 'semi-premium',
+    category: 'Verified Driver',
+    tagline: 'Most Popular',
     badge: '✅',
-    price: 199,
-    duration: 'year',
-    intro: 'Best for drivers who want more trust & better visibility',
+    isPopular: true,
     benefits: [
-      'Everything in Job Ready',
-      'One-time ID & document verification',
-      'Verified badge on profile',
-      'Higher trust with transporters',
-      'Better chances of shortlisting',
+      'Apply to 20 jobs',
+      'Access to 5 training modules',
+      'Verified Driver badge',
+      'Mandatory profile completion',
+      'Higher transporter visibility',
     ],
-    ctaText: 'Get Verified',
-    color: COLORS.primary,
-    bgColor: COLORS.verifiedBg,
-    gradient: ['#4F46E5', '#6366F1'],
+    verificationRequired: ['Driving License', 'Aadhaar'],
+    verificationOptional: ['PAN', 'Voter ID'],
+    trustMessage: 'Verified drivers get faster callbacks and higher match success',
   },
-  {
-    id: 499,
-    tier: 'trusted',
-    name: 'TRUSTED',
-    subtitle: 'DRIVER',
-    tagline: 'Maximum opportunities',
-    badge: '🛡️',
-    price: 499,
-    duration: 'year',
-    intro: 'Best for premium trust & faster hiring',
+  499: {
+    tier: 'premium',
+    category: 'Trusted Driver',
+    tagline: 'Best Value ⭐',
+    badge: '⭐',
+    isBestValue: true,
     benefits: [
-      'Everything in Verified',
-      'Digital court & background check',
-      'Digital address verification',
-      'Home & photo verification with geo-location',
-      'Trusted badge on profile',
-      'Priority consideration for premium jobs',
+      'Unlimited job applications',
+      'Full access to all training modules',
+      'Trusted Driver premium badge',
+      'Priority visibility for transporters',
+      'TeleChamp prioritization enabled',
     ],
-    ctaText: 'Get Trusted',
-    color: COLORS.trusted,
-    bgColor: COLORS.trustedBg,
-    gradient: ['#F59E0B', '#FBBF24'],
+    verificationRequired: ['Court Check', 'Digital Address Verification'],
+    verificationOptional: [],
+    trustMessage: 'Maximum trust, maximum opportunities. Get hired faster!',
+    edgeCaseNote: 'Verification can be completed later with progress tracking',
   },
-];
-
-const COMPARISON_DATA = {
-  columns: ['Feature', 'Job Ready', 'Verified', 'Trusted'],
-  rows: [
-    { label: 'Job Access', values: ['5', '20', 'Unlimited'] },
-    { label: 'Profile Visibility', values: ['Basic', 'Higher', 'Highest'] },
-    { label: 'ID Verification', values: [false, true, true] },
-    { label: 'Court Check', values: [false, false, true] },
-    { label: 'Address Verification', values: [false, false, true] },
-    { label: 'Transporter Trust', values: ['Low', 'Medium', 'High'] },
-  ],
 };
 
-// --- Loading Overlay Component ---
-const LoadingOverlay = ({ visible }: { visible: boolean }) => {
-  if (!visible) return null;
-
-  return (
-    <Animated.View
-      entering={FadeIn.duration(200)}
-      exiting={FadeOut.duration(200)}
-      style={styles.loadingOverlay}
-    >
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Opening Payment Gateway...</Text>
-      </View>
-    </Animated.View>
-  );
+// Transporter plan tiers configuration
+const TRANSPORTER_PLAN_CONFIG: Record<number, Partial<SubscriptionPlan>> = {
+  499: {
+    tier: 'base',
+    category: 'Standard Transporter',
+    tagline: 'Start Hiring',
+    badge: '🚚',
+    benefits: [
+      'Unlimited Job Posting',
+      'View Driver Applications',
+      'Profile Updates',
+      'Add Drivers for Training',
+    ],
+    verificationRequired: [],
+    verificationOptional: [],
+    trustMessage: 'Post jobs and find drivers for your fleet',
+  },
 };
 
-// --- Consent Modal Component ---
-const ConsentModal = ({
-  visible,
-  onClose,
-  safeAreaInsets,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  safeAreaInsets: { top: number; bottom: number };
-}) => {
-  const [content, setContent] = useState<string>('');
-  const [loading, setLoading] = useState(true);
-  const { width: screenWidth } = Dimensions.get('window');
-
-  useEffect(() => {
-    if (visible) {
-      fetchConsentContent();
-    }
-  }, [visible]);
-
-  const fetchConsentContent = async () => {
-    setLoading(true);
-    try {
-      const response = await axiosInstance.get(END_POINTS.SUBSCRIPTION_CONSENT);
-      const data = response?.data;
-      
-      // Try different response structures
-      let htmlContent = '';
-      if (data?.data?.content) {
-        htmlContent = data.data.content;
-      } else if (data?.content) {
-        htmlContent = data.content;
-      } else if (data?.data?.description) {
-        htmlContent = data.data.description;
-      } else if (data?.description) {
-        htmlContent = data.description;
-      } else if (data?.data?.html) {
-        htmlContent = data.data.html;
-      } else if (data?.html) {
-        htmlContent = data.html;
-      } else if (typeof data?.data === 'string') {
-        htmlContent = data.data;
-      } else if (typeof data === 'string') {
-        htmlContent = data;
-      }
-      
-      setContent(htmlContent || '<p>No content available.</p>');
-    } catch (error) {
-      console.error('Error fetching consent content:', error);
-      setContent('<p>Unable to load content. Please try again later.</p>');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const tagsStyles = {
-    body: {
-      color: COLORS.text,
-      fontSize: 15,
-      lineHeight: 24,
-    },
-    p: {
-      marginBottom: 12,
-      color: COLORS.text,
-    },
-    h1: {
-      fontSize: 22,
-      fontWeight: '700' as const,
-      color: COLORS.text,
-      marginBottom: 16,
-      marginTop: 20,
-    },
-    h2: {
-      fontSize: 18,
-      fontWeight: '700' as const,
-      color: COLORS.text,
-      marginBottom: 12,
-      marginTop: 16,
-    },
-    h3: {
-      fontSize: 16,
-      fontWeight: '600' as const,
-      color: COLORS.text,
-      marginBottom: 10,
-      marginTop: 14,
-    },
-    ul: {
-      marginBottom: 12,
-      paddingLeft: 8,
-    },
-    ol: {
-      marginBottom: 12,
-      paddingLeft: 8,
-    },
-    li: {
-      marginBottom: 6,
-      color: COLORS.text,
-    },
-    strong: {
-      fontWeight: '700' as const,
-      color: COLORS.text,
-    },
-    a: {
-      color: COLORS.primary,
-    },
-  };
-
-  return (
-    <Modal
-      animationType="slide"
-      transparent={false}
-      visible={visible}
-      statusBarTranslucent
-      onRequestClose={onClose}
-    >
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-      <View style={[styles.consentModalContainer, { paddingTop: safeAreaInsets.top }]}>
-        {/* Header */}
-        <View style={styles.consentModalHeader}>
-          <Text style={styles.consentModalTitle}>Terms & Disclaimer</Text>
-          <TouchableOpacity
-            onPress={onClose}
-            style={styles.consentModalCloseBtn}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="close" size={24} color={COLORS.text} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Content */}
-        {loading ? (
-          <View style={styles.consentModalLoading}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.consentModalLoadingText}>Loading...</Text>
-          </View>
-        ) : (
-          <ScrollView
-            style={styles.consentModalScroll}
-            contentContainerStyle={[
-              styles.consentModalScrollContent,
-              { paddingBottom: safeAreaInsets.bottom + 100 },
-            ]}
-            showsVerticalScrollIndicator={true}
-          >
-            {content ? (
-              <RenderHtml
-                contentWidth={screenWidth - 48}
-                source={{ html: content }}
-                tagsStyles={tagsStyles}
-              />
-            ) : (
-              <Text style={{ color: COLORS.text, fontSize: 15 }}>No content available.</Text>
-            )}
-          </ScrollView>
-        )}
-
-        {/* Close Button at Bottom */}
-        <View style={[styles.consentModalFooter, { paddingBottom: safeAreaInsets.bottom + 16 }]}>
-          <TouchableOpacity
-            onPress={onClose}
-            activeOpacity={0.9}
-            style={styles.consentModalDoneBtn}
-          >
-            <LinearGradient
-              colors={[COLORS.primary, '#6366F1']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.consentModalDoneBtnGradient}
-            >
-              <Text style={styles.consentModalDoneBtnText}>I Understand</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
+// Get tier color helper
+const getTierColor = (tier?: string, fallback?: string) => {
+  switch (tier) {
+    case 'base':
+      return DESIGN_COLORS.base;
+    case 'semi-premium':
+      return DESIGN_COLORS.verified;
+    case 'premium':
+      return DESIGN_COLORS.trusted;
+    default:
+      return fallback || DESIGN_COLORS.verified;
+  }
 };
 
-// --- Sub-Components ---
-
-const FeatureTable = React.memo(({ responsiveFontSize }: { responsiveFontSize: (s: number) => number }) => {
-  return (
-    <View style={styles.tableContainer}>
-      <Text style={[styles.tableTitle, { fontSize: responsiveFontSize(1.8) }]}>
-        Compare Plans
-      </Text>
-
-      {/* Header Row */}
-      <View style={styles.tableHeaderRow}>
-        <Text style={[styles.tableHeaderCell, { flex: 1.2, textAlign: 'left' }]}>Feature</Text>
-        <Text style={styles.tableHeaderCell}>Job Ready</Text>
-        <Text style={styles.tableHeaderCell}>Verified</Text>
-        <Text style={[styles.tableHeaderCell, { color: COLORS.trusted }]}>Trusted</Text>
-      </View>
-
-      {/* Data Rows */}
-      {COMPARISON_DATA.rows.map((row, idx) => (
-        <View key={idx} style={[styles.tableRow, idx === COMPARISON_DATA.rows.length - 1 && styles.tableRowLast]}>
-          <Text style={[
-            styles.tableCellLabel,
-            { fontSize: responsiveFontSize(1.3) },
-          ]}>
-            {row.label}
-          </Text>
-
-          {row.values.map((val, vIdx) => (
-            <View key={vIdx} style={styles.tableCell}>
-              {typeof val === 'boolean' ? (
-                val ? <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
-                  : <Ionicons name="close-circle-outline" size={20} color={COLORS.danger} />
-              ) : (
-                <Text style={[
-                  styles.tableCellValue,
-                  { fontSize: responsiveFontSize(1.3) },
-                ]}>
-                  {val}
-                </Text>
-              )}
-            </View>
-          ))}
-        </View>
-      ))}
-    </View>
-  );
-});
-
-const BulletPoint = ({ text, color }: { text: string; color: string }) => (
-  <View style={styles.bulletRow}>
-    <Ionicons name="checkmark-circle" size={18} color={color} style={{ marginTop: 1 }} />
-    <Text style={styles.bulletText}>{text}</Text>
-  </View>
-);
-
+// Large Plan Card Component with animations
 const PlanCard = React.memo(({
   plan,
-  isExpanded,
-  onToggle,
+  index,
+  scrollX,
   onSelect,
-  responsiveFontSize,
-  isPopular,
-  consentChecked,
-  onConsentToggle,
-  onOpenConsent
+  isSelected,
 }: {
-  plan: typeof PLAN_DATA[0];
-  isExpanded: boolean;
-  onToggle: () => void;
+  plan: SubscriptionPlan;
+  index: number;
+  scrollX: Animated.SharedValue<number>;
   onSelect: () => void;
-  responsiveFontSize: (s: number) => number;
-  isPopular?: boolean;
-  consentChecked: boolean;
-  onConsentToggle: () => void;
-  onOpenConsent: () => void;
+  isSelected: boolean;
 }) => {
-  const rotation = useSharedValue(isExpanded ? 180 : 0);
+  const { responsiveFontSize } = useResponsiveScale();
 
-  useEffect(() => {
-    rotation.value = withTiming(isExpanded ? 180 : 0, { duration: 250 });
-  }, [isExpanded]);
+  const tierColors: Record<string, { accent: string; bg: string }> = {
+    base: { accent: DESIGN_COLORS.base, bg: '#F1F5F9' },
+    'semi-premium': { accent: DESIGN_COLORS.verified, bg: '#EFF6FF' },
+    premium: { accent: DESIGN_COLORS.trusted, bg: '#FEF3C7' },
+  };
 
-  const animatedIconStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotation.value}deg` }],
-  }));
+  const tierStyle = tierColors[plan.tier] || tierColors.base;
+  const inputRange = [
+    (index - 1) * SNAP_INTERVAL,
+    index * SNAP_INTERVAL,
+    (index + 1) * SNAP_INTERVAL,
+  ];
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const scale = interpolate(
+      scrollX.value,
+      inputRange,
+      [0.88, 1.0, 0.88],
+      Extrapolation.CLAMP
+    );
+    const opacity = interpolate(
+      scrollX.value,
+      inputRange,
+      [0.6, 1, 0.6],
+      Extrapolation.CLAMP
+    );
+
+    return {
+      transform: [{ scale }],
+      opacity,
+    };
+  });
 
   return (
-    <Animated.View style={[
-      styles.cardContainer,
-      isExpanded && styles.cardContainerExpanded,
-      isPopular && styles.cardPopular
-    ]}>
-      {isPopular && (
-        <View style={styles.popularBadge}>
-          <Text style={styles.popularBadgeText}>MOST POPULAR</Text>
-        </View>
-      )}
-
-      {/* Header (Always Visible) */}
-      <TouchableOpacity
-        activeOpacity={0.9}
-        onPress={onToggle}
-        style={styles.cardHeader}
+    <TouchableOpacity activeOpacity={0.9} onPress={onSelect}>
+      <Animated.View
+        style={[
+          styles.planCard,
+          animatedStyle,
+          {
+            width: CARD_WIDTH,
+            marginRight: CARD_SPACING,
+            borderWidth: isSelected ? 3 : 1,
+            borderColor: isSelected ? tierStyle.accent : DESIGN_COLORS.border,
+            backgroundColor: DESIGN_COLORS.white,
+          },
+        ]}
       >
-        <View style={styles.cardHeaderContent}>
-          <View style={styles.cardHeaderTop}>
-            <View style={styles.cardHeaderLeft}>
-              <View style={[styles.badgeContainer, { backgroundColor: plan.bgColor }]}>
-                <Text style={styles.cardBadgeEmoji}>{plan.badge}</Text>
-              </View>
-              <View style={{ marginLeft: 12 }}>
-                <Text style={[styles.cardTitle, { fontSize: responsiveFontSize(2) }]}>{plan.name}</Text>
-                <Text style={[styles.cardSubtitle, { fontSize: responsiveFontSize(1.2) }]}>{plan.subtitle}</Text>
-              </View>
-            </View>
-            <Animated.View style={animatedIconStyle}>
-              <Ionicons name="chevron-down" size={24} color={COLORS.textMuted} />
-            </Animated.View>
+        {/* Colored Top Bar */}
+        <View style={[styles.cardTopBar, { backgroundColor: tierStyle.accent }]} />
+
+        {/* Tag Badge */}
+        {(plan.isPopular || plan.isBestValue) && (
+          <View
+            style={[
+              styles.tagBadge,
+              { backgroundColor: plan.isBestValue ? DESIGN_COLORS.trusted : '#8B5CF6' },
+            ]}
+          >
+            <Text style={styles.tagBadgeText}>
+              {plan.isBestValue ? '⭐ Best Value' : '🔥 Popular'}
+            </Text>
+          </View>
+        )}
+
+        {/* Card Content */}
+        <View style={styles.cardContent}>
+          <Text style={styles.planBadgeEmoji}>{plan.badge}</Text>
+
+          <View style={styles.priceSection}>
+            <Text style={[styles.currencySymbol, { color: tierStyle.accent, fontSize: responsiveFontSize(2) }]}>₹</Text>
+            <Text style={[styles.priceAmount, { fontSize: responsiveFontSize(4.5) }]}>{plan.amount}</Text>
           </View>
 
-          {/* Price always visible */}
-          <View style={styles.priceContainer}>
-            <View style={styles.priceRow}>
-              <Text style={[styles.priceAmount, { color: plan.color, fontSize: responsiveFontSize(3) }]}>
-                ₹{plan.price}
-              </Text>
-              <Text style={styles.priceDuration}>/{plan.duration}</Text>
-            </View>
-            <Text style={[styles.priceTagline, { fontSize: responsiveFontSize(1.2) }]}>
+          <Text style={[styles.durationText, { fontSize: responsiveFontSize(1.2) }]}>
+            / {plan.duration_months} Months
+          </Text>
+
+          <Text style={[styles.planName, { fontSize: responsiveFontSize(1.8), color: DESIGN_COLORS.text }]}>
+            {plan.tier === 'base' ? 'Base Plan' : plan.tier === 'semi-premium' ? 'Verified' : 'Trusted'}
+          </Text>
+
+          <View style={[styles.taglineContainer, { backgroundColor: tierStyle.bg }]}>
+            <Text style={[styles.planTagline, { fontSize: responsiveFontSize(1.2), color: tierStyle.accent }]}>
               {plan.tagline}
             </Text>
           </View>
+
+          <View style={[
+            styles.selectionIndicator,
+            { backgroundColor: isSelected ? tierStyle.accent : DESIGN_COLORS.border }
+          ]}>
+            {isSelected && <Ionicons name="checkmark" size={16} color={DESIGN_COLORS.white} />}
+          </View>
         </View>
-      </TouchableOpacity>
-
-      {/* Expanded Content */}
-      {isExpanded && (
-        <Animated.View entering={FadeIn.duration(300)} style={styles.cardItinerary}>
-          <View style={styles.separator} />
-
-          {/* Intro */}
-          <Text style={[styles.introText, { fontSize: responsiveFontSize(1.35) }]}>
-            {plan.intro}
-          </Text>
-
-          {/* Benefits */}
-          <View style={styles.benefitsContainer}>
-            <Text style={styles.benefitsTitle}>What's Included:</Text>
-            {plan.benefits.map((benefit, idx) => (
-              <BulletPoint key={idx} text={benefit} color={plan.color} />
-            ))}
-          </View>
-
-          {/* Consent Checkbox */}
-          <View style={styles.consentRow}>
-            <TouchableOpacity
-              onPress={onConsentToggle}
-              activeOpacity={0.7}
-              style={styles.checkboxTouchable}
-            >
-              <View style={[styles.checkbox, consentChecked && styles.checkboxChecked]}>
-                {consentChecked && (
-                  <Ionicons name="checkmark" size={14} color={COLORS.white} />
-                )}
-              </View>
-            </TouchableOpacity>
-            <Text style={styles.consentText}>
-              I agree to the{' '}
-              <Text
-                style={styles.consentLink}
-                onPress={onOpenConsent}
-              >
-                subscription terms and disclaimer
-              </Text>
-              {' '}and authorize recurring payments
-            </Text>
-          </View>
-
-          {/* CTA */}
-          <TouchableOpacity
-            onPress={onSelect}
-            activeOpacity={consentChecked ? 0.9 : 1}
-            disabled={!consentChecked}
-            style={[styles.ctaButtonContainer, { shadowColor: plan.color, opacity: consentChecked ? 1 : 0.5 }]}
-          >
-            <LinearGradient
-              colors={plan.gradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.ctaButton}
-            >
-              <Text style={styles.ctaButtonText}>{plan.ctaText}</Text>
-              <Ionicons name="arrow-forward" size={18} color={COLORS.white} style={{ marginLeft: 8 }} />
-            </LinearGradient>
-          </TouchableOpacity>
-        </Animated.View>
-      )}
-    </Animated.View>
+      </Animated.View>
+    </TouchableOpacity>
   );
 });
 
-// --- Main Component ---
 export default function Subscription({ }: any) {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const colors = useColor();
   const safeAreaInsets = useSafeAreaInsets();
-  const { responsiveFontSize } = useResponsiveScale();
+  const { shadow } = useShadow();
+  const { responsiveHeight, responsiveWidth, responsiveFontSize } = useResponsiveScale();
+  const [checkBoxSelect, setCheckBoxSelect] = useState<boolean>(false);
   const navigation = useNavigation<NavigatorProp>();
-  const { user, subscriptionModal } = useSelector((state: any) => state?.user);
+  const { user, subscriptionModal, isDriver } = useSelector((state: any) => state?.user);
 
-  const [expandedId, setExpandedId] = useState<number | null>(199); // Default to verified plan
-  const [isLoading, setIsLoading] = useState(false);
-  const [consentChecked, setConsentChecked] = useState(false);
-  const [consentModalVisible, setConsentModalVisible] = useState(false);
+  const [errors, setErrors] = useState<{ checkBox?: string }>({});
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [selectedPlanIndex, setSelectedPlanIndex] = useState<number>(0);
+  const [isLoadingPlans, setIsLoadingPlans] = useState<boolean>(false);
 
-  const handleToggle = (id: number) => {
-    LayoutAnimation.configureNext({
-      duration: 250,
-      create: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
-      update: { type: LayoutAnimation.Types.easeInEaseOut },
-      delete: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
-    });
-    setExpandedId(prev => prev === id ? null : id);
-  };
+  // Animation values
+  const scrollX = useSharedValue(0);
+  const benefitsOpacity = useSharedValue(1);
+  const flatListRef = useRef<Animated.FlatList<SubscriptionPlan>>(null);
 
-  const handleSelectPlan = async (plan: typeof PLAN_DATA[0]) => {
+  // Get selected plan - memoized
+  const selectedPlan = useMemo(() => plans[selectedPlanIndex] || null, [plans, selectedPlanIndex]);
+
+  // Fetch plans when modal opens
+  useEffect(() => {
+    if (subscriptionModal) {
+      fetchPlans();
+    }
+  }, [subscriptionModal]);
+
+  // Reset scroll position when plans change
+  useEffect(() => {
+    if (plans.length > 0) {
+      const popularIndex = plans.findIndex(p => p.isPopular);
+      const initialIndex = popularIndex >= 0 ? popularIndex : 0;
+      setSelectedPlanIndex(initialIndex);
+
+      setTimeout(() => {
+        flatListRef.current?.scrollToOffset({
+          offset: initialIndex * SNAP_INTERVAL,
+          animated: true,
+        });
+      }, 100);
+    }
+  }, [plans]);
+
+  const fetchPlans = async () => {
+    setIsLoadingPlans(true);
     try {
-      setIsLoading(true);
-      await _generateOrderId(plan);
+      const role = isDriver ? 'driver' : 'transporter';
+      const response = await axiosInstance.get(END_POINTS.SUBSCRIPTION_PLANS(role));
+
+      if (response?.data?.success && Array.isArray(response?.data?.data)) {
+        const planConfig = isDriver ? DRIVER_PLAN_CONFIG : TRANSPORTER_PLAN_CONFIG;
+        const fetchedPlans: SubscriptionPlan[] = response.data.data.map((plan: any) => {
+          const config = planConfig[plan.amount] || {};
+          return { ...plan, ...config };
+        });
+        fetchedPlans.sort((a, b) => a.amount - b.amount);
+        setPlans(fetchedPlans);
+      }
     } catch (error) {
-      console.error(error);
-      setIsLoading(false);
+      console.error('Error fetching plans:', error);
+    } finally {
+      setIsLoadingPlans(false);
     }
   };
 
-  const _generateOrderId = async (plan: typeof PLAN_DATA[0]) => {
+  // Smooth plan change with simple opacity animation
+  const handlePlanChange = useCallback((index: number) => {
+    if (index !== selectedPlanIndex && index >= 0 && index < plans.length) {
+      // Simple fade transition - no heavy layout animations
+      benefitsOpacity.value = withTiming(0, { duration: 80, easing: Easing.out(Easing.ease) }, () => {
+        // Update index on JS thread after fade out
+      });
+
+      // Update state immediately for responsive feel
+      setSelectedPlanIndex(index);
+
+      // Fade back in
+      setTimeout(() => {
+        benefitsOpacity.value = withTiming(1, { duration: 150, easing: Easing.in(Easing.ease) });
+      }, 80);
+    }
+  }, [selectedPlanIndex, plans.length, benefitsOpacity]);
+
+  const onMomentumScrollEnd = useCallback((event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const newIndex = Math.round(offsetX / SNAP_INTERVAL);
+    if (newIndex >= 0 && newIndex < plans.length) {
+      handlePlanChange(newIndex);
+    }
+  }, [handlePlanChange, plans.length]);
+
+  const onScroll = useCallback((event: any) => {
+    scrollX.value = event.nativeEvent.contentOffset.x;
+  }, [scrollX]);
+
+  const _generateOrderId = async () => {
+    if (!validate()) return;
+    if (!selectedPlan) {
+      showToast(t('pleaseSelectAPlan'));
+      return;
+    }
+
     try {
-      const amount = plan.price * 100;
-
-      // Fetch plans real quick to get correct server ID just in case
-      let serverPlanId = plan.id;
-      try {
-        const response = await axiosInstance.get(END_POINTS.SUBSCRIPTION_PLANS('driver'));
-        if (response?.data?.success && Array.isArray(response?.data?.data)) {
-          const found = response.data.data.find((p: any) => p.amount === plan.price);
-          if (found) serverPlanId = found.id;
-        }
-      } catch (e) {
-        console.log('Error fetching plans for matching, using fallback ID', e);
-      }
-
-      const payload = { plan_id: serverPlanId };
+      const amount = selectedPlan.amount * 100;
+      const payload = { plan_id: selectedPlan.id };
       const response = await axiosInstance.post(END_POINTS.PAYMENT_SUBSCRIPTION_CREATE, payload);
       const subscriptionId = response?.data?.subscription_id;
 
       if (subscriptionId) {
-        _onPressPayNow(subscriptionId, amount.toString(), plan);
+        _onPressPayNow(subscriptionId, amount.toString());
       } else {
-        setIsLoading(false);
         showToast(t('oopsPaymentUnsuccessful'));
       }
     } catch (error) {
       console.error('Error creating order:', error);
-      setIsLoading(false);
       showToast(t('oopsPaymentUnsuccessful'));
     }
   };
 
-  const _onPressPayNow = async (subscriptionId: string, amount: string, plan: typeof PLAN_DATA[0]) => {
+  const _onpressCheckBox = () => {
+    setCheckBoxSelect(!checkBoxSelect);
+    setErrors({ checkBox: undefined });
+  };
+
+  const validate = (): boolean => {
+    if (!checkBoxSelect) {
+      setErrors({ checkBox: t(`youNeedToAcceptTruckMitr`) });
+      return false;
+    }
+    return true;
+  };
+
+  const _onPressPayNow = async (subscriptionId: string, amount: string) => {
     const options = {
       description: 'TruckMitr Subscription',
       image: 'https://truckmitr.com/public/front/assets/images/logotrick.png',
@@ -631,32 +435,148 @@ export default function Subscription({ }: any) {
       key: STATICS?.RAYZORPAY_KEY_ID,
       subscription_id: subscriptionId,
       name: 'TruckMitr',
-      notes: { unique_id: user?.unique_id, role: user?.role, plan_id: plan.id },
+      notes: { unique_id: user?.unique_id, role: user?.role, plan_id: selectedPlan?.id },
       prefill: { email: user?.email, contact: Number(user?.mobile), name: user?.name },
-      theme: { color: plan.color },
+      theme: { color: colors.royalBlue },
     } as any;
 
     await RazorpayCheckout.open(options)
       .then(async data => {
-        setIsLoading(false);
         const eventData = {
           user_id: String(user?.id ?? ''),
           user_unique_id: user?.unique_id ?? '',
-          payment_amount: amount,
+          user_name: user?.name ?? '',
+          user_email: user?.email ?? '',
+          user_role: user?.role ?? '',
+          payment_order_id: data?.razorpay_order_id ?? (data as any)?.razorpay_subscription_id ?? '',
+          payment_id: data?.razorpay_payment_id ?? '',
+          payment_signature: data?.razorpay_signature ?? '',
+          payment_amount: selectedPlan?.amount?.toString() ?? '',
+          payment_currency: options.currency,
           payment_method: 'razorpay',
           status: 'success',
-          plan_id: plan.id,
+          plan_id: selectedPlan?.id ?? '',
         };
-        await analytics().logEvent('payment_success', eventData as any);
+        await analytics().logEvent('payment_success', eventData);
         AppEventsLogger.logEvent('payment_success', eventData);
         dispatch(subscriptionModalAction(false));
         setTimeout(() => navigation.navigate(STACKS.PAYMENT_SUCCESS, { options, data }), 100);
       })
       .catch(async error => {
-        setIsLoading(false);
         showToast(t('oopsPaymentUnsuccessful'));
+        dispatch(subscriptionModalAction(false));
+        const errorData = {
+          user_id: String(user?.id ?? ''),
+          user_unique_id: user?.unique_id ?? '',
+          payment_amount: selectedPlan?.amount?.toString() ?? '',
+          error_code: error?.code,
+          status: 'failed',
+        };
+        await analytics().logEvent('payment_failure', errorData);
+        AppEventsLogger.logEvent('payment_failure', errorData);
       });
   };
+
+  // Animated styles for benefits section - simple opacity
+  const benefitsAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: benefitsOpacity.value,
+  }));
+
+  const sidePadding = (SCREEN_WIDTH - CARD_WIDTH) / 2;
+
+  const renderPlanCard = useCallback(({ item, index }: { item: SubscriptionPlan; index: number }) => (
+    <PlanCard
+      plan={item}
+      index={index}
+      scrollX={scrollX}
+      isSelected={selectedPlanIndex === index}
+      onSelect={() => {
+        flatListRef.current?.scrollToOffset({
+          offset: index * SNAP_INTERVAL,
+          animated: true,
+        });
+        handlePlanChange(index);
+      }}
+    />
+  ), [scrollX, selectedPlanIndex, handlePlanChange]);
+
+  // Memoized benefits content to prevent re-renders
+  const BenefitsContent = useMemo(() => {
+    if (!selectedPlan) return null;
+
+    const tierColor = getTierColor(selectedPlan.tier);
+
+    return (
+      <>
+        {/* Category Badge */}
+        <View style={[styles.categoryBadge, { backgroundColor: tierColor }]}>
+          <Text style={styles.categoryBadgeText}>
+            {selectedPlan.badge} {selectedPlan.category}
+          </Text>
+        </View>
+
+        {/* Benefits List */}
+        <View style={styles.benefitsList}>
+          {selectedPlan.benefits?.map((benefit, idx) => (
+            <View key={`benefit-${idx}`} style={styles.benefitRow}>
+              <View style={styles.checkIconContainer}>
+                <Ionicons name="checkmark" size={14} color={DESIGN_COLORS.white} />
+              </View>
+              <Text style={[styles.benefitText, { fontSize: responsiveFontSize(1.45) }]}>
+                {benefit}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Verification Section */}
+        {(selectedPlan.verificationRequired?.length > 0 || selectedPlan.verificationOptional?.length > 0) && (
+          <View style={styles.verificationContainer}>
+            <View style={styles.verificationHeader}>
+              <Ionicons name="shield-checkmark" size={18} color={DESIGN_COLORS.verified} />
+              <Text style={[styles.verificationTitle, { fontSize: responsiveFontSize(1.3) }]}>
+                Verification Requirements
+              </Text>
+            </View>
+            {selectedPlan.verificationRequired?.length > 0 && (
+              <View style={styles.verificationGroup}>
+                <Text style={[styles.verificationLabel, { fontSize: responsiveFontSize(1.15) }]}>Required: </Text>
+                <Text style={[styles.verificationItems, { fontSize: responsiveFontSize(1.15) }]}>
+                  {selectedPlan.verificationRequired.join(', ')}
+                </Text>
+              </View>
+            )}
+            {selectedPlan.verificationOptional?.length > 0 && (
+              <View style={styles.verificationGroup}>
+                <Text style={[styles.verificationLabelOptional, { fontSize: responsiveFontSize(1.15) }]}>Optional: </Text>
+                <Text style={[styles.verificationItems, { fontSize: responsiveFontSize(1.15) }]}>
+                  {selectedPlan.verificationOptional.join(', ')}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Trust Message */}
+        <View style={styles.trustMessageContainer}>
+          <Ionicons name="information-circle" size={18} color={DESIGN_COLORS.verified} />
+          <Text style={[styles.trustMessage, { fontSize: responsiveFontSize(1.25) }]}>
+            {selectedPlan.trustMessage}
+          </Text>
+        </View>
+
+        {/* Edge Case Note */}
+        {selectedPlan.edgeCaseNote && (
+          <View style={styles.edgeCaseNote}>
+            <Ionicons name="time-outline" size={16} color={DESIGN_COLORS.base} />
+            <Text style={[styles.edgeCaseText, { fontSize: responsiveFontSize(1.1) }]}>
+              {selectedPlan.edgeCaseNote}
+            </Text>
+          </View>
+        )}
+      </>
+    );
+  }, [selectedPlan, responsiveFontSize]);
 
   return (
     <Modal
@@ -666,522 +586,436 @@ export default function Subscription({ }: any) {
       statusBarTranslucent
       onRequestClose={() => dispatch(subscriptionModalAction(false))}
     >
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
-      <View style={[styles.container, { paddingTop: safeAreaInsets.top }]}>
+      <StatusBar barStyle="dark-content" backgroundColor={DESIGN_COLORS.background} />
 
+      <View style={[styles.fullScreenContainer, { paddingTop: safeAreaInsets.top }]}>
         {/* Close Button */}
         <TouchableOpacity
           onPress={() => dispatch(subscriptionModalAction(false))}
-          style={styles.closeButton}
           activeOpacity={0.7}
+          style={[styles.closeButton, shadow]}
         >
-          <Ionicons name="close" size={24} color={COLORS.text} />
+          <Ionicons name="close" size={24} color={DESIGN_COLORS.text} />
         </TouchableOpacity>
 
-        {/* Top Banner - Limited Time Offer */}
-        <View style={styles.topBanner}>
-          <Text style={styles.headerTag}>Limited Time Mega Offer</Text>
-        </View>
-
+        {/* Scrollable Content */}
         <ScrollView
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingBottom: safeAreaInsets.bottom }
-          ]}
+          style={styles.mainScrollView}
+          contentContainerStyle={styles.mainScrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* 1️⃣ Heading */}
-          <View style={styles.header}>
-            <Text style={[styles.headerTitle, { fontSize: responsiveFontSize(2) }]}>
-              Get Skilled. Get Verified. Get Hired. Get Ahead.
+          {/* ===== 1️⃣ HEADER ===== */}
+          <View style={styles.headerSection}>
+            <Text style={[styles.headerTitle, { fontSize: responsiveFontSize(2.6) }]}>
+              Driver Subscriptions
             </Text>
-            <Text style={[styles.headerSubtitle, { fontSize: responsiveFontSize(2) }]}>
-              Join TruckMitr Annual Membership and unlock exclusive benefits designed for drivers!
+            <Text style={[styles.headerSubtitle, { fontSize: responsiveFontSize(1.45) }]}>
+              Choose how far you want to grow
             </Text>
+            <View style={styles.headerDivider} />
           </View>
-          <FeatureTable responsiveFontSize={responsiveFontSize} />
-          {/* 2️⃣ Plan Cards Section */}
-          <View style={styles.cardsStack}>
-            {PLAN_DATA.map((plan, index) => (
-              <PlanCard
-                key={plan.id}
-                plan={plan}
-                isExpanded={expandedId === plan.id}
-                onToggle={() => handleToggle(plan.id)}
-                onSelect={() => handleSelectPlan(plan)}
-                responsiveFontSize={responsiveFontSize}
-                isPopular={index === 1} // Middle plan is popular
-                consentChecked={consentChecked}
-                onConsentToggle={() => setConsentChecked(!consentChecked)}
-                onOpenConsent={() => setConsentModalVisible(true)}
+
+          {/* ===== 2️⃣ BENEFITS SECTION (TOP) ===== */}
+          <Animated.View style={[styles.benefitsSection, benefitsAnimatedStyle]}>
+            {isLoadingPlans ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={DESIGN_COLORS.verified} />
+                <Text style={styles.loadingText}>Loading plans...</Text>
+              </View>
+            ) : (
+              BenefitsContent
+            )}
+          </Animated.View>
+
+          {/* ===== 3️⃣ PLAN CARDS (BOTTOM) ===== */}
+          {!isLoadingPlans && plans.length > 0 && (
+            <View style={styles.planCardsSection}>
+              <Text style={[styles.selectPlanTitle, { fontSize: responsiveFontSize(1.5) }]}>
+                Scroll to Select Plan
+              </Text>
+              <Animated.FlatList
+                ref={flatListRef}
+                data={plans}
+                renderItem={renderPlanCard}
+                keyExtractor={(item) => item.id.toString()}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                snapToInterval={SNAP_INTERVAL}
+                decelerationRate="fast"
+                contentContainerStyle={{ paddingHorizontal: sidePadding, paddingVertical: 16 }}
+                onMomentumScrollEnd={onMomentumScrollEnd}
+                onScroll={onScroll}
+                scrollEventThrottle={16}
+                removeClippedSubviews={true}
+                maxToRenderPerBatch={3}
+                windowSize={3}
               />
-            ))}
-          </View>
-
-          {/* 3️⃣ Feature Comparison Box */}
-
-
-          {/* Footer Note */}
-          <View style={styles.footerNote}>
-            <Ionicons name="shield-checkmark" size={20} color={COLORS.success} />
-            <Text style={styles.footerNoteText}>
-              Secure payment powered by Razorpay
-            </Text>
-          </View>
-
+            </View>
+          )}
         </ScrollView>
 
-        {/* Loading Overlay */}
-        <LoadingOverlay visible={isLoading} />
+        {/* ===== 4️⃣ CTA SECTION (STICKY) ===== */}
+        <View style={[styles.ctaSection, { paddingBottom: safeAreaInsets.bottom + 14 }]}>
+          <TouchableOpacity activeOpacity={0.7} onPress={_onpressCheckBox} style={styles.consentRow}>
+            <MaterialCommunityIcons
+              name={checkBoxSelect ? 'checkbox-marked' : 'checkbox-blank-outline'}
+              size={24}
+              color={checkBoxSelect ? DESIGN_COLORS.verified : DESIGN_COLORS.base}
+            />
+            <Text style={[styles.consentText, { fontSize: responsiveFontSize(1.25) }]}>
+              {t(`iAgreeToTruckMitr`)}{' '}
+              <Text
+                onPress={() => {
+                  dispatch(subscriptionModalAction(false));
+                  navigation.navigate(STACKS?.SUBSCRIPTION_CONSENT);
+                }}
+                style={styles.consentLink}
+              >
+                {t(`Subscription consent`)}
+              </Text>
+            </Text>
+          </TouchableOpacity>
 
-        {/* Consent Modal */}
-        <ConsentModal
-          visible={consentModalVisible}
-          onClose={() => setConsentModalVisible(false)}
-          safeAreaInsets={safeAreaInsets}
-        />
-      </View >
-    </Modal >
+          {errors.checkBox && (
+            <View style={styles.errorRow}>
+              <Ionicons name="alert-circle" size={16} color="#EF4444" />
+              <Text style={styles.errorText}>{errors.checkBox}</Text>
+            </View>
+          )}
+
+          <TouchableOpacity
+            onPress={_generateOrderId}
+            activeOpacity={checkBoxSelect ? 0.8 : 1}
+            disabled={!checkBoxSelect}
+            style={[
+              styles.ctaButton,
+              { backgroundColor: checkBoxSelect ? getTierColor(selectedPlan?.tier, colors.royalBlue) : '#CBD5E1' },
+            ]}
+          >
+            <Text style={[styles.ctaButtonText, { fontSize: responsiveFontSize(1.7) }]}>
+              {selectedPlan
+                ? `Continue with ${selectedPlan.category} – ₹${selectedPlan.amount}`
+                : t('payNow')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  fullScreenContainer: {
     flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 60,
+    backgroundColor: DESIGN_COLORS.background,
   },
   closeButton: {
     position: 'absolute',
     top: 50,
     right: 20,
-    zIndex: 10,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.white,
+    zIndex: 100,
+    height: 44,
+    width: 44,
+    backgroundColor: DESIGN_COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 22,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 4,
   },
-
-  // Loading Overlay
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: COLORS.overlay,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
+  mainScrollView: {
+    flex: 1,
   },
-  loadingContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    padding: 30,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
+  mainScrollContent: {
+    paddingBottom: 20,
   },
 
   // Header
-  header: {
+  headerSection: {
     alignItems: 'center',
-    marginBottom: 7,
+    paddingTop: 20,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
   },
   headerTitle: {
-    fontWeight: '800',
-    color: COLORS.text,
+    fontWeight: '700',
+    color: DESIGN_COLORS.text,
     textAlign: 'center',
-    marginBottom: 4,
     letterSpacing: -0.5,
   },
   headerSubtitle: {
-    color: COLORS.textMuted,
+    color: DESIGN_COLORS.textSecondary,
+    fontWeight: '400',
+    marginTop: 6,
     textAlign: 'center',
-    fontWeight: '500',
-    lineHeight: 20,
-    marginTop: 4,
-    paddingHorizontal: 20,
   },
-  topBanner: {
-    backgroundColor: '#DEF7EC',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+  headerDivider: {
+    width: 60,
+    height: 4,
+    backgroundColor: DESIGN_COLORS.verified,
+    borderRadius: 2,
+    marginTop: 14,
+  },
+
+  // Loading
+  loadingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: COLORS.success,
+    paddingVertical: 50,
   },
-  headerTag: {
-    color: COLORS.success,
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-
-  // Cards
-  cardsStack: {
-    gap: 16,
-    marginBottom: 32,
-  },
-  cardContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-  },
-  cardContainerExpanded: {
-    shadowOpacity: 0.1,
-    borderColor: COLORS.primary,
-  },
-  cardPopular: {
-    borderColor: COLORS.primary,
-    transform: [{ scale: 1.02 }],
-  },
-  popularBadge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderBottomLeftRadius: 12,
-    zIndex: 1,
-  },
-  popularBadgeText: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  cardHeader: {
-    padding: 20,
-  },
-  cardHeaderContent: {
-    gap: 16,
-  },
-  cardHeaderTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  cardHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  badgeContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardBadgeEmoji: {
-    fontSize: 28,
-  },
-  cardTitle: {
-    fontWeight: '800',
-    color: COLORS.text,
-    letterSpacing: 0.3,
-  },
-  cardSubtitle: {
-    color: COLORS.textMuted,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-
-  // Price
-  priceContainer: {
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 4,
-  },
-  priceAmount: {
-    fontWeight: '900',
-    letterSpacing: -1,
-  },
-  priceDuration: {
-    fontSize: 16,
-    color: COLORS.textMuted,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-  priceTagline: {
-    color: COLORS.textMuted,
-    fontWeight: '500',
-  },
-
-  // Expanded Content
-  cardItinerary: {
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginBottom: 16,
-    width: '100%',
-  },
-  introText: {
-    color: COLORS.textMuted,
-    marginBottom: 20,
-    fontWeight: '500',
-    lineHeight: 20,
-  },
-  benefitsContainer: {
-    marginBottom: 24,
-  },
-  benefitsTitle: {
+  loadingText: {
+    marginTop: 12,
+    color: DESIGN_COLORS.textSecondary,
     fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 12,
-    letterSpacing: 0.3,
   },
-  bulletRow: {
+
+  // Benefits Section (TOP)
+  benefitsSection: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    minHeight: 200,
+  },
+  categoryBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 24,
+    marginBottom: 16,
+  },
+  categoryBadgeText: {
+    color: DESIGN_COLORS.white,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  benefitsList: {
+    marginBottom: 14,
+  },
+  benefitRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: 10,
-    gap: 10,
   },
-  bulletText: {
-    flex: 1,
-    fontSize: 14,
-    color: COLORS.text,
-    lineHeight: 20,
-    fontWeight: '500',
-  },
-  ctaButtonContainer: {
-    width: '100%',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-    borderRadius: 16,
-  },
-  ctaButton: {
-    flexDirection: 'row',
-    height: 56,
-    borderRadius: 16,
+  checkIconContainer: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: DESIGN_COLORS.verified,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 12,
+    marginTop: 1,
+  },
+  benefitText: {
+    flex: 1,
+    fontWeight: '500',
+    lineHeight: 22,
+    color: DESIGN_COLORS.text,
+  },
+  verificationContainer: {
+    backgroundColor: DESIGN_COLORS.white,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: DESIGN_COLORS.border,
+  },
+  verificationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  verificationTitle: {
+    fontWeight: '600',
+    color: DESIGN_COLORS.text,
+    marginLeft: 8,
+  },
+  verificationGroup: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 4,
+  },
+  verificationLabel: {
+    fontWeight: '600',
+    color: DESIGN_COLORS.verified,
+  },
+  verificationLabelOptional: {
+    fontWeight: '500',
+    color: DESIGN_COLORS.textSecondary,
+  },
+  verificationItems: {
+    color: DESIGN_COLORS.text,
+    fontWeight: '400',
+    flex: 1,
+  },
+  trustMessageContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#EFF6FF',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+  },
+  trustMessage: {
+    flex: 1,
+    marginLeft: 10,
+    color: DESIGN_COLORS.verified,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  edgeCaseNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: DESIGN_COLORS.border,
+  },
+  edgeCaseText: {
+    flex: 1,
+    marginLeft: 10,
+    color: DESIGN_COLORS.textSecondary,
+    fontWeight: '400',
+  },
+
+  // Plan Cards Section (BOTTOM)
+  planCardsSection: {
+    marginTop: 16,
+  },
+  selectPlanTitle: {
+    textAlign: 'center',
+    fontWeight: '600',
+    color: DESIGN_COLORS.textSecondary,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  planCard: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  cardTopBar: {
+    height: 5,
     width: '100%',
   },
-  ctaButtonText: {
-    color: COLORS.white,
+  tagBadge: {
+    position: 'absolute',
+    top: 5,
+    right: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    zIndex: 10,
+  },
+  tagBadgeText: {
+    color: DESIGN_COLORS.white,
+    fontSize: 9,
     fontWeight: '700',
-    fontSize: 16,
-    letterSpacing: 0.3,
+  },
+  cardContent: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  planBadgeEmoji: {
+    fontSize: 32,
+    marginBottom: 6,
+  },
+  priceSection: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 2,
+  },
+  currencySymbol: {
+    fontWeight: '600',
+    marginTop: 6,
+    marginRight: 2,
+  },
+  priceAmount: {
+    fontWeight: '800',
+    color: DESIGN_COLORS.text,
+  },
+  durationText: {
+    color: DESIGN_COLORS.textSecondary,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  planName: {
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  taglineContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 14,
+    marginBottom: 10,
+  },
+  planTagline: {
+    fontWeight: '600',
+  },
+  selectionIndicator: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // CTA Section
+  ctaSection: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    backgroundColor: DESIGN_COLORS.white,
+    borderTopWidth: 1,
+    borderTopColor: DESIGN_COLORS.border,
   },
   consentRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-    gap: 10,
-  },
-  checkboxTouchable: {
-    padding: 2,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: COLORS.border,
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.white,
-  },
-  checkboxChecked: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    marginBottom: 10,
   },
   consentText: {
     flex: 1,
-    fontSize: 13,
-    color: COLORS.textMuted,
-    lineHeight: 18,
-    fontWeight: '500',
+    marginLeft: 12,
+    color: DESIGN_COLORS.textSecondary,
   },
   consentLink: {
-    color: COLORS.primary,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
-
-  // Table
-  tableContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  tableTitle: {
-    fontWeight: '800',
-    color: COLORS.text,
-    marginBottom: 16,
-    letterSpacing: 0.3,
-  },
-  tableHeaderRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: COLORS.border,
-    paddingBottom: 10,
-  },
-  tableHeaderCell: {
-    flex: 1,
-    fontSize: 11,
-    fontWeight: '800',
-    color: COLORS.textMuted,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  tableRowLast: {
-    borderBottomWidth: 0,
-  },
-  tableCellLabel: {
-    flex: 1.2,
-    color: COLORS.text,
+    color: DESIGN_COLORS.verified,
     fontWeight: '600',
   },
-  tableCell: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tableCellValue: {
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-
-  // Footer
-  footerNote: {
+  errorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 16,
+    marginBottom: 10,
   },
-  footerNoteText: {
+  errorText: {
+    marginLeft: 8,
     fontSize: 13,
-    color: COLORS.textMuted,
-    fontWeight: '600',
+    color: '#EF4444',
   },
-
-  // Consent Modal
-  consentModalContainer: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-  },
-  consentModalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  consentModalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  consentModalCloseBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
+  ctaButton: {
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  consentModalLoading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  consentModalLoadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: COLORS.textMuted,
-    fontWeight: '500',
-  },
-  consentModalScroll: {
-    flex: 1,
-  },
-  consentModalScrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 20,
-  },
-  consentModalFooter: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    backgroundColor: COLORS.white,
-  },
-  consentModalDoneBtn: {
-    width: '100%',
-    shadowColor: COLORS.primary,
+    marginTop: 2,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
     elevation: 6,
-    borderRadius: 14,
   },
-  consentModalDoneBtnGradient: {
-    height: 52,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  consentModalDoneBtnText: {
-    color: COLORS.white,
-    fontSize: 16,
+  ctaButtonText: {
+    color: DESIGN_COLORS.white,
     fontWeight: '700',
   },
 });
