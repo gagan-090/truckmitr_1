@@ -64,8 +64,9 @@ export const END_POINTS = {
     PAYMENT_SUBSCRIPTION_CAPTURE: `api/payment/subscription/capture`,
     PAYMENT_SUBSCRIPTION_DETAILS: `api/payment/subscription/details`,
     PAYMENT_SUBSCRIPTION_CREATE: `api/subscription/create`,
-    SUBSCRIPTION_PLANS: (role: string) => `api/subscription/plans?role=${role}`,
+    // PAYMENT_SUBSCRIPTION_UPDATE: `/api/subscription/plansByUser?role={role}`,
 
+    SUBSCRIPTION_PLANS: (role: string) => `api/subscription/plans?role=${role}`,
     PUBLIC_SAVE_FCM_TOKEN: `api/public/save-fcm-token`,
     TRUCKMITRBANNERS: "api/banners",
     GENERATECERTIFICATE: (id: any) => `api/certificates/${id}`,

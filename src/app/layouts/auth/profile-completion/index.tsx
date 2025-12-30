@@ -255,7 +255,7 @@ const DRIVER_STEPS = [
 // Transporter Steps
 const TRANSPORTER_STEPS = [
 
-    { id: 'year_of_exp', title: 'yearOfExperience', subtitle: 'selectYearsOfExperience', field: 'year_of_exp', required: true },
+    { id: 'year_of_exp', title: 'yearOfOperation', subtitle: 'selectYearsOfOperation', field: 'year_of_exp', required: true },
     { id: 'fleet_size', title: 'fleetSize', subtitle: 'selectFleetSize', field: 'fleet_size', required: true },
     { id: 'industry_segment', title: 'industrySegment', subtitle: 'selectIndustrySegment', field: 'industry_segment', required: true },
     { id: 'avg_km_run', title: 'avgKmRun', subtitle: 'enterAverageKmRun', field: 'avg_km_run', required: true },
@@ -812,7 +812,9 @@ export default function ProfileCompletion() {
             // ===== TRANSPORTER-SPECIFIC FIELDS =====
             if (userRole === 'transporter') {
                 formData.append('transport_name', userEdit?.transport_name || savedSignupData?.transport_name || '');
-                formData.append('year_of_establishment', userEdit?.year_of_establishment || userEdit?.establishment_year || '');
+                // year_of_exp collected in UI should be saved as year_of_establishment in DB
+                formData.append('year_of_exp', userEdit?.year_of_exp || '');
+                formData.append('year_of_establishment', userEdit?.year_of_exp || userEdit?.year_of_establishment || userEdit?.establishment_year || '');
                 formData.append('fleet_size', userEdit?.fleet_size || '');
                 formData.append('average_km', userEdit?.avg_km_run || '');
                 formData.append('registered_id', userEdit?.registered_id || '');
@@ -1364,7 +1366,7 @@ export default function ProfileCompletion() {
             case 'year_of_exp':
                 return (
                     <View style={styles.stepContainer}>
-                        <Text style={styles.classicLabel}>{t('yearOfExperience') || 'Years of Experience'}</Text>
+
                         <View style={styles.gridContainer}>
                             {translatedYearOfExp.map((exp) => (
                                 <TouchableOpacity

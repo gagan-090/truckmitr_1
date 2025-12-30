@@ -582,11 +582,11 @@ export default function AppliedJob() {
                 </View>
             )}
 
-            <ProfileIncompleteModal
+            {/* <ProfileIncompleteModal
                 visible={isJobAccepted()}
                 onClose={_goback}
                 onCompleteProfile={_navigateProfileEdit}
-            />
+            /> */}
         </View>
     )
 }

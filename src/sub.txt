@@ -63,7 +63,7 @@ const COLORS = {
   textMuted: '#718096',
   border: '#E2E8F0',
   primary: '#4F46E5', // Indigo
-  success: '#089720ff', // Emerald
+  success: '#10B981', // Emerald
   warning: '#F59E0B', // Amber
   danger: '#EF4444', // Red
   base: '#6B7280',
@@ -75,26 +75,26 @@ const COLORS = {
   overlay: 'rgba(0, 0, 0, 0.5)',
 };
 
-// --- Plan Data Configuration (with translations) ---
-const getPlanData = (t: (key: string) => string) => [
+// --- Plan Data Configuration ---
+const PLAN_DATA = [
   {
     id: 99,
     tier: 'base',
-    name: t('subJobReadyName'),
-    subtitle: t('subDriverSubtitle'),
-    tagline: t('subStartYourJourney'),
+    name: 'JOB READY',
+    subtitle: 'DRIVER',
+    tagline: 'Start your journey',
     badge: '🚛',
     price: 99,
-    duration: t('subYear'),
-    intro: t('subJobReadyIntro'),
+    duration: 'year',
+    intro: 'Best for drivers who want to explore jobs on their own',
     benefits: [
-      t('subBenefitCreateProfile'),
-      t('subBenefitBrowseJobs'),
-      t('subBenefitContactTransporters'),
-      t('subBenefitBasicTraining'),
-      t('subBenefitStayJobReady'),
+      'Create your driver profile',
+      'Browse and apply for job opportunities',
+      'Contact transporters via in-app calling',
+      'Access basic training & guidance',
+      'Stay job-ready and visible',
     ],
-    ctaText: t('subGetStarted'),
+    ctaText: 'Get Started',
     color: COLORS.base,
     bgColor: COLORS.baseBg,
     gradient: ['#6B7280', '#9CA3AF'],
@@ -102,21 +102,21 @@ const getPlanData = (t: (key: string) => string) => [
   {
     id: 199,
     tier: 'verified',
-    name: t('subVerifiedName'),
-    subtitle: t('subDriverSubtitle'),
-    tagline: t('subStandOutWithTrust'),
+    name: 'VERIFIED',
+    subtitle: 'DRIVER',
+    tagline: 'Stand out with trust',
     badge: '✅',
     price: 199,
-    duration: t('subYear'),
-    intro: t('subVerifiedIntro'),
+    duration: 'year',
+    intro: 'Best for drivers who want more trust & better visibility',
     benefits: [
-      t('subBenefitEverythingJobReady'),
-      t('subBenefitOneTimeVerification'),
-      t('subBenefitVerifiedBadge'),
-      t('subBenefitHigherTrust'),
-      t('subBenefitBetterShortlisting'),
+      'Everything in Job Ready',
+      'One-time ID & document verification',
+      'Verified badge on profile',
+      'Higher trust with transporters',
+      'Better chances of shortlisting',
     ],
-    ctaText: t('subGetVerified'),
+    ctaText: 'Get Verified',
     color: COLORS.primary,
     bgColor: COLORS.verifiedBg,
     gradient: ['#4F46E5', '#6366F1'],
@@ -124,42 +124,42 @@ const getPlanData = (t: (key: string) => string) => [
   {
     id: 499,
     tier: 'trusted',
-    name: t('subTrustedName'),
-    subtitle: t('subDriverSubtitle'),
-    tagline: t('subMaximumOpportunities'),
+    name: 'TRUSTED',
+    subtitle: 'DRIVER',
+    tagline: 'Maximum opportunities',
     badge: '🛡️',
     price: 499,
-    duration: t('subYear'),
-    intro: t('subTrustedIntro'),
+    duration: 'year',
+    intro: 'Best for premium trust & faster hiring',
     benefits: [
-      t('subBenefitEverythingVerified'),
-      t('subBenefitCourtCheck'),
-      t('subBenefitAddressVerify'),
-      t('subBenefitHomePhotoVerify'),
-      t('subBenefitTrustedBadge'),
-      t('subBenefitPriorityPremium'),
+      'Everything in Verified',
+      'Digital court & background check',
+      'Digital address verification',
+      'Home & photo verification with geo-location',
+      'Trusted badge on profile',
+      'Priority consideration for premium jobs',
     ],
-    ctaText: t('subGetTrusted'),
+    ctaText: 'Get Trusted',
     color: COLORS.trusted,
     bgColor: COLORS.trustedBg,
     gradient: ['#F59E0B', '#FBBF24'],
   },
 ];
 
-const getComparisonData = (t: (key: string) => string) => ({
-  columns: [t('subFeature'), t('subJobReadyName'), t('subVerifiedName'), t('subTrustedName')],
+const COMPARISON_DATA = {
+  columns: ['Feature', 'Job Ready', 'Verified', 'Trusted'],
   rows: [
-    { label: t('subJobAccess'), values: ['5', '20', t('subUnlimited')] },
-    { label: t('subProfileVisibility'), values: [t('subBasic'), t('subHigher'), t('subHighest')] },
-    { label: t('subIdVerification'), values: [false, true, true] },
-    { label: t('subCourtCheck'), values: [false, false, true] },
-    { label: t('subAddressVerification'), values: [false, false, true] },
-    { label: t('subTransporterTrust'), values: [t('subLow'), t('subMedium'), t('subHigh')] },
+    { label: 'Job Access', values: ['5', '20', 'Unlimited'] },
+    { label: 'Profile Visibility', values: ['Basic', 'Higher', 'Highest'] },
+    { label: 'ID Verification', values: [false, true, true] },
+    { label: 'Court Check', values: [false, false, true] },
+    { label: 'Address Verification', values: [false, false, true] },
+    { label: 'Transporter Trust', values: ['Low', 'Medium', 'High'] },
   ],
-});
+};
 
 // --- Loading Overlay Component ---
-const LoadingOverlay = ({ visible, t }: { visible: boolean; t: (key: string) => string }) => {
+const LoadingOverlay = ({ visible }: { visible: boolean }) => {
   if (!visible) return null;
 
   return (
@@ -170,7 +170,7 @@ const LoadingOverlay = ({ visible, t }: { visible: boolean; t: (key: string) => 
     >
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>{t('subOpeningPaymentGateway')}</Text>
+        <Text style={styles.loadingText}>Opening Payment Gateway...</Text>
       </View>
     </Animated.View>
   );
@@ -186,7 +186,6 @@ const ConsentModal = ({
   onClose: () => void;
   safeAreaInsets: { top: number; bottom: number };
 }) => {
-  const { t } = useTranslation();
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const { width: screenWidth } = Dimensions.get('window');
@@ -202,7 +201,7 @@ const ConsentModal = ({
     try {
       const response = await axiosInstance.get(END_POINTS.SUBSCRIPTION_CONSENT);
       const data = response?.data;
-
+      
       // Try different response structures
       let htmlContent = '';
       if (data?.data?.content) {
@@ -222,7 +221,7 @@ const ConsentModal = ({
       } else if (typeof data === 'string') {
         htmlContent = data;
       }
-
+      
       setContent(htmlContent || '<p>No content available.</p>');
     } catch (error) {
       console.error('Error fetching consent content:', error);
@@ -296,7 +295,7 @@ const ConsentModal = ({
       <View style={[styles.consentModalContainer, { paddingTop: safeAreaInsets.top }]}>
         {/* Header */}
         <View style={styles.consentModalHeader}>
-          <Text style={styles.consentModalTitle}>{t('subTermsDisclaimer')}</Text>
+          <Text style={styles.consentModalTitle}>Terms & Disclaimer</Text>
           <TouchableOpacity
             onPress={onClose}
             style={styles.consentModalCloseBtn}
@@ -310,7 +309,7 @@ const ConsentModal = ({
         {loading ? (
           <View style={styles.consentModalLoading}>
             <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.consentModalLoadingText}>{t('loading')}</Text>
+            <Text style={styles.consentModalLoadingText}>Loading...</Text>
           </View>
         ) : (
           <ScrollView
@@ -328,7 +327,7 @@ const ConsentModal = ({
                 tagsStyles={tagsStyles}
               />
             ) : (
-              <Text style={{ color: COLORS.text, fontSize: 15 }}>{t('subNoContentAvailable')}</Text>
+              <Text style={{ color: COLORS.text, fontSize: 15 }}>No content available.</Text>
             )}
           </ScrollView>
         )}
@@ -346,7 +345,7 @@ const ConsentModal = ({
               end={{ x: 1, y: 0 }}
               style={styles.consentModalDoneBtnGradient}
             >
-              <Text style={styles.consentModalDoneBtnText}>{t('subIUnderstand')}</Text>
+              <Text style={styles.consentModalDoneBtnText}>I Understand</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -357,26 +356,24 @@ const ConsentModal = ({
 
 // --- Sub-Components ---
 
-const FeatureTable = React.memo(({ responsiveFontSize, t }: { responsiveFontSize: (s: number) => number; t: (key: string) => string }) => {
-  const comparisonData = getComparisonData(t);
-
+const FeatureTable = React.memo(({ responsiveFontSize }: { responsiveFontSize: (s: number) => number }) => {
   return (
     <View style={styles.tableContainer}>
       <Text style={[styles.tableTitle, { fontSize: responsiveFontSize(1.8) }]}>
-        {t('subComparePlans')}
+        Compare Plans
       </Text>
 
       {/* Header Row */}
       <View style={styles.tableHeaderRow}>
-        <Text style={[styles.tableHeaderCell, { flex: 1.2, textAlign: 'left' }]}>{comparisonData.columns[0]}</Text>
-        <Text style={styles.tableHeaderCell}>{comparisonData.columns[1]}</Text>
-        <Text style={styles.tableHeaderCell}>{comparisonData.columns[2]}</Text>
-        <Text style={[styles.tableHeaderCell, { color: COLORS.trusted }]}>{comparisonData.columns[3]}</Text>
+        <Text style={[styles.tableHeaderCell, { flex: 1.2, textAlign: 'left' }]}>Feature</Text>
+        <Text style={styles.tableHeaderCell}>Job Ready</Text>
+        <Text style={styles.tableHeaderCell}>Verified</Text>
+        <Text style={[styles.tableHeaderCell, { color: COLORS.trusted }]}>Trusted</Text>
       </View>
 
       {/* Data Rows */}
-      {comparisonData.rows.map((row: { label: string; values: (string | boolean)[] }, idx: number) => (
-        <View key={idx} style={[styles.tableRow, idx === comparisonData.rows.length - 1 && styles.tableRowLast]}>
+      {COMPARISON_DATA.rows.map((row, idx) => (
+        <View key={idx} style={[styles.tableRow, idx === COMPARISON_DATA.rows.length - 1 && styles.tableRowLast]}>
           <Text style={[
             styles.tableCellLabel,
             { fontSize: responsiveFontSize(1.3) },
@@ -384,7 +381,7 @@ const FeatureTable = React.memo(({ responsiveFontSize, t }: { responsiveFontSize
             {row.label}
           </Text>
 
-          {row.values.map((val: string | boolean, vIdx: number) => (
+          {row.values.map((val, vIdx) => (
             <View key={vIdx} style={styles.tableCell}>
               {typeof val === 'boolean' ? (
                 val ? <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
@@ -412,24 +409,6 @@ const BulletPoint = ({ text, color }: { text: string; color: string }) => (
   </View>
 );
 
-// Plan data type definition
-interface PlanDataType {
-  id: number;
-  tier: string;
-  name: string;
-  subtitle: string;
-  tagline: string;
-  badge: string;
-  price: number;
-  duration: string;
-  intro: string;
-  benefits: string[];
-  ctaText: string;
-  color: string;
-  bgColor: string;
-  gradient: string[];
-}
-
 const PlanCard = React.memo(({
   plan,
   isExpanded,
@@ -441,7 +420,7 @@ const PlanCard = React.memo(({
   onConsentToggle,
   onOpenConsent
 }: {
-  plan: PlanDataType;
+  plan: typeof PLAN_DATA[0];
   isExpanded: boolean;
   onToggle: () => void;
   onSelect: () => void;
@@ -451,7 +430,6 @@ const PlanCard = React.memo(({
   onConsentToggle: () => void;
   onOpenConsent: () => void;
 }) => {
-  const { t } = useTranslation();
   const rotation = useSharedValue(isExpanded ? 180 : 0);
 
   useEffect(() => {
@@ -470,7 +448,7 @@ const PlanCard = React.memo(({
     ]}>
       {isPopular && (
         <View style={styles.popularBadge}>
-          <Text style={styles.popularBadgeText}>{t('subMostPopular')}</Text>
+          <Text style={styles.popularBadgeText}>MOST POPULAR</Text>
         </View>
       )}
 
@@ -496,33 +474,17 @@ const PlanCard = React.memo(({
             </Animated.View>
           </View>
 
-          {/* Price and Pay Now button always visible */}
-          <View style={styles.priceAndPayContainer}>
-            <View style={styles.priceContainer}>
-              <View style={styles.priceRow}>
-                <Text style={[styles.priceAmount, { color: plan.color, fontSize: responsiveFontSize(3) }]}>
-                  ₹{plan.price}
-                </Text>
-                <Text style={styles.priceDuration}>/{plan.duration}</Text>
-              </View>
-              <Text style={[styles.priceTagline, { fontSize: responsiveFontSize(1.2) }]}>
-                {plan.tagline}
+          {/* Price always visible */}
+          <View style={styles.priceContainer}>
+            <View style={styles.priceRow}>
+              <Text style={[styles.priceAmount, { color: plan.color, fontSize: responsiveFontSize(3) }]}>
+                ₹{plan.price}
               </Text>
+              <Text style={styles.priceDuration}>/{plan.duration}</Text>
             </View>
-
-            {/* Quick Pay Button (always visible) */}
-            <TouchableOpacity
-              onPress={onSelect}
-              activeOpacity={consentChecked ? 0.8 : 1}
-              disabled={!consentChecked}
-              style={[
-                styles.quickPayButton,
-                { backgroundColor: plan.color, opacity: consentChecked ? 1 : 0.5 }
-              ]}
-            >
-              <Text style={styles.quickPayButtonText}>Pay Now</Text>
-              <Ionicons name="arrow-forward" size={14} color={COLORS.white} />
-            </TouchableOpacity>
+            <Text style={[styles.priceTagline, { fontSize: responsiveFontSize(1.2) }]}>
+              {plan.tagline}
+            </Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -539,7 +501,7 @@ const PlanCard = React.memo(({
 
           {/* Benefits */}
           <View style={styles.benefitsContainer}>
-            <Text style={styles.benefitsTitle}>{t('subWhatsIncluded')}</Text>
+            <Text style={styles.benefitsTitle}>What's Included:</Text>
             {plan.benefits.map((benefit, idx) => (
               <BulletPoint key={idx} text={benefit} color={plan.color} />
             ))}
@@ -603,121 +565,10 @@ export default function Subscription({ }: any) {
   const navigation = useNavigation<NavigatorProp>();
   const { user, subscriptionModal } = useSelector((state: any) => state?.user);
 
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(199); // Default to verified plan
   const [isLoading, setIsLoading] = useState(false);
-  const [consentChecked, setConsentChecked] = useState(true);
+  const [consentChecked, setConsentChecked] = useState(false);
   const [consentModalVisible, setConsentModalVisible] = useState(false);
-  const [dynamicPlans, setDynamicPlans] = useState<PlanDataType[]>([]);
-  const [plansLoading, setPlansLoading] = useState(true);
-
-  // Fetch subscription plans from API based on user role
-  useEffect(() => {
-    if (subscriptionModal) {
-      fetchSubscriptionPlans();
-    }
-  }, [subscriptionModal, user?.role]);
-
-  const fetchSubscriptionPlans = async () => {
-    try {
-      setPlansLoading(true);
-      const role = user?.role || 'driver';
-      console.log('Fetching subscription plans for role:', role);
-
-      const response = await axiosInstance.get(END_POINTS.SUBSCRIPTION_PLANS(role));
-      console.log('Subscription plans API response:', JSON.stringify(response?.data, null, 2));
-
-      if (response?.data?.success && Array.isArray(response?.data?.data)) {
-        const apiPlans = response.data.data;
-
-        // Transform API plans to our PlanDataType format
-        const transformedPlans: PlanDataType[] = apiPlans.map((apiPlan: any, index: number) => {
-          // Determine tier based on plan name or amount
-          let tier = 'base';
-          let color = COLORS.base;
-          let bgColor = COLORS.baseBg;
-          let gradient = ['#6B7280', '#9CA3AF'];
-          let badge = '🚛';
-
-          const planName = (apiPlan.name || '').toLowerCase();
-          const amount = apiPlan.amount || apiPlan.price || 0;
-
-          if (planName.includes('trusted') || planName.includes('premium') || amount >= 400) {
-            tier = 'trusted';
-            color = COLORS.trusted;
-            bgColor = COLORS.trustedBg;
-            gradient = ['#F59E0B', '#FBBF24'];
-            badge = '🛡️';
-          } else if (planName.includes('verified') || planName.includes('standard') || amount >= 150) {
-            tier = 'verified';
-            color = COLORS.primary;
-            bgColor = COLORS.verifiedBg;
-            gradient = ['#4F46E5', '#6366F1'];
-            badge = '✅';
-          }
-
-          // Extract benefits from API or use defaults based on tier
-          let benefits: string[] = [];
-          if (apiPlan.features && Array.isArray(apiPlan.features)) {
-            benefits = apiPlan.features.map((f: any) => typeof f === 'string' ? f : f.name || f.feature || '');
-          } else if (apiPlan.benefits && Array.isArray(apiPlan.benefits)) {
-            benefits = apiPlan.benefits.map((b: any) => typeof b === 'string' ? b : b.name || b.benefit || '');
-          } else if (apiPlan.description) {
-            benefits = [apiPlan.description];
-          } else {
-            // Default benefits based on tier
-            if (tier === 'trusted') {
-              benefits = [t('subBenefitEverythingVerified'), t('subBenefitCourtCheck'), t('subBenefitAddressVerify'), t('subBenefitTrustedBadge')];
-            } else if (tier === 'verified') {
-              benefits = [t('subBenefitEverythingJobReady'), t('subBenefitOneTimeVerification'), t('subBenefitVerifiedBadge'), t('subBenefitHigherTrust')];
-            } else {
-              benefits = [t('subBenefitCreateProfile'), t('subBenefitBrowseJobs'), t('subBenefitContactTransporters')];
-            }
-          }
-
-          return {
-            id: apiPlan.id,
-            tier,
-            name: apiPlan.name || `Plan ${index + 1}`,
-            subtitle: role === 'transporter' ? t('subTransporterSubtitle') || 'For Transporters' : t('subDriverSubtitle'),
-            tagline: apiPlan.tagline || (tier === 'trusted' ? t('subMaximumOpportunities') : tier === 'verified' ? t('subStandOutWithTrust') : t('subStartYourJourney')),
-            badge,
-            price: amount,
-            duration: apiPlan.duration || t('subYear'),
-            intro: apiPlan.description || apiPlan.intro || '',
-            benefits,
-            ctaText: tier === 'trusted' ? t('subGetTrusted') : tier === 'verified' ? t('subGetVerified') : t('subGetStarted'),
-            color,
-            bgColor,
-            gradient,
-          };
-        });
-
-        // Sort plans by price (ascending)
-        transformedPlans.sort((a, b) => a.price - b.price);
-
-        console.log('Transformed plans:', transformedPlans);
-        setDynamicPlans(transformedPlans);
-
-        // Set default expanded plan (middle one if available)
-        if (transformedPlans.length > 0) {
-          const middleIndex = Math.floor(transformedPlans.length / 2);
-          setExpandedId(transformedPlans[middleIndex]?.id || transformedPlans[0]?.id);
-        }
-      } else {
-        // Fallback to hardcoded plans if API fails
-        console.log('API response invalid, using fallback plans');
-        setDynamicPlans(getPlanData(t));
-        setExpandedId(199);
-      }
-    } catch (error) {
-      console.error('Error fetching subscription plans:', error);
-      // Fallback to hardcoded plans
-      setDynamicPlans(getPlanData(t));
-      setExpandedId(199);
-    } finally {
-      setPlansLoading(false);
-    }
-  };
 
   const handleToggle = (id: number) => {
     LayoutAnimation.configureNext({
@@ -729,7 +580,7 @@ export default function Subscription({ }: any) {
     setExpandedId(prev => prev === id ? null : id);
   };
 
-  const handleSelectPlan = async (plan: PlanDataType) => {
+  const handleSelectPlan = async (plan: typeof PLAN_DATA[0]) => {
     try {
       setIsLoading(true);
       await _generateOrderId(plan);
@@ -739,139 +590,54 @@ export default function Subscription({ }: any) {
     }
   };
 
-  const _generateOrderId = async (plan: PlanDataType) => {
+  const _generateOrderId = async (plan: typeof PLAN_DATA[0]) => {
     try {
       const amount = plan.price * 100;
-      const serverPlanId: number = plan.id;
-      console.log(`Using plan: id=${serverPlanId}, price=${plan.price}, name=${plan.name}`);
 
-      // Try creating a subscription first
+      // Fetch plans real quick to get correct server ID just in case
+      let serverPlanId = plan.id;
       try {
-        console.log(`Attempting to create subscription for plan ${serverPlanId}`);
-        const payload = { plan_id: serverPlanId };
-        const response = await axiosInstance.post(END_POINTS.PAYMENT_SUBSCRIPTION_CREATE, payload);
-
-        console.log('=== SUBSCRIPTION CREATE RESPONSE ===');
-        console.log('Full response.data:', JSON.stringify(response?.data, null, 2));
-
-        let subscriptionId =
-          response?.data?.subscription_id ||
-          response?.data?.data?.subscription_id ||
-          response?.data?.data?.id ||
-          response?.data?.id;
-
-        // If specific error "not recurring", throw specific error to catch below
-        if (!subscriptionId && response?.data?.message === 'This plan is not recurring') {
-          throw new Error('NOT_RECURRING');
+        const response = await axiosInstance.get(END_POINTS.SUBSCRIPTION_PLANS('driver'));
+        if (response?.data?.success && Array.isArray(response?.data?.data)) {
+          const found = response.data.data.find((p: any) => p.amount === plan.price);
+          if (found) serverPlanId = found.id;
         }
+      } catch (e) {
+        console.log('Error fetching plans for matching, using fallback ID', e);
+      }
 
-        if (subscriptionId) {
-          console.log('Subscription created successfully:', subscriptionId);
-          await _onPressPayNow(subscriptionId, true, String(amount), plan, serverPlanId);
-          return;
-        }
+      const payload = { plan_id: serverPlanId };
+      const response = await axiosInstance.post(END_POINTS.PAYMENT_SUBSCRIPTION_CREATE, payload);
+      const subscriptionId = response?.data?.subscription_id;
 
-        // Otherwise handle as generic error
-        console.error('Subscription creation failed:', response?.data);
-        showToast(response?.data?.message || t('subUnableToLoadContent'));
+      if (subscriptionId) {
+        _onPressPayNow(subscriptionId, amount.toString(), plan);
+      } else {
         setIsLoading(false);
-
-      } catch (subError: any) {
-        // Check for "not recurring" error either from throw or from API 400 response
-        const isNotRecurring = subError.message === 'NOT_RECURRING' ||
-          subError?.response?.data?.message === 'This plan is not recurring';
-
-        if (isNotRecurring) {
-          console.log('Plan is not recurring, falling back to standard order creation...');
-
-          try {
-            // Create standard order
-            const orderPayload = {
-              amount: amount,
-              currency: 'INR',
-              notes: {
-                plan_id: serverPlanId,
-                role: user?.role || 'driver'
-              }
-            };
-
-            const orderResponse = await axiosInstance.post(END_POINTS.CREATE_ORDER, orderPayload);
-            console.log('Order creation response:', orderResponse?.data);
-
-            let orderId = orderResponse?.data?.id || orderResponse?.data?.order_id || (orderResponse?.data?.data ? orderResponse?.data?.data?.id : null);
-
-            if (orderResponse?.data?.success || (orderId && String(orderId).startsWith('order_'))) {
-              if (orderId) {
-                console.log('Order created successfully:', orderId);
-                await _onPressPayNow(orderId, false, String(amount), plan, serverPlanId);
-              } else {
-                throw new Error('Order ID not found in response');
-              }
-            } else {
-              throw new Error(orderResponse?.data?.message || 'Failed to create order');
-            }
-          } catch (orderError: any) {
-            console.error('Order creation failed:', orderError);
-            showToast(t('subUnableToLoadContent') || 'Unable to initiate payment');
-            setIsLoading(false);
-          }
-        } else {
-          // Genuine subscription error
-          console.error('Error creating subscription:', subError);
-          const message = subError?.response?.data?.message || subError.message || 'Failed to create session';
-          showToast(message);
-          setIsLoading(false);
-        }
+        showToast(t('oopsPaymentUnsuccessful'));
       }
     } catch (error) {
-      console.error(error);
+      console.error('Error creating order:', error);
       setIsLoading(false);
+      showToast(t('oopsPaymentUnsuccessful'));
     }
   };
 
-  const _onPressPayNow = async (id: string, isSubscription: boolean, amount: string, plan: PlanDataType, serverPlanId: number) => {
-    // Format mobile number with country code
-    const mobileNumber = user?.mobile ? `+91${String(user.mobile).replace(/^\+91/, '')}` : '';
-
+  const _onPressPayNow = async (subscriptionId: string, amount: string, plan: typeof PLAN_DATA[0]) => {
     const options = {
-      description: plan.name || 'TruckMitr Subscription',
+      description: 'TruckMitr Subscription',
       image: 'https://truckmitr.com/public/front/assets/images/logotrick.png',
       currency: 'INR',
       key: STATICS?.RAYZORPAY_KEY_ID,
-      amount: !isSubscription ? amount : undefined, // Amount needed for non-subscription
+      subscription_id: subscriptionId,
       name: 'TruckMitr',
-      subscription_id: isSubscription ? id : undefined,
-      order_id: !isSubscription ? id : undefined,
-      notes: {
-        user_id: Number(user?.id) || 0,
-        plan_id: Number(serverPlanId)
-      },
-      prefill: {
-        email: user?.email || '',
-        contact: mobileNumber,
-        name: user?.name || ''
-      },
-      readonly: {
-        email: true,
-        contact: true
-      },
-      send_sms_hash: true,
-      retry: {
-        enabled: false,
-      },
-      modal: {
-        confirm_close: false,
-        animation: true,
-      },
+      notes: { unique_id: user?.unique_id, role: user?.role, plan_id: plan.id },
+      prefill: { email: user?.email, contact: Number(user?.mobile), name: user?.name },
       theme: { color: plan.color },
     } as any;
 
-    console.log(`Opening Razorpay checkout (${isSubscription ? 'Subscription' : 'One-time'}):`, id);
-
     await RazorpayCheckout.open(options)
-      .then(async (data: any) => {
-        console.log('=== RAZORPAY SUCCESS ===');
-        console.log('Razorpay response data:', JSON.stringify(data, null, 2));
+      .then(async data => {
         setIsLoading(false);
         const eventData = {
           user_id: String(user?.id ?? ''),
@@ -879,34 +645,14 @@ export default function Subscription({ }: any) {
           payment_amount: amount,
           payment_method: 'razorpay',
           status: 'success',
-          plan_id: serverPlanId,
-          payment_id: data.razorpay_payment_id,
-          subscription_id: data.razorpay_subscription_id,
-          order_id: data.razorpay_order_id,
-          payment_type: isSubscription ? 'subscription' : 'one-time'
+          plan_id: plan.id,
         };
-        try {
-          if (analytics) await analytics().logEvent('payment_success', eventData as any);
-          AppEventsLogger.logEvent('payment_success', eventData);
-        } catch (e) { console.log('Analytics error', e) }
-
+        await analytics().logEvent('payment_success', eventData as any);
+        AppEventsLogger.logEvent('payment_success', eventData);
         dispatch(subscriptionModalAction(false));
-        setTimeout(() => navigation.navigate(STACKS.PAYMENT_SUCCESS, {
-          options,
-          data,
-          plan,
-          serverPlanId: serverPlanId
-        }), 100);
+        setTimeout(() => navigation.navigate(STACKS.PAYMENT_SUCCESS, { options, data }), 100);
       })
       .catch(async error => {
-        console.log('=== RAZORPAY ERROR ===');
-        console.log('Error object:', JSON.stringify(error, null, 2));
-
-        // Check if it's actually a success (some SDK versions have this bug)
-        if (error?.code === 0 || error?.description?.includes('success')) {
-          console.log('Payment might have succeeded despite error callback. Check dashboard.');
-        }
-
         setIsLoading(false);
         showToast(t('oopsPaymentUnsuccessful'));
       });
@@ -934,7 +680,7 @@ export default function Subscription({ }: any) {
 
         {/* Top Banner - Limited Time Offer */}
         <View style={styles.topBanner}>
-          <Text style={styles.headerTag}>⏰ {t('subLimitedTimeOffer')}</Text>
+          <Text style={styles.headerTag}>Limited Time Mega Offer</Text>
         </View>
 
         <ScrollView
@@ -944,72 +690,32 @@ export default function Subscription({ }: any) {
           ]}
           showsVerticalScrollIndicator={false}
         >
-          {/* 1️⃣ Heading Section */}
+          {/* 1️⃣ Heading */}
           <View style={styles.header}>
-            <Text style={[styles.headerTitle, { fontSize: responsiveFontSize(2.2) }]}>
-              {t('subHeaderTagline')}
+            <Text style={[styles.headerTitle, { fontSize: responsiveFontSize(2) }]}>
+              Get Skilled. Get Verified. Get Hired. Get Ahead.
             </Text>
-            <Text style={[styles.headerSubtitle, { fontSize: responsiveFontSize(1.5) }]}>
-              {t('subHeaderDesc')}
-            </Text>
-
-            {/* Benefits List */}
-            <View style={styles.headerBenefitsList}>
-              <View style={styles.headerBenefitRow}>
-                <Text style={styles.headerBenefitCheck}>✔</Text>
-                <Text style={styles.headerBenefitText}>{t('subHeaderBenefit1')}</Text>
-              </View>
-              <View style={styles.headerBenefitRow}>
-                <Text style={styles.headerBenefitCheck}>✔</Text>
-                <Text style={styles.headerBenefitText}>{t('subHeaderBenefit2')}</Text>
-              </View>
-              <View style={styles.headerBenefitRow}>
-                <Text style={styles.headerBenefitCheck}>✔</Text>
-                <Text style={styles.headerBenefitText}>{t('subHeaderBenefit3')}</Text>
-              </View>
-              <View style={styles.headerBenefitRow}>
-                <Text style={styles.headerBenefitCheck}>✔</Text>
-                <Text style={styles.headerBenefitText}>{t('subHeaderBenefit4')}</Text>
-              </View>
-            </View>
-
-            {/* CTA Message */}
-            <Text style={styles.headerCTA}>
-              👉 {t('subHeaderCTA')}
+            <Text style={[styles.headerSubtitle, { fontSize: responsiveFontSize(2) }]}>
+              Join TruckMitr Annual Membership and unlock exclusive benefits designed for drivers!
             </Text>
           </View>
-
-          <FeatureTable responsiveFontSize={responsiveFontSize} t={t} />
-
-          {/*  */}
-
+          <FeatureTable responsiveFontSize={responsiveFontSize} />
           {/* 2️⃣ Plan Cards Section */}
           <View style={styles.cardsStack}>
-            {plansLoading ? (
-              <View style={styles.plansLoadingContainer}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
-                <Text style={styles.plansLoadingText}>{t('loading') || 'Loading plans...'}</Text>
-              </View>
-            ) : dynamicPlans.length > 0 ? (
-              dynamicPlans.map((plan: PlanDataType, index: number) => (
-                <PlanCard
-                  key={plan.id}
-                  plan={plan}
-                  isExpanded={expandedId === plan.id}
-                  onToggle={() => handleToggle(plan.id)}
-                  onSelect={() => handleSelectPlan(plan)}
-                  responsiveFontSize={responsiveFontSize}
-                  isPopular={dynamicPlans.length > 1 && index === Math.floor(dynamicPlans.length / 2)} // Middle plan is popular
-                  consentChecked={consentChecked}
-                  onConsentToggle={() => setConsentChecked(!consentChecked)}
-                  onOpenConsent={() => setConsentModalVisible(true)}
-                />
-              ))
-            ) : (
-              <View style={styles.plansLoadingContainer}>
-                <Text style={styles.plansLoadingText}>{t('subNoPlansAvailable') || 'No plans available'}</Text>
-              </View>
-            )}
+            {PLAN_DATA.map((plan, index) => (
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+                isExpanded={expandedId === plan.id}
+                onToggle={() => handleToggle(plan.id)}
+                onSelect={() => handleSelectPlan(plan)}
+                responsiveFontSize={responsiveFontSize}
+                isPopular={index === 1} // Middle plan is popular
+                consentChecked={consentChecked}
+                onConsentToggle={() => setConsentChecked(!consentChecked)}
+                onOpenConsent={() => setConsentModalVisible(true)}
+              />
+            ))}
           </View>
 
           {/* 3️⃣ Feature Comparison Box */}
@@ -1019,14 +725,14 @@ export default function Subscription({ }: any) {
           <View style={styles.footerNote}>
             <Ionicons name="shield-checkmark" size={20} color={COLORS.success} />
             <Text style={styles.footerNoteText}>
-              {t('subSecurePayment')}
+              Secure payment powered by Razorpay
             </Text>
           </View>
 
         </ScrollView>
 
         {/* Loading Overlay */}
-        <LoadingOverlay visible={isLoading} t={t} />
+        <LoadingOverlay visible={isLoading} />
 
         {/* Consent Modal */}
         <ConsentModal
@@ -1046,7 +752,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 60,
   },
   closeButton: {
     position: 'absolute',
@@ -1091,20 +797,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.text,
   },
-  plansLoadingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    marginVertical: 8,
-  },
-  plansLoadingText: {
-    marginTop: 12,
-    fontSize: 15,
-    fontWeight: '500',
-    color: COLORS.textMuted,
-  },
 
   // Header
   header: {
@@ -1127,49 +819,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   topBanner: {
-    backgroundColor: '#fefefeff',
+    backgroundColor: '#DEF7EC',
     paddingHorizontal: 16,
     paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    // borderBottomWidth: 2,
+    borderBottomWidth: 2,
     borderBottomColor: COLORS.success,
   },
   headerTag: {
     color: COLORS.success,
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
     letterSpacing: 0.5,
-  },
-  headerBenefitsList: {
-    marginTop: 20,
-    width: '100%',
-    paddingHorizontal: 12,
-  },
-  headerBenefitRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  headerBenefitCheck: {
-    fontSize: 16,
-    color: COLORS.success,
-    fontWeight: '700',
-    marginRight: 10,
-  },
-  headerBenefitText: {
-    fontSize: 15,
-    color: COLORS.text,
-    fontWeight: '500',
-    flex: 1,
-  },
-  headerCTA: {
-    marginTop: 20,
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.primary,
-    textAlign: 'center',
-    paddingHorizontal: 16,
   },
 
   // Cards
@@ -1252,7 +915,9 @@ const styles = StyleSheet.create({
 
   // Price
   priceContainer: {
-    flex: 1,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
   },
   priceRow: {
     flexDirection: 'row',
@@ -1272,35 +937,6 @@ const styles = StyleSheet.create({
   priceTagline: {
     color: COLORS.textMuted,
     fontWeight: '500',
-  },
-
-  // Price and Pay Container
-  priceAndPayContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  quickPayButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    gap: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  quickPayButtonText: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: '700',
   },
 
   // Expanded Content
@@ -1399,40 +1035,6 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600',
     textDecorationLine: 'underline',
-  },
-
-  // Global Consent
-  globalConsentContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  globalConsentRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  globalConsentText: {
-    flex: 1,
-    fontSize: 14,
-    color: COLORS.text,
-    lineHeight: 20,
-    fontWeight: '500',
-  },
-  consentHint: {
-    fontSize: 12,
-    color: COLORS.warning,
-    marginTop: 10,
-    marginLeft: 34,
-    fontWeight: '600',
   },
 
   // Table

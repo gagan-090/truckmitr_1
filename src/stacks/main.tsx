@@ -15,6 +15,7 @@ import VerificationDriversByTransporter from '../app/layouts/main/transporter-ve
 import Verification from '../app/layouts/main/verification/verification-screen';
 import DriverDocumentUploadScreen from '../app/layouts/main/transporter-verification/drivers-document-upload-screen';
 import PaymentHistoryScreen from '../app/layouts/main/transporter-verification/payment-history-screen';
+import MembershipCard from '../app/layouts/main/membership-card';
 
 const Stack = createNativeStackNavigator();
 
@@ -129,6 +130,7 @@ export default function Main() {
       <Stack.Screen name={STACKS.REFERRAL} component={Referral} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.VERIFIED_DRIVERS_DOCUMENTS_UPLOAD} component={DriverDocumentUploadScreen} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.PAYMENT_HISTORY_SCREEN} component={PaymentHistoryScreen} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.MEMBERSHIP_CARD} component={MembershipCard} options={{ animation: 'fade_from_bottom' }} />
     </Stack.Navigator>
   )
 }

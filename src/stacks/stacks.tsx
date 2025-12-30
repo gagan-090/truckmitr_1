@@ -41,6 +41,7 @@ export type NavigatorParams = {
     terms: undefined
     transporterConsent: undefined,
     driverConsent: undefined,
+    membershipCard: undefined,
     verification: undefined
     paymentScreen: undefined
     doucmentUploadScreen: undefined
@@ -138,6 +139,7 @@ export const STACKS = {
     TRANSPORTER_CONSENT: 'transporterConsent',
     DRIVER_CONSENT: 'driverConsent',
     SUBSCRIPTION_CONSENT: 'subscriptionConsent',
+    MEMBERSHIP_CARD: 'membershipCard',
     VERIFICATION: 'verification',
     DOCUMENTUPLOAD: 'doucmentUploadScreen',
     VERIFICATIONSTATUS: 'verificationStatusScreen',

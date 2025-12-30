@@ -1,0 +1,218 @@
+// New styles for pixel-perfect ID card
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    width: '100%',
+    alignItems: 'center',
+  },
+  backButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 100,
+    zIndex: 10,
+  },
+  headerTitle: {
+    position: 'absolute',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  cardContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  card: {
+    borderRadius: 28,
+    overflow: 'visible',
+  },
+  // Double Border System
+  outerBorder: {
+    flex: 1,
+    borderRadius: 28,
+    borderWidth: 3,
+    borderColor: '#0a2540',
+    padding: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 15,
+  },
+  innerBorder: {
+    flex: 1,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    overflow: 'hidden',
+  },
+  gradientBackground: {
+    flex: 1,
+    position: 'relative',
+  },
+  textureOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.08)',
+    opacity: 0.4,
+  },
+  // Curved Streaks
+  streaksContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  streak: {
+    position: 'absolute',
+    left: '-10%',
+    right: '-10%',
+    height: 60,
+  },
+  // 65/35 Split Layout
+  contentRow: {
+    flex: 1,
+    flexDirection: 'row',
+    padding: 18,
+  },
+  leftSection: {
+    flex: 65,
+    paddingRight: 12,
+    justifyContent: 'space-between',
+  },
+  rightSection: {
+    flex: 35,
+    alignItems: 'center',
+    paddingTop: 8,
+  },
+  // Logo Area
+  logoArea: {
+    marginBottom: 8,
+  },
+  logoImage: {
+    width: 160,
+    height: 52,
+    marginBottom: 2,
+  },
+  tagline: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '500',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  // ID Code Section
+  idCodeSection: {
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  idCode: {
+    color: '#FFFFFF',
+    fontSize: 26,
+    fontWeight: '900',
+    letterSpacing: 2.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 5,
+  },
+  // Validity Section
+  validityRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 50,
+    marginBottom: 12,
+  },
+  validityGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  validityLabel: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  validityValue: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  // Member Info
+  memberInfo: {
+    marginTop: 4,
+  },
+  memberName: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    marginBottom: 3,
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 5,
+  },
+  memberLocation: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  // Photo Frame - Double Border
+  photoOuterFrame: {
+    backgroundColor: '#0a2540',
+    padding: 4,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  photoInnerFrame: {
+    backgroundColor: '#FFFFFF',
+    padding: 3,
+    borderRadius: 16,
+  },
+  photoImage: {
+    width: 90,
+    height: 100,
+    borderRadius: 13,
+  },
+  // License Pill
+  licensePill: {
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  licensePillText: {
+    color: '#0a2540',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+});

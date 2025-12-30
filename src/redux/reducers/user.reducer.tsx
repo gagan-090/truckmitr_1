@@ -34,12 +34,12 @@ const userReducer = (state = initialState, action: any) => {
                     console.error("Invalid JSON string in Operational_Segment", e);
                 }
             }
-            
+
             // Preserve local edits (like profilePath) when refreshing user data
-            const preservedUserEdit = (state.userEdit as any)?.profilePath 
+            const preservedUserEdit = (state.userEdit as any)?.profilePath
                 ? { ...payload?.user, profilePath: (state.userEdit as any).profilePath }
                 : payload?.user;
-            
+
             return {
                 ...state,
                 user: payload?.user,
@@ -50,7 +50,7 @@ const userReducer = (state = initialState, action: any) => {
                 dashboard: payload?.dashboard_status,
                 rank: payload?.rank,
                 star_rating: payload?.star_rating,
-                referral: {referral_remains: payload?.referral_remains, referral_sent: payload?.referral_sent,referral_success: payload?.referral_success, referral_bonus: payload?.referral_bonus, total_referrals: payload?.total_referrals},
+                referral: { referral_remains: payload?.referral_remains, referral_sent: payload?.referral_sent, referral_success: payload?.referral_success, referral_bonus: payload?.referral_bonus, total_referrals: payload?.total_referrals },
                 whatsapp_link: payload?.whatsapp_link
             }
         case TYPES['USER_PROFILE_EDIT']:
@@ -59,23 +59,80 @@ const userReducer = (state = initialState, action: any) => {
                 userEdit: payload
             }
         case TYPES['SUBSCRIPTION_DETAILS']:
-            // filter for subscription records
-            const subscription = payload.filter((item: any) => item.payment_type === "subscription");
-            let payloadSubscriptionDetails = subscription[0]
-            if (typeof payloadSubscriptionDetails?.payment_details === 'string') {
+            // Valid subscription payment types - includes all plan names
+            const validPaymentTypes = [
+                'subscription',
+                'Standard',
+                'Verified',
+                'Trusted',
+                'Job Ready',
+                'JOB READY',
+                'VERIFIED',
+                'TRUSTED'
+            ];
+
+            // Filter for subscription records - handle all payment types
+            // If payment_type matches known types OR if record has a subscription_id (meaning it's a subscription)
+            const subscriptionRecords = payload.filter((item: any) =>
+                validPaymentTypes.includes(item.payment_type) || !!item.subscription_id
+            );
+
+            // Find the first active subscription
+            const currentTimeInSeconds = Math.floor(Date.now() / 1000);
+            let activeSubscription = subscriptionRecords.find((item: any) => {
+                const hasSubscriptionId = !!item.subscription_id;
+                const isPaymentCaptured = item.payment_status === 'captured';
+                const isNotExpired = currentTimeInSeconds < item.end_at;
+                return hasSubscriptionId && isPaymentCaptured && isNotExpired;
+            });
+
+            // If no active subscription found in filtered records, check ALL payload items
+            // This handles cases where payment_type might be something unexpected
+            if (!activeSubscription && payload.length > 0) {
+                activeSubscription = payload.find((item: any) => {
+                    const hasSubscriptionId = !!item.subscription_id;
+                    const isPaymentCaptured = item.payment_status === 'captured';
+                    const isNotExpired = currentTimeInSeconds < item.end_at;
+                    return hasSubscriptionId && isPaymentCaptured && isNotExpired;
+                });
+            }
+
+            // If no active subscription found, use the first subscription record for details
+            let payloadSubscriptionDetails = activeSubscription || subscriptionRecords[0] || payload[0];
+
+            if (payloadSubscriptionDetails && typeof payloadSubscriptionDetails?.payment_details === 'string') {
                 try {
-                    payloadSubscriptionDetails.payment_details = JSON.parse(payloadSubscriptionDetails.payment_details);
+                    payloadSubscriptionDetails = {
+                        ...payloadSubscriptionDetails,
+                        payment_details: JSON.parse(payloadSubscriptionDetails.payment_details)
+                    };
                 } catch (e) {
                     console.error("Invalid JSON string in payment_details", e);
                 }
             }
-            const currentTimeInSeconds = Math.floor(Date.now() / 1000);
-            const subscriptionExpiry = currentTimeInSeconds > payloadSubscriptionDetails?.end_at;
-            const isExpired = subscriptionExpiry;
-            const hasNoSubscription = !payloadSubscriptionDetails?.id;
+
+            // Determine if user has an active subscription
+            const hasActiveSubscription = !!activeSubscription;
+            const subscriptionExpiry = payloadSubscriptionDetails?.end_at
+                ? currentTimeInSeconds > payloadSubscriptionDetails.end_at
+                : true;
+
+            // showSubscriptionModel is true when user does NOT have an active subscription
+            const shouldShowSubscriptionModal = !hasActiveSubscription;
+
             return {
                 ...state,
-                subscriptionDetails: payloadSubscriptionDetails?.id ? { ...payloadSubscriptionDetails, subscriptionExpiry, showSubscriptionModel: (hasNoSubscription || isExpired) } : { showSubscriptionModel: (hasNoSubscription || isExpired) }
+                subscriptionDetails: payloadSubscriptionDetails?.id
+                    ? {
+                        ...payloadSubscriptionDetails,
+                        subscriptionExpiry,
+                        showSubscriptionModel: shouldShowSubscriptionModal,
+                        hasActiveSubscription: hasActiveSubscription
+                    }
+                    : {
+                        showSubscriptionModel: true, // No subscription at all
+                        hasActiveSubscription: false
+                    }
             }
         case TYPES['SUBSCRIPTION_MODAL']:
             return {
