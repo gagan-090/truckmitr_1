@@ -20,6 +20,7 @@ import Subscription from '../subscription';
 import { subscriptionModalAction } from '@truckmitr/src/redux/actions/user.action';
 import Feather from 'react-native-vector-icons/Feather'
 import { showToast } from '@truckmitr/src/app/hooks/toast';
+import { log } from '@react-native-firebase/crashlytics';
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 
 
@@ -64,6 +65,13 @@ const VideoModulesView = ({ item, index, module }: any) => {
     )
 }
 
+
+type TrainingCompleteModalState = {
+    visible: boolean;
+    module: number;
+    totalModules: number;
+};
+
 export default function Training() {
     const { t } = useTranslation();
     const route = useRoute<any>()
@@ -91,7 +99,8 @@ export default function Training() {
     const [quizList, setquizList] = useState([])
     const [trainingCompleteModal, setTrainingCompleteModal] = useState({
         visible: false,
-        module: 1
+        module: 1,
+        totalModules: 0
     });
     const [isExtended, setIsExtended] = useState(false);
 
@@ -120,6 +129,11 @@ export default function Training() {
 
     const handleStartNextModule = () => {
         const nextModuleNumber = trainingCompleteModal.module + 1;
+
+        // if (!trainingCompleteModal.totalModules) {
+        //     setTrainingCompleteModal({ ...trainingCompleteModal, visible: false });
+        //     return;
+        // }
 
         if (nextModuleNumber > trainingCompleteModal.totalModules) {
             setTrainingCompleteModal({ ...trainingCompleteModal, visible: false });
@@ -244,8 +258,52 @@ export default function Training() {
 
     }
     const _navigateQuiz = () => {
-        navigation.navigate(STACKS.QUIZ, { item: quizList?.find((a: any) => Number(a?.module) === (moduleQuizToggle === 'MODULE_1' ? 1 : 2)) })
-    }
+        if (!moduleQuizToggle) return;
+
+        const moduleNumberMap: Record<string, number> = {
+            MODULE_1: 1,
+            MODULE_2: 2,
+            MODULE_3: 3,
+        };
+
+        const selectedModule = moduleNumberMap[moduleQuizToggle];
+
+        const quiz = quizList.find(
+            (q: any) => Number(q.module) === selectedModule
+        );
+
+        if (!quiz) {
+            showToast('Quiz not available');
+            return;
+        }
+
+        console.log('Selected:', moduleQuizToggle);
+        // console.log('Available quizzes:', quizList.map(q => q.module));
+
+        console.log('quiz:',quiz);
+        
+        navigation.navigate(STACKS.QUIZ, { item: quiz });
+    };
+
+
+    // const _navigateQuiz = () => {
+    //     navigation.navigate(STACKS.QUIZ, { item: quizList?.find((a: any) => Number(a?.module) === (moduleQuizToggle === 'MODULE_1' ? 1 : 2)) })
+    // }
+    // const _navigateQuiz = () => {
+    //     let backendModule = 1;
+    //     if (moduleQuizToggle === 'MODULE_1') backendModule = 1;
+    //     if (moduleQuizToggle === 'MODULE_2') backendModule = 2;
+    //     if (moduleQuizToggle === 'MODULE_3') backendModule = 4; // 👈 KEY LINE
+    //     const quiz = quizList.find((q: any) => Number(q.module) === backendModule);
+    //     // return console.log('quiz',quiz);
+
+    //     if (!quiz) {
+    //         showToast('Quiz not available');
+    //         return;
+    //     }
+    //     navigation.navigate(STACKS.QUIZ, { item: quiz });
+    // };
+
     const _navigatePlayer = () => {
         navigation.navigate(STACKS.PLAYER, { item: continueWatching, isContinueWatching: true })
     }
@@ -353,30 +411,135 @@ export default function Training() {
                         <Space height={responsiveHeight(.5)} />
                         {!watchAllVideos[0]?.watchAllVideos ? <Text style={{ width: '80%', color: colors.blackOpacity(.5), fontSize: responsiveFontSize(1.9), textAlign: 'center', marginVertical: responsiveFontSize(1.2) }}>{t(`youMustCompleteAllVideos`)}</Text>
                             : <View style={{ flexDirection: 'row', padding: responsiveWidth(6) }}>
-                                <TouchableOpacity onPress={() => setmoduleQuizToggle('MODULE_1')} style={{ flex: 1, height: responsiveHeight(10), alignItems: 'center', justifyContent: 'center', backgroundColor: moduleQuizToggle === 'MODULE_1' ? colors.blackOpacity(.07) : colors.blackOpacity(.01), borderRadius: 5, borderColor: moduleQuizToggle === 'MODULE_1' ? colors.blackOpacity(.0) : colors.blackOpacity(.05), borderWidth: 1 }}>
-                                    <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.9), fontWeight: '500' }}>{`Module 1`}</Text>
-                                    <Text style={{ color: colors.blackOpacity(.5), fontSize: responsiveFontSize(1.6), fontWeight: '400' }}>{t('quiz')}</Text>
-                                    <TouchableOpacity onPress={() => setmoduleQuizToggle('MODULE_1')} style={{ position: 'absolute', zIndex: 100, left: responsiveFontSize(.7), top: responsiveFontSize(.7) }}>
-                                        <Ionicons name={moduleQuizToggle === 'MODULE_1' ? 'radio-button-on' : 'radio-button-off'} size={22} color={moduleQuizToggle === 'MODULE_1' ? colors.black : colors.blackOpacity(.5)} />
-                                    </TouchableOpacity>
+
+                                {/* MODULE 1 */}
+                                <TouchableOpacity
+                                    onPress={() => setmoduleQuizToggle('MODULE_1')}
+                                    style={{
+                                        flex: 1,
+                                        height: responsiveHeight(10),
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor:
+                                            moduleQuizToggle === 'MODULE_1'
+                                                ? colors.blackOpacity(.07)
+                                                : colors.blackOpacity(.01),
+                                        borderRadius: 5,
+                                        borderWidth: 1,
+                                        position: 'relative', // ✅ IMPORTANT
+                                    }}
+                                >
+                                    {/* 🔘 RADIO ICON — TOP LEFT */}
+                                    <Ionicons
+                                        name={
+                                            moduleQuizToggle === 'MODULE_1'
+                                                ? 'radio-button-on'
+                                                : 'radio-button-off'
+                                        }
+                                        size={16}
+                                        color={
+                                            moduleQuizToggle === 'MODULE_1'
+                                                ? colors.black
+                                                : colors.blackOpacity(.5)
+                                        }
+                                        style={{
+                                            position: 'absolute',
+                                            top: responsiveFontSize(.8),
+                                            left: responsiveFontSize(.8),
+                                        }}
+                                    />
+
+                                    <Text style={{ fontSize: responsiveFontSize(1.9), fontWeight: '500' }}>
+                                        Module 1
+                                    </Text>
+
+                                    <Text style={{ fontSize: responsiveFontSize(1.6), color: colors.blackOpacity(.5) }}>
+                                        {t('quiz')}
+                                    </Text>
                                 </TouchableOpacity>
-                                <Space width={responsiveWidth(4)} />
-                                <TouchableOpacity onPress={() => setmoduleQuizToggle('MODULE_2')} disabled={!watchAllVideos[1]?.watchAllVideos} style={{ flex: 1, height: responsiveHeight(10), alignItems: 'center', justifyContent: 'center', backgroundColor: moduleQuizToggle === 'MODULE_2' ? colors.blackOpacity(.07) : colors.blackOpacity(.01), borderRadius: 5, borderColor: moduleQuizToggle === 'MODULE_2' ? colors.blackOpacity(.0) : colors.blackOpacity(.05), borderWidth: 1, opacity: !watchAllVideos[1]?.watchAllVideos ? .5 : 1 }}>
-                                    <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.9), fontWeight: '500' }}>{`Module 2`}</Text>
-                                    <Text style={{ color: colors.blackOpacity(.5), fontSize: responsiveFontSize(1.6), fontWeight: '400' }}>{t('quiz')}</Text>
-                                    <TouchableOpacity onPress={() => {
+
+
+                                <Space width={responsiveWidth(3)} />
+
+                                {/* MODULE 2 */}
+                                <TouchableOpacity
+                                    disabled={!watchAllVideos[1]?.watchAllVideos}
+                                    onPress={() => {
                                         if (!watchAllVideos[1]?.watchAllVideos) {
                                             showToast(t(`toAttemptQuizPlsCompleteModule2Training`));
                                         } else {
                                             setmoduleQuizToggle('MODULE_2');
                                         }
                                     }}
-                                        // disabled={!watchAllVideos[1]?.watchAllVideos}
-                                        style={{ position: 'absolute', zIndex: 100, left: responsiveFontSize(.7), top: responsiveFontSize(.7) }}>
-                                        <Ionicons name={moduleQuizToggle === 'MODULE_2' ? 'radio-button-on' : 'radio-button-off'} size={22} color={moduleQuizToggle === 'MODULE_2' ? colors.black : colors.blackOpacity(.5)} />
-                                    </TouchableOpacity>
+                                    style={{
+                                        flex: 1,
+                                        height: responsiveHeight(10),
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: moduleQuizToggle === 'MODULE_2'
+                                            ? colors.blackOpacity(.07)
+                                            : colors.blackOpacity(.01),
+                                        borderRadius: 5,
+                                        borderWidth: 1,
+                                        opacity: watchAllVideos[1]?.watchAllVideos ? 1 : 0.5,
+                                        position: 'relative', // ✅ IMPORTANT
+                                    }}>
+                                    {/* 🔘 RADIO ICON — TOP LEFT */}
+                                    <Ionicons
+                                        name={moduleQuizToggle === 'MODULE_2'
+                                            ? 'radio-button-on'
+                                            : 'radio-button-off'}
+                                        size={16}
+                                        color={moduleQuizToggle === 'MODULE_2'
+                                            ? colors.black
+                                            : colors.blackOpacity(.5)}
+                                        style={{
+                                            position: 'absolute',
+                                            top: responsiveFontSize(.8),
+                                            left: responsiveFontSize(.8),
+                                        }}
+                                    />
+
+                                    <Text style={{ fontSize: responsiveFontSize(1.9), fontWeight: '500' }}>
+                                        Module 2
+                                    </Text>
+                                    <Text style={{ fontSize: responsiveFontSize(1.6), color: colors.blackOpacity(.5) }}>
+                                        {t('quiz')}
+                                    </Text>
                                 </TouchableOpacity>
-                            </View>}
+
+                                <Space width={responsiveWidth(3)} />
+
+                                {/* MODULE 3 (BACKEND = MODULE 4) */}
+                                <TouchableOpacity
+                                    disabled={!watchAllVideos[2]?.watchAllVideos}
+                                    onPress={() => {
+                                        if (!watchAllVideos[2]?.watchAllVideos) {
+                                            showToast(t(`toAttemptQuizPlsCompleteModule3Training`));
+                                        } else {
+                                            setmoduleQuizToggle('MODULE_3');
+                                        }
+                                    }}
+                                    style={{
+                                        flex: 1, height: responsiveHeight(10), alignItems: 'center', justifyContent: 'center', backgroundColor: moduleQuizToggle === 'MODULE_3' ? colors.blackOpacity(.07) : colors.blackOpacity(.01), borderRadius: 5, borderWidth: 1, opacity: watchAllVideos[2]?.watchAllVideos ? 1 : 0.5, position: 'relative',
+                                    }}>
+
+                                    <Ionicons
+                                        name={moduleQuizToggle === 'MODULE_3' ? 'radio-button-on' : 'radio-button-off'}
+                                        size={16}
+                                        color={moduleQuizToggle === 'MODULE_3' ? colors.black : colors.blackOpacity(.5)}
+                                        style={{ position: 'absolute', top: responsiveFontSize(.8), left: responsiveFontSize(.8), }}
+                                    />
+                                    <Text style={{ fontSize: responsiveFontSize(1.9), fontWeight: '500' }}>
+                                        Module 3
+                                    </Text>
+                                    <Text style={{ fontSize: responsiveFontSize(1.6), color: colors.blackOpacity(.5) }}>
+                                        {t('quiz')}
+                                    </Text>
+                                </TouchableOpacity>
+
+                            </View>
+                        }
                         <Space height={responsiveHeight(2)} />
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <TouchableOpacity onPress={() => setquizModuleModel(false)} activeOpacity={.7} style={{ height: responsiveHeight(6.5), flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.blackOpacity(.1), bottom: -1 }}>

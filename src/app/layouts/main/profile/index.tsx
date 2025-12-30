@@ -40,7 +40,9 @@ import { AppEventsLogger } from 'react-native-fbsdk-next';
 import RNFetchBlob from 'react-native-blob-util';
 import LinearGradient from 'react-native-linear-gradient';
 import { ImageBackground } from 'react-native';
-
+import { openOverlayPermission } from '@truckmitr/src/utils/permissions/appearOnTopPermission';
+import { ZegoSendCallInvitationButton } from '@zegocloud/zego-uikit-prebuilt-call-rn';
+import { startVideoCall } from '@truckmitr/src/utils/zegoService';
 // Membership Card Asset Images
 const LOGO_IMAGE = require('@truckmitr/src/assets/membership-card/logotrick.png');
 const PROFILE_PLACEHOLDER = require('@truckmitr/src/assets/membership-card/man.png');
@@ -118,7 +120,6 @@ const getTierFromPaymentType = (paymentType: string): TierType => {
   if (normalizedType === 'STANDARD') return 'Standard';
   return 'JOB READY';
 };
-
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -1224,7 +1225,33 @@ export default function Profile() {
             onPress={_navigateProfileEdit}
           />
         </CardContainer>
+        {/* <TouchableOpacity 
+onPress={()=>{
+  openOverlayPermission()
+  console.log('pressed');
+  
+}}
+>
+  <Text>Enable Appear on Top</Text>
+</TouchableOpacity> */}
 
+        {/* <ZegoSendCallInvitationButton
+          invitees={[{ userID: 'TM2512UPDR23435', userName: '"Abhishek"' }]}
+          isVideoCall={true}
+          resourceID={"TruckMitr"} // Please fill in the resource ID name that has been configured in the ZEGOCLOUD's console here.
+        /> */}
+        <ZegoSendCallInvitationButton
+          invitees={[{ userID: 'TM2512UPDR23435', userName: 'Abhishek' }]}
+          isVideoCall={true}
+          resourceID="TruckMitr"
+          text="Call Driver"
+          backgroundColor={colors.white}
+          textColor={colors.royalBlue}
+          width={160}
+          height={48}
+          borderRadius={12}
+        // borderColor={colors.royalBlue}
+        />
         {/* General Section */}
         <SectionHeader title={t('general')} />
         <CardContainer>

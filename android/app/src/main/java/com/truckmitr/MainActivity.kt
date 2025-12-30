@@ -18,7 +18,8 @@ class MainActivity : ReactActivity() {
     override fun onCreate(savedInstanceState: Bundle?) { // Correct Kotlin override and method signature
         setTheme(R.style.MyTheme)
         RNBootSplash.init(this, R.style.BootTheme); // ⬅️ initialize the splash screen
-        super.onCreate(savedInstanceState)
+//      super.onCreate(savedInstanceState)
+        super.onCreate(null)
     }
 
 

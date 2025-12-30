@@ -36,10 +36,10 @@ export default function Quiz() {
     const _goback = () => {
         navigation.goBack();
     };
-    
+
     const _navigateQuizResult = () => {
-            navigation.navigate(STACKS.QUIZ_RESULT)
-        }
+        navigation.navigate(STACKS.QUIZ_RESULT)
+    }
 
     const handleAnswerSelection = async (answer: string) => {
         if (!currentQuestion) return;
@@ -48,9 +48,13 @@ export default function Quiz() {
         const formData = new FormData();
         formData.append('quiz_id', currentQuestion.id);
         formData.append('user_answer', answer);
+        console.log('formdata----------', formData);
+
         try {
             const response = await axiosInstance.post(END_POINTS.ATTEMPT_QUIZ, formData);
             if (response?.data?.status) {
+                console.log('---------------------------------QUIZE RESULT ---------------------------------');
+                console.log(response?.data?.data);
                 setquizResult(response?.data?.data.result)
                 const currentIndex = item?.questions.findIndex((q: any) => q.id === currentQuestionId);
                 if (currentIndex !== -1 && currentIndex < item?.questions.length - 1) {

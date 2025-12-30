@@ -623,7 +623,7 @@ export default function Subscription({ }: any) {
       const role = user?.role || 'driver';
       console.log('Fetching subscription plans for role:', role);
 
-      const response = await axiosInstance.get(END_POINTS.SUBSCRIPTION_PLANS(role));
+      const response = await axiosInstance.get(END_POINTS.PAYMENT_SUBSCRIPTION_UPDATE(role));
       console.log('Subscription plans API response:', JSON.stringify(response?.data, null, 2));
 
       if (response?.data?.success && Array.isArray(response?.data?.data)) {

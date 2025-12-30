@@ -35,6 +35,7 @@ export const END_POINTS = {
     RECOMMENDED_JOBS: `api/jobs/recommended-jobs`,
     ALL_JOBS_AND_SEARCH: (payload: any) => `api/jobs/all?search=${payload}`,
     JOBS_FILTER: (payload: any) => `api/jobs/filter?salary=${payload?.salary}&experience=${payload?.experience || ``}&job_location=${payload?.jobLocation || ``}`,
+    JOB_THAT_SUITS_YOU: `api/jobs-suits/jobs-by-state`,
     APPLIED_JOBS: `api/jobs/applied-jobs`,
     APPLY_JOB: (payload: any) => `api/jobs/apply-jobs/${payload}`,
     QUIZ_LIST: `api/quiz/list`,
@@ -64,7 +65,7 @@ export const END_POINTS = {
     PAYMENT_SUBSCRIPTION_CAPTURE: `api/payment/subscription/capture`,
     PAYMENT_SUBSCRIPTION_DETAILS: `api/payment/subscription/details`,
     PAYMENT_SUBSCRIPTION_CREATE: `api/subscription/create`,
-    // PAYMENT_SUBSCRIPTION_UPDATE: `/api/subscription/plansByUser?role={role}`,
+    PAYMENT_SUBSCRIPTION_UPDATE: (role: any) => `api/subscription/plansByUser?role=${role}`,
 
     SUBSCRIPTION_PLANS: (role: string) => `api/subscription/plans?role=${role}`,
     PUBLIC_SAVE_FCM_TOKEN: `api/public/save-fcm-token`,
