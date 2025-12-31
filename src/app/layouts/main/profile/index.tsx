@@ -618,10 +618,20 @@ export default function Profile() {
   const downloadInvoice = async () => {
     try {
       setDownloadingInvoice(true);
-      const getPDFLink: any = await axiosInstance.get(END_POINTS?.INVOICE_DOWNLOAD);
-      if (getPDFLink?.data?.url) {
+
+      // Get payment_id from subscriptionDetails
+      const paymentId = subscriptionDetails?.payment_id || subscriptionDetails?.id;
+
+      if (!paymentId) {
+        showToast('Unable to download invoice. Payment ID not found.');
+        return;
+      }
+
+      const getPDFLink: any = await axiosInstance.get(END_POINTS?.INVOICE_DOWNLOAD(paymentId));
+
+      if (getPDFLink?.data?.status && getPDFLink?.data?.invoice_url) {
         const { config, fs, android } = RNFetchBlob;
-        const timestamp = new Date().getTime()
+        const timestamp = new Date().getTime();
         const filePath = `${fs.dirs.DownloadDir}/Invoice${timestamp}.pdf`;
 
         await config({
@@ -635,14 +645,20 @@ export default function Profile() {
             mediaScannable: true,
           },
         })
-          .fetch('GET', getPDFLink?.data?.url)
+          .fetch('GET', getPDFLink?.data?.invoice_url)
           .then((res) => {
             android.actionViewIntent(res.path(), 'application/pdf');
+            showToast('Invoice downloaded successfully!');
           })
           .catch((e) => {
             Alert.alert('Error', e.message);
           });
+      } else {
+        showToast(getPDFLink?.data?.message || 'Unable to download invoice.');
       }
+    } catch (error: any) {
+      console.error('Download invoice error:', error);
+      showToast(error?.message || 'Failed to download invoice. Please try again.');
     } finally {
       setDownloadingInvoice(false);
     }

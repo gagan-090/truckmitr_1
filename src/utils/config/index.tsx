@@ -111,7 +111,8 @@ export const END_POINTS = {
     PAYMENT_DETAIL: 'api/orders/payments_details',
     REFERRAL: 'api/referrals/send',
     CALL_TRANSPORTER: 'api/call-logs/logCallTransporter',
-    INVOICE_DOWNLOAD: 'api/invoices/download',
+
+    INVOICE_DOWNLOAD: (payment_id: any) => `api/invoice/${payment_id}`,
     GET_DRIVERS_PROFILE: (driver_id: any) => `api/profile?driver_id=${driver_id}`,
     DRIVER_UPLOAD_DOCUMENTS_BY_TRANSPORTER: (driver_id: any) => `api/driver-verification/upload-documents?driver_id=${driver_id}`,
     VERIFICATION_VIDEO: `api/driver-verification/verification-video`,

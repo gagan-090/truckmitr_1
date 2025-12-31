@@ -551,6 +551,9 @@ export default function AvailableJob() {
                         setshowLottie(false)
                     }, 1200);
                 } else {
+                    if (response?.data?.message === "You have reached your cumulative job application limit for your subscriptions.") {
+                        dispatch(subscriptionModalAction(true));
+                    }
                     showToast(response?.data?.message)
                 }
             } catch (error: any) {

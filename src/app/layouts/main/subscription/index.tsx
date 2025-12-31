@@ -428,6 +428,7 @@ interface PlanDataType {
   color: string;
   bgColor: string;
   gradient: string[];
+  is_recurring?: number | boolean;
 }
 
 const PlanCard = React.memo(({
@@ -685,6 +686,7 @@ export default function Subscription({ }: any) {
             duration: apiPlan.duration || t('subYear'),
             intro: apiPlan.description || apiPlan.intro || '',
             benefits,
+            is_recurring: apiPlan.is_recurring,
             ctaText: tier === 'trusted' ? t('subGetTrusted') : tier === 'verified' ? t('subGetVerified') : t('subGetStarted'),
             color,
             bgColor,
@@ -743,93 +745,102 @@ export default function Subscription({ }: any) {
     try {
       const amount = plan.price * 100;
       const serverPlanId: number = plan.id;
-      console.log(`Using plan: id=${serverPlanId}, price=${plan.price}, name=${plan.name}`);
+      const isRecurring = plan.is_recurring === 1 || plan.is_recurring === true;
 
-      // Try creating a subscription first
-      try {
-        console.log(`Attempting to create subscription for plan ${serverPlanId}`);
-        const payload = { plan_id: serverPlanId };
-        const response = await axiosInstance.post(END_POINTS.PAYMENT_SUBSCRIPTION_CREATE, payload);
+      console.log(`Using plan: id=${serverPlanId}, price=${plan.price}, name=${plan.name}, recurring=${isRecurring}`);
 
-        console.log('=== SUBSCRIPTION CREATE RESPONSE ===');
-        console.log('Full response.data:', JSON.stringify(response?.data, null, 2));
+      if (isRecurring) {
+        // Try creating a subscription
+        try {
+          console.log(`Attempting to create subscription for plan ${serverPlanId}`);
+          const payload = { plan_id: serverPlanId };
+          const response = await axiosInstance.post(END_POINTS.PAYMENT_SUBSCRIPTION_CREATE, payload);
 
-        let subscriptionId =
-          response?.data?.subscription_id ||
-          response?.data?.data?.subscription_id ||
-          response?.data?.data?.id ||
-          response?.data?.id;
+          console.log('=== SUBSCRIPTION CREATE RESPONSE ===');
+          console.log('Full response.data:', JSON.stringify(response?.data, null, 2));
 
-        // If specific error "not recurring", throw specific error to catch below
-        if (!subscriptionId && response?.data?.message === 'This plan is not recurring') {
-          throw new Error('NOT_RECURRING');
-        }
+          let subscriptionId =
+            response?.data?.subscription_id ||
+            response?.data?.data?.subscription_id ||
+            response?.data?.data?.id ||
+            response?.data?.id;
 
-        if (subscriptionId) {
-          console.log('Subscription created successfully:', subscriptionId);
-          await _onPressPayNow(subscriptionId, true, String(amount), plan, serverPlanId);
-          return;
-        }
-
-        // Otherwise handle as generic error
-        console.error('Subscription creation failed:', response?.data);
-        showToast(response?.data?.message || t('subUnableToLoadContent'));
-        setIsLoading(false);
-
-      } catch (subError: any) {
-        // Check for "not recurring" error either from throw or from API 400 response
-        const isNotRecurring = subError.message === 'NOT_RECURRING' ||
-          subError?.response?.data?.message === 'This plan is not recurring';
-
-        if (isNotRecurring) {
-          console.log('Plan is not recurring, falling back to standard order creation...');
-
-          try {
-            // Create standard order
-            const orderPayload = {
-              amount: amount,
-              currency: 'INR',
-              notes: {
-                plan_id: serverPlanId,
-                role: user?.role || 'driver'
-              }
+          // If success
+          if (subscriptionId) {
+            console.log('Subscription created successfully:', subscriptionId);
+            const subscriptionDates = {
+              start_date: response?.data?.start_at || response?.data?.data?.start_at || response?.data?.current_start || response?.data?.data?.current_start,
+              end_date: response?.data?.end_at || response?.data?.data?.end_at || response?.data?.current_end || response?.data?.data?.current_end
             };
-
-            const orderResponse = await axiosInstance.post(END_POINTS.CREATE_ORDER, orderPayload);
-            console.log('Order creation response:', orderResponse?.data);
-
-            let orderId = orderResponse?.data?.id || orderResponse?.data?.order_id || (orderResponse?.data?.data ? orderResponse?.data?.data?.id : null);
-
-            if (orderResponse?.data?.success || (orderId && String(orderId).startsWith('order_'))) {
-              if (orderId) {
-                console.log('Order created successfully:', orderId);
-                await _onPressPayNow(orderId, false, String(amount), plan, serverPlanId);
-              } else {
-                throw new Error('Order ID not found in response');
-              }
-            } else {
-              throw new Error(orderResponse?.data?.message || 'Failed to create order');
-            }
-          } catch (orderError: any) {
-            console.error('Order creation failed:', orderError);
-            showToast(t('subUnableToLoadContent') || 'Unable to initiate payment');
-            setIsLoading(false);
+            await _onPressPayNow(subscriptionId, true, String(amount), plan, serverPlanId, subscriptionDates);
+            return;
           }
-        } else {
-          // Genuine subscription error
-          console.error('Error creating subscription:', subError);
-          const message = subError?.response?.data?.message || subError.message || 'Failed to create session';
-          showToast(message);
-          setIsLoading(false);
+
+          // If specific error "not recurring", proceed to fallback (Create Order)
+          if (response?.data?.message === 'This plan is not recurring') {
+            console.log('API returned "not recurring" error. Switching to order creation.');
+            // Fall through to order creation below
+          } else {
+            // Other error
+            throw new Error(response?.data?.message || 'Failed to create subscription');
+          }
+        } catch (subError: any) {
+          const isNotRecurringError = subError.message === 'NOT_RECURRING' ||
+            subError?.response?.data?.message === 'This plan is not recurring';
+
+          if (isNotRecurringError) {
+            console.log('Caught "not recurring" error. Switching to order creation.');
+            // Fall through
+          } else {
+            // Genuine error
+            console.error('Subscription creation failed:', subError);
+            showToast(subError?.response?.data?.message || t('subUnableToLoadContent'));
+            setIsLoading(false);
+            return;
+          }
         }
       }
+
+      // Create Order Logic (Reached if !isRecurring OR "not recurring" error occurred)
+      try {
+        console.log('Creating standard order for plan:', serverPlanId);
+        const orderPayload = {
+          amount: amount,
+          currency: 'INR',
+          notes: {
+            plan_id: serverPlanId,
+            role: user?.role || 'driver'
+          }
+        };
+
+        const orderResponse = await axiosInstance.post(END_POINTS.CREATE_ORDER, orderPayload);
+        console.log('Order creation response:', orderResponse?.data);
+
+        let orderId = orderResponse?.data?.id || orderResponse?.data?.order_id || (orderResponse?.data?.data ? orderResponse?.data?.data?.id : null);
+
+        if (orderResponse?.data?.success || (orderId && String(orderId).startsWith('order_'))) {
+          if (orderId) {
+            console.log('Order created successfully:', orderId);
+            await _onPressPayNow(orderId, false, String(amount), plan, serverPlanId);
+          } else {
+            throw new Error('Order ID not found in response');
+          }
+        } else {
+          throw new Error(orderResponse?.data?.message || 'Failed to create order');
+        }
+      } catch (orderError: any) {
+        console.error('Order creation failed:', orderError);
+        showToast(t('subUnableToLoadContent') || 'Unable to initiate payment');
+        setIsLoading(false);
+      }
+
     } catch (error) {
       console.error(error);
       setIsLoading(false);
     }
   };
 
-  const _onPressPayNow = async (id: string, isSubscription: boolean, amount: string, plan: PlanDataType, serverPlanId: number) => {
+  const _onPressPayNow = async (id: string, isSubscription: boolean, amount: string, plan: PlanDataType, serverPlanId: number, subscriptionDates?: any) => {
     // Format mobile number with country code
     const mobileNumber = user?.mobile ? `+91${String(user.mobile).replace(/^\+91/, '')}` : '';
 
@@ -895,7 +906,8 @@ export default function Subscription({ }: any) {
           options,
           data,
           plan,
-          serverPlanId: serverPlanId
+          serverPlanId: serverPlanId,
+          subscriptionDates
         }), 100);
       })
       .catch(async error => {

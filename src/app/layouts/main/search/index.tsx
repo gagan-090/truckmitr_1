@@ -66,22 +66,22 @@ export default function AvailableJob() {
         return () => clearTimeout(timer); // cleanup on re-run
     }, [search]);
 
-      const validate = (jobId: number): boolean => {
-    let valid = true;
-    const newErrors: { [key: string]: string } = {};
+    const validate = (jobId: number): boolean => {
+        let valid = true;
+        const newErrors: { [key: string]: string } = {};
 
-    if (!checkBoxSelect[jobId]) {
-      newErrors.checkBox = t(`youNeedToAcceptTruckMitr`);
-      valid = false;
-    }
-    setErrors(prev => ({ ...prev, [jobId]: newErrors }));
-    return valid;
-  };
+        if (!checkBoxSelect[jobId]) {
+            newErrors.checkBox = t(`youNeedToAcceptTruckMitr`);
+            valid = false;
+        }
+        setErrors(prev => ({ ...prev, [jobId]: newErrors }));
+        return valid;
+    };
 
-  const _onpressCheckBox = (jobId: number) => {
-    setCheckBoxSelect(prev => ({ ...prev, [jobId]: !prev[jobId] }));
-    setErrors(prev => ({ ...prev, [jobId]: { checkBox: undefined } }));
-  };
+    const _onpressCheckBox = (jobId: number) => {
+        setCheckBoxSelect(prev => ({ ...prev, [jobId]: !prev[jobId] }));
+        setErrors(prev => ({ ...prev, [jobId]: { checkBox: undefined } }));
+    };
 
 
     const [expandedJobs, setExpandedJobs] = useState<{ [key: number]: boolean }>({});
@@ -102,22 +102,28 @@ export default function AvailableJob() {
         } else {
             try {
                 setloadingApplyJob(id)
-        const FormData = require('form-data');
-        let data = new FormData();
-        // Set consent_visible_transporter to 1 if checked, 0 if unchecked
-        data.append('consent_visible_transporter', checkBoxSelect[id] ? 1 : 0);
+                const FormData = require('form-data');
+                let data = new FormData();
+                // Set consent_visible_transporter to 1 if checked, 0 if unchecked
+                data.append('consent_visible_transporter', checkBoxSelect[id] ? 1 : 0);
 
-        const response: any = await axiosInstance.post(END_POINTS?.APPLY_JOB(id), data);
+                const response: any = await axiosInstance.post(END_POINTS?.APPLY_JOB(id), data);
                 if (response?.data?.status) {
                     setshowLottie(true)
                     setTimeout(() => {
                         setshowLottie(false)
                     }, 1200);
                 } else {
+                    if (response?.data?.message === "You have reached your cumulative job application limit for your subscriptions.") {
+                        dispatch(subscriptionModalAction(true));
+                    }
                     showToast(response?.data?.message)
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Error searching jobs:", error);
+                if (error?.response?.status === 403 || error?.response?.data?.message === "You have reached your cumulative job application limit for your subscriptions.") {
+                    dispatch(subscriptionModalAction(true));
+                }
             } finally {
                 setloadingApplyJob(-1)
             }
@@ -284,27 +290,27 @@ export default function AvailableJob() {
                                             </View>
                                         </View>
                                         <Space height={responsiveHeight(2)} />
-                                                          <View style={{ flexDirection: 'row' }}>
-                                                            <TouchableOpacity activeOpacity={1} onPress={() => _onpressCheckBox(item.id)}>
-                                                              <MaterialCommunityIcons
-                                                                name={checkBoxSelect[item.id] ? 'checkbox-marked' : 'checkbox-blank-outline'}
-                                                                size={24}
-                                                                color={colors.royalBlue}
-                                                              />
-                                                            </TouchableOpacity>
-                                                               <Text style={{ color: colors.blackOpacity(0.7), marginStart: responsiveFontSize(1), flexShrink: 1, flexWrap: 'wrap' }}>
-                                                                                                          {t(`iAgreeToTruckMitr`)}
-                                                                                                          <Text onPress={() => navigation.navigate(STACKS?.DRIVER_CONSENT)} style={{ color: colors.royalBlue, fontWeight: '500' }}> {t(`driverConsent`)}</Text>
-                                                                                                          {t(`applyJobPolicy`)}
-                                                              </Text>
-                                                          </View>
-                                                          {errors[item.id]?.checkBox && (
-                                                            <View style={{ flexDirection: 'row', marginTop: responsiveHeight(1) }}>
-                                                              <Text style={{ color: colors.error, fontSize: responsiveFontSize(1.7), marginLeft: responsiveFontSize(0.5) }}>
-                                                                {errors[item.id]?.checkBox}
-                                                              </Text>
-                                                            </View>
-                                                          )}
+                                        <View style={{ flexDirection: 'row' }}>
+                                            <TouchableOpacity activeOpacity={1} onPress={() => _onpressCheckBox(item.id)}>
+                                                <MaterialCommunityIcons
+                                                    name={checkBoxSelect[item.id] ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                                                    size={24}
+                                                    color={colors.royalBlue}
+                                                />
+                                            </TouchableOpacity>
+                                            <Text style={{ color: colors.blackOpacity(0.7), marginStart: responsiveFontSize(1), flexShrink: 1, flexWrap: 'wrap' }}>
+                                                {t(`iAgreeToTruckMitr`)}
+                                                <Text onPress={() => navigation.navigate(STACKS?.DRIVER_CONSENT)} style={{ color: colors.royalBlue, fontWeight: '500' }}> {t(`driverConsent`)}</Text>
+                                                {t(`applyJobPolicy`)}
+                                            </Text>
+                                        </View>
+                                        {errors[item.id]?.checkBox && (
+                                            <View style={{ flexDirection: 'row', marginTop: responsiveHeight(1) }}>
+                                                <Text style={{ color: colors.error, fontSize: responsiveFontSize(1.7), marginLeft: responsiveFontSize(0.5) }}>
+                                                    {errors[item.id]?.checkBox}
+                                                </Text>
+                                            </View>
+                                        )}
                                         <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: responsiveFontSize(1.5), borderTopColor: colors?.blackOpacity(.05), borderTopWidth: 1, paddingTop: responsiveFontSize(1.5) }}>
                                             <View style={{ flex: 1.5 }} />
                                             <View style={{ flex: 1 }}>
