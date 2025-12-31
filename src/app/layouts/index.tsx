@@ -1,5 +1,5 @@
 import { Approval, IntroVideo, Language, Login, Namaste, Otp, Signup, Welcome, ProfileCompletion, Congratulations } from "@truckmitr/layouts/auth"
-import { AppliedJob, AvailableJob, ContactUs, Home, DrivingDetails, HealthHygiene, Job, Modules, Notification, Player, Privacy, Profile, ProfileEdit, Quiz, Rating, Search, Settings, Training, UploadDocuments, Dashboard, SuitsJob, QuizResult, AddJob, ViewJobs, AddDriver, TransporterAppliedJob, DriverList, ProfileEditTransporter, DrivingDetailsTransporter, UploadDocumentsTransporter, Terms, JobStep2, JobStep3, DriverProfileEditByTransporter, DriverDrivingDetailsByTransporter, DriverUploadDocumentsByTransporter, PreferredColor, LanguageMain, PaymentSuccess, ExcelImport, AddLoad, LocationSearch, LocationMap, TransporterVerificationScreen } from "@truckmitr/layouts/main"
+import { AppliedJob, AvailableJob, ContactUs, Home, DrivingDetails, HealthHygiene, Job, Modules, Notification, Player, Privacy, Profile, ProfileEdit, Quiz, Rating, Search, Settings, Training, UploadDocuments, Dashboard, SuitsJob, QuizResult, AddJob, ViewJobs, AddDriver, TransporterAppliedJob, DriverList, ProfileEditTransporter, DrivingDetailsTransporter, UploadDocumentsTransporter, Terms, JobStep2, JobStep3, DriverProfileEditByTransporter, DriverDrivingDetailsByTransporter, DriverUploadDocumentsByTransporter, PreferredColor, LanguageMain, PaymentSuccess, ExcelImport, AddLoad, LocationSearch, LocationMap, TransporterVerificationScreen, DLVerification } from "@truckmitr/layouts/main"
 
 export {
     Namaste,
@@ -55,5 +55,6 @@ export {
     LocationMap,
     TransporterVerificationScreen,
     ProfileCompletion,
-    Congratulations
+    Congratulations,
+    DLVerification
 }

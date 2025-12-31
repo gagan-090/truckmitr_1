@@ -841,8 +841,12 @@ export default function Subscription({ }: any) {
   };
 
   const _onPressPayNow = async (id: string, isSubscription: boolean, amount: string, plan: PlanDataType, serverPlanId: number, subscriptionDates?: any) => {
-    // Format mobile number with country code
-    const mobileNumber = user?.mobile ? `+91${String(user.mobile).replace(/^\+91/, '')}` : '';
+    // Format mobile number - ensure it's just 10 digits for prefill
+    const rawMobile = String(user?.mobile || '').replace(/\D/g, '');
+    const mobileNumber = rawMobile.length >= 10 ? rawMobile.slice(-10) : rawMobile;
+
+    // Get email - use a default if not available
+    const userEmail = user?.email || `user${user?.id}@truckmitr.com`;
 
     const options = {
       description: plan.name || 'TruckMitr Subscription',
@@ -858,13 +862,18 @@ export default function Subscription({ }: any) {
         plan_id: Number(serverPlanId)
       },
       prefill: {
-        email: user?.email || '',
+        email: userEmail,
         contact: mobileNumber,
         name: user?.name || ''
       },
       readonly: {
         email: true,
-        contact: true
+        contact: true,
+        name: true
+      },
+      hidden: {
+        email: true, // Hide email field completely
+        contact: false // Show contact but make it readonly
       },
       send_sms_hash: true,
       retry: {

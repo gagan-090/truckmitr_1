@@ -59,6 +59,17 @@ const userReducer = (state = initialState, action: any) => {
                 userEdit: payload
             }
         case TYPES['SUBSCRIPTION_DETAILS']:
+            // If payload is empty or not an array, clear subscription data
+            if (!payload || !Array.isArray(payload) || payload.length === 0) {
+                return {
+                    ...state,
+                    subscriptionDetails: {
+                        showSubscriptionModel: true, // No subscription at all
+                        hasActiveSubscription: false
+                    }
+                };
+            }
+
             // Valid subscription payment types - includes all plan names
             const validPaymentTypes = [
                 'subscription',
@@ -100,6 +111,17 @@ const userReducer = (state = initialState, action: any) => {
             // If no active subscription found, use the first subscription record for details
             let payloadSubscriptionDetails = activeSubscription || subscriptionRecords[0] || payload[0];
 
+            // If still no valid subscription details, return empty state
+            if (!payloadSubscriptionDetails || !payloadSubscriptionDetails.id) {
+                return {
+                    ...state,
+                    subscriptionDetails: {
+                        showSubscriptionModel: true,
+                        hasActiveSubscription: false
+                    }
+                };
+            }
+
             if (payloadSubscriptionDetails && typeof payloadSubscriptionDetails?.payment_details === 'string') {
                 try {
                     payloadSubscriptionDetails = {
@@ -122,17 +144,12 @@ const userReducer = (state = initialState, action: any) => {
 
             return {
                 ...state,
-                subscriptionDetails: payloadSubscriptionDetails?.id
-                    ? {
-                        ...payloadSubscriptionDetails,
-                        subscriptionExpiry,
-                        showSubscriptionModel: shouldShowSubscriptionModal,
-                        hasActiveSubscription: hasActiveSubscription
-                    }
-                    : {
-                        showSubscriptionModel: true, // No subscription at all
-                        hasActiveSubscription: false
-                    }
+                subscriptionDetails: {
+                    ...payloadSubscriptionDetails,
+                    subscriptionExpiry,
+                    showSubscriptionModel: shouldShowSubscriptionModal,
+                    hasActiveSubscription: hasActiveSubscription
+                }
             }
         case TYPES['SUBSCRIPTION_MODAL']:
             return {

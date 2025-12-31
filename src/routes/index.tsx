@@ -136,9 +136,9 @@ export default function Routes() {
             'X-Skip-Global-Logout': 'true'
           }
         });
-        if (sub?.data?.status) {
-          dispatch(subscriptionDetailsAction(sub?.data?.data));
-        }
+        // Always dispatch subscription data - even empty array to clear stale data
+        const subData = sub?.data?.data || [];
+        dispatch(subscriptionDetailsAction(subData));
       } else if (profile?.status === 401 || profile?.status === 403) {
         // Only logout on explicit auth failure, not on network errors
         console.log('Auth failed during refresh - logging out');
@@ -280,9 +280,9 @@ export default function Routes() {
                   'X-Skip-Global-Logout': 'true'
                 }
               });
-              if (sub?.data?.status) {
-                dispatch(subscriptionDetailsAction(sub?.data?.data));
-              }
+              // Always dispatch subscription data - even empty array to clear stale data
+              const subData = sub?.data?.data || [];
+              dispatch(subscriptionDetailsAction(subData));
 
               // Mark session as active
               await AsyncStorage.setItem('app_session_active', 'true');

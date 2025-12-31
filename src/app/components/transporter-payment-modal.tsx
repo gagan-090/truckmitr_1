@@ -40,19 +40,19 @@ const TransporterPaymentModal = ({
 
 
   const generateOrderId = async () => {
-  try {
-    const data = new FormData();
-    data.append('amount', totalAmountInPaise)
-    data.append('payment_type', 'transporter_verification');
+    try {
+      const data = new FormData();
+      data.append('amount', totalAmountInPaise)
+      data.append('payment_type', 'transporter_verification');
 
-    const response = await axiosInstance.post(END_POINTS.CREATE_ORDER, data)
-    if(!!response?.data?.order?.id){
-    processPayment(response?.data?.order?.id)
+      const response = await axiosInstance.post(END_POINTS.CREATE_ORDER, data)
+      if (!!response?.data?.order?.id) {
+        processPayment(response?.data?.order?.id)
+      }
+    } catch (error) {
+      console.error('Error creating order:', error);
     }
-  } catch (error) {
-    console.error('Error creating order:', error);
-  }
-};
+  };
 
   const capturePayment = async (paymentData: any, orderId: string) => {
     setIsCapturingPayment(true);
@@ -121,6 +121,13 @@ const TransporterPaymentModal = ({
   };
 
   const processPayment = async (orderId: string) => {
+    // Format mobile number - ensure it's just 10 digits
+    const rawMobile = String(user?.mobile || '').replace(/\D/g, '');
+    const mobileNumber = rawMobile.length >= 10 ? rawMobile.slice(-10) : rawMobile;
+
+    // Get email - use default if not available
+    const userEmail = user?.email || `user${user?.id}@truckmitr.com`;
+
     const options = {
       description: `Driver Verification Fee (${selectedDriversCount} drivers)`,
       image: 'https://truckmitr.com/public/front/assets/images/logotrick.png',
@@ -136,9 +143,18 @@ const TransporterPaymentModal = ({
         payment_type: 'transporter_verification',
       },
       prefill: {
-        email: user?.email,
-        contact: Number(user?.mobile),
-        name: user?.name,
+        email: userEmail,
+        contact: mobileNumber,
+        name: user?.name || '',
+      },
+      readonly: {
+        email: true,
+        contact: true,
+        name: true
+      },
+      hidden: {
+        email: true,
+        contact: false
       },
       theme: { color: colors.royalBlue },
     } as any;

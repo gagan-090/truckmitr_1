@@ -459,9 +459,27 @@ export default function Profile() {
         const profile: any = await axiosInstance.get(END_POINTS?.GET_PROFILE);
         if (profile?.data?.status) {
           dispatch(userAction(profile?.data))
-          const subscriptionDetails: any = await axiosInstance.get(END_POINTS?.PAYMENT_SUBSCRIPTION_DETAILS);
-          if (subscriptionDetails?.data?.status) {
-            dispatch(subscriptionDetailsAction(subscriptionDetails?.data?.data))
+
+          // Always fetch subscription details
+          try {
+            const subscriptionResponse: any = await axiosInstance.get(END_POINTS?.PAYMENT_SUBSCRIPTION_DETAILS);
+            console.log('Subscription API Response:', JSON.stringify(subscriptionResponse?.data, null, 2));
+
+            // Always dispatch - even if data is empty array
+            // The reducer will handle empty arrays correctly
+            if (subscriptionResponse?.data?.status) {
+              const subscriptionData = subscriptionResponse?.data?.data || [];
+              console.log('Dispatching subscription data, length:', subscriptionData.length);
+              dispatch(subscriptionDetailsAction(subscriptionData));
+            } else {
+              // API returned status: false, clear subscription data
+              console.log('Subscription API returned status: false, clearing data');
+              dispatch(subscriptionDetailsAction([]));
+            }
+          } catch (error) {
+            console.error('Error fetching subscription details:', error);
+            // On error, clear subscription data to be safe
+            dispatch(subscriptionDetailsAction([]));
           }
         }
       }
@@ -528,6 +546,7 @@ export default function Profile() {
   const _navigateContactUs = () => navigation.navigate(STACKS.CONTACT_US)
   const _navigatePrivacy = () => navigation.navigate(STACKS.PRIVACY)
   const _navigateSetting = () => navigation.navigate(STACKS.SETTINGS)
+  const _navigateDLVerification = () => navigation.navigate(STACKS.DL_VERIFICATION)
 
   const deleteAccount = async () => {
     setIsDeleting(true);
@@ -1256,8 +1275,8 @@ export default function Profile() {
                 </TouchableOpacity>
               </ViewShot>
 
-              {/* Action Buttons - Invoice and Membership Card */}
-              <View style={{ paddingHorizontal: responsiveFontSize(1), marginTop: responsiveFontSize(1.5), gap: responsiveFontSize(1) }}>
+              {/* Action Buttons - Invoice and Membership Card (Horizontal) */}
+              <View style={{ paddingHorizontal: responsiveFontSize(1), marginTop: responsiveFontSize(1.5), flexDirection: 'row', gap: responsiveFontSize(1) }}>
                 {/* Download Invoice Button */}
                 <TouchableOpacity
                   onPress={downloadInvoice}
@@ -1265,56 +1284,52 @@ export default function Profile() {
                   disabled={downloadingInvoice}
                   style={[
                     styles.premiumInvoiceButton,
-                    { opacity: downloadingInvoice ? 0.7 : 1 }
+                    {
+                      opacity: downloadingInvoice ? 0.7 : 1,
+                      flex: 1,
+                      backgroundColor: colors.royalBlue,
+                    }
                   ]}
                 >
-                  <LinearGradient
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={StyleSheet.absoluteFillObject}
-                    colors={['#084489', '#0c78f0', '#4A90D9', '#0c78f0', '#084489']}
-                  />
                   {downloadingInvoice ? (
                     <ActivityIndicator color="#FFFFFF" size="small" />
                   ) : (
                     <>
-                      <MaterialIcons name="receipt" size={20} color="#FFFFFF" />
+                      <MaterialIcons name="receipt" size={18} color="#FFFFFF" />
                       <Text style={[
                         styles.premiumInvoiceButtonText,
-                        { fontSize: responsiveFontSize(1.7), marginLeft: 8, color: '#FFFFFF' }
+                        { fontSize: responsiveFontSize(1.5), marginLeft: 6, color: '#FFFFFF' }
                       ]}>
-                        {t('downloadInvoice') || 'Download Invoice'}
+                        {t('downloadInvoice') || 'Invoice'}
                       </Text>
                     </>
                   )}
                 </TouchableOpacity>
 
-                {/* Share/Download Membership Card Button */}
+                {/* Share Membership Card Button */}
                 <TouchableOpacity
                   onPress={() => shareMembershipCard('share')}
                   activeOpacity={0.85}
                   disabled={sharingCard}
                   style={[
                     styles.premiumInvoiceButton,
-                    { opacity: sharingCard ? 0.7 : 1 }
+                    {
+                      opacity: sharingCard ? 0.7 : 1,
+                      flex: 1,
+                      backgroundColor: colors.royalBlue,
+                    }
                   ]}
                 >
-                  <LinearGradient
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={StyleSheet.absoluteFillObject}
-                    colors={tierConfig.borderColors.slice(0, 5)}
-                  />
                   {sharingCard ? (
                     <ActivityIndicator color="#FFFFFF" size="small" />
                   ) : (
                     <>
-                      <Ionicons name="share-social" size={20} color="#FFFFFF" />
+                      <Ionicons name="share-social" size={18} color="#FFFFFF" />
                       <Text style={[
                         styles.premiumInvoiceButtonText,
-                        { fontSize: responsiveFontSize(1.7), marginLeft: 8, color: '#FFFFFF' }
+                        { fontSize: responsiveFontSize(1.5), marginLeft: 6, color: '#FFFFFF' }
                       ]}>
-                        {t('shareMembershipCard') || 'Share Membership Card'}
+                        {t('shareMembershipCard') || 'Share Card'}
                       </Text>
                     </>
                   )}
@@ -1332,6 +1347,16 @@ export default function Profile() {
             title={t('profile')}
             onPress={_navigateProfileEdit}
           />
+          {isDriver && (
+            <>
+              <View style={[styles.divider, { backgroundColor: colors.blackOpacity(0.06) }]} />
+              <MenuItem
+                icon={<MaterialCommunityIcons name="card-account-details-outline" size={20} color="#059669" />}
+                title={t('dlVerification') || 'DL Verification'}
+                onPress={_navigateDLVerification}
+              />
+            </>
+          )}
         </CardContainer>
         {/* <TouchableOpacity 
 onPress={()=>{
@@ -1348,18 +1373,7 @@ onPress={()=>{
           isVideoCall={true}
           resourceID={"TruckMitr"} // Please fill in the resource ID name that has been configured in the ZEGOCLOUD's console here.
         /> */}
-        <ZegoSendCallInvitationButton
-          invitees={[{ userID: 'TM2512UPDR23435', userName: 'Abhishek' }]}
-          isVideoCall={true}
-          resourceID="TruckMitr"
-          text="Call Driver"
-          backgroundColor={colors.white}
-          textColor={colors.royalBlue}
-          width={160}
-          height={48}
-          borderRadius={12}
-        // borderColor={colors.royalBlue}
-        />
+
         {/* General Section */}
         <SectionHeader title={t('general')} />
         <CardContainer>

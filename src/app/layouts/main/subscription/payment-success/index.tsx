@@ -24,6 +24,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
 import { END_POINTS } from '@truckmitr/src/utils/config';
+import { STACKS } from '@truckmitr/src/stacks/stacks';
 import { useDispatch, useSelector } from 'react-redux';
 import { subscriptionDetailsAction } from '@truckmitr/src/redux/actions/user.action';
 import moment from 'moment';
@@ -150,11 +151,18 @@ export default function PaymentSuccess() {
 
     const tierConfig = TIER_CONFIG[planName] || TIER_CONFIG['VERIFIED'];
 
+    // Check if driver should verify their license (for 199 or 499 plans)
+    const showDLVerification = isDriver && (planPrice === 199 || planPrice === 499);
+
     // Animation
     const checkScale = useSharedValue(0);
 
     const _goback = () => {
         navigation.goBack();
+    };
+
+    const _navigateToDLVerification = () => {
+        navigation.navigate(STACKS.DL_VERIFICATION as any);
     };
 
     const _handleEmailSubmit = async () => {
@@ -324,7 +332,7 @@ export default function PaymentSuccess() {
                 </Animated.View>
 
                 {/* Spacer for button */}
-                <View style={{ height: 100 }} />
+                <View style={{ height: showDLVerification ? 160 : 100 }} />
             </ScrollView>
 
             {/* Fixed Bottom Button */}
@@ -332,20 +340,47 @@ export default function PaymentSuccess() {
                 entering={FadeInUp.delay(900).duration(400)}
                 style={[styles.bottomContainer, { paddingBottom: safeAreaInsets.bottom + 16 }]}
             >
+                {showDLVerification && (
+                    <>
+                        {/* DL Verification Button */}
+                        <TouchableOpacity
+                            onPress={_navigateToDLVerification}
+                            activeOpacity={0.8}
+                            style={[styles.homeButton, { marginBottom: 10 }]}
+                        >
+                            <LinearGradient
+                                colors={[COLORS.success, COLORS.successLight]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={styles.homeButtonGradient}
+                            >
+                                <Ionicons name="card-outline" size={20} color={COLORS.white} />
+                                <Text style={styles.homeButtonText}>{t('dlVerifyLicense') || 'Verify License'}</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    </>
+                )}
                 <TouchableOpacity
                     onPress={_goback}
                     activeOpacity={0.8}
-                    style={styles.homeButton}
+                    style={showDLVerification ? styles.secondaryButton : styles.homeButton}
                 >
-                    <LinearGradient
-                        colors={tierConfig.gradient}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.homeButtonGradient}
-                    >
-                        <Ionicons name="home-outline" size={20} color={COLORS.white} />
-                        <Text style={styles.homeButtonText}>{t('backToHome')}</Text>
-                    </LinearGradient>
+                    {showDLVerification ? (
+                        <View style={styles.secondaryButtonInner}>
+                            <Ionicons name="home-outline" size={20} color={COLORS.text} />
+                            <Text style={styles.secondaryButtonText}>{t('backToHome')}</Text>
+                        </View>
+                    ) : (
+                        <LinearGradient
+                            colors={tierConfig.gradient}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.homeButtonGradient}
+                        >
+                            <Ionicons name="home-outline" size={20} color={COLORS.white} />
+                            <Text style={styles.homeButtonText}>{t('backToHome')}</Text>
+                        </LinearGradient>
+                    )}
                 </TouchableOpacity>
             </Animated.View>
 
@@ -689,6 +724,26 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '700',
         color: COLORS.white,
+    },
+    // Secondary Button (for when DL verification is shown)
+    secondaryButton: {
+        borderRadius: 12,
+        overflow: 'hidden',
+        borderWidth: 1.5,
+        borderColor: COLORS.border,
+        backgroundColor: COLORS.white,
+    },
+    secondaryButtonInner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+        gap: 8,
+    },
+    secondaryButtonText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: COLORS.text,
     },
     // Modal
     modalOverlay: {

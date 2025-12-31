@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { STACKS } from '@truckmitr/stacks/stacks';
 import Bottom from './tabs/bottom';
-import { AddDriver, AddJob, AddLoad, AppliedJob, AvailableJob, ContactUs, Dashboard, DriverDrivingDetailsByTransporter, DriverList, DriverProfileEditByTransporter, DriverUploadDocumentsByTransporter, DrivingDetails, DrivingDetailsTransporter, ExcelImport, JobStep2, JobStep3, LanguageMain, LocationSearch, LocationMap, Modules, Notification, PaymentSuccess, Player, PreferredColor, Privacy, ProfileEdit, ProfileEditTransporter, Quiz, QuizResult, Rating, Search, Settings, SuitsJob, TransporterAppliedJob, TransporterVerificationScreen, UploadDocuments, UploadDocumentsTransporter, ViewJobs } from '@truckmitr/layouts/index';
+import { AddDriver, AddJob, AddLoad, AppliedJob, AvailableJob, ContactUs, Dashboard, DriverDrivingDetailsByTransporter, DriverList, DriverProfileEditByTransporter, DriverUploadDocumentsByTransporter, DrivingDetails, DrivingDetailsTransporter, ExcelImport, JobStep2, JobStep3, LanguageMain, LocationSearch, LocationMap, Modules, Notification, PaymentSuccess, Player, PreferredColor, Privacy, ProfileEdit, ProfileEditTransporter, Quiz, QuizResult, Rating, Search, Settings, SuitsJob, TransporterAppliedJob, TransporterVerificationScreen, UploadDocuments, UploadDocumentsTransporter, ViewJobs, DLVerification } from '@truckmitr/layouts/index';
 import { setupFirebaseNotifications, initializeNotificationChannel } from '@truckmitr/src/utils/notification';
 import { DocumentUploadScreen, VerificationStatusScreen, } from '../app/layouts/main';
 import DriverInvites from '@truckmitr/src/app/layouts/main/driver-invites/driver-invites';
@@ -153,6 +153,7 @@ export default function Main() {
       <Stack.Screen name={STACKS.PREFERRED_COLOR} component={PreferredColor} options={{ animation: 'fade' }} />
 
       <Stack.Screen name={STACKS.PAYMENT_SUCCESS} component={PaymentSuccess} options={{ animation: 'fade_from_bottom' }} />
+      <Stack.Screen name={STACKS.DL_VERIFICATION} component={DLVerification} options={{ animation: 'fade_from_bottom' }} />
       <Stack.Screen name={STACKS.EXCEL_IMPORT} component={ExcelImport} options={{ animation: 'fade_from_bottom' }} />
       <Stack.Screen name={STACKS.ADD_LOAD} component={AddLoad} options={{ animation: 'fade_from_bottom' }} />
       <Stack.Screen name={STACKS.LOCATION_SEARCH} component={LocationSearch} options={{ animation: 'slide_from_right' }} />

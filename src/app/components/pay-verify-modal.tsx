@@ -34,7 +34,7 @@ type NavigatorProp = NativeStackNavigationProp<
   keyof NavigatorParams
 >;
 
-export default function PaymentVerify({}: any) {
+export default function PaymentVerify({ }: any) {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const colors = useColor();
@@ -90,6 +90,13 @@ export default function PaymentVerify({}: any) {
   };
 
   const _onPressPayNow = async (orderId: string) => {
+    // Format mobile number - ensure it's just 10 digits
+    const rawMobile = String(user?.mobile || '').replace(/\D/g, '');
+    const mobileNumber = rawMobile.length >= 10 ? rawMobile.slice(-10) : rawMobile;
+
+    // Get email - use default if not available
+    const userEmail = user?.email || `user${user?.id}@truckmitr.com`;
+
     const options = {
       description: 'Verification Fee',
       image: 'https://truckmitr.com/public/front/assets/images/logotrick.png',
@@ -103,9 +110,18 @@ export default function PaymentVerify({}: any) {
         role: user?.role,
       },
       prefill: {
-        email: user?.email,
-        contact: Number(user?.mobile),
-        name: user?.name,
+        email: userEmail,
+        contact: mobileNumber,
+        name: user?.name || '',
+      },
+      readonly: {
+        email: true,
+        contact: true,
+        name: true
+      },
+      hidden: {
+        email: true,
+        contact: false
       },
       theme: { color: colors.royalBlue },
     } as any;

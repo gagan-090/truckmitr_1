@@ -47,6 +47,7 @@ export type NavigatorParams = {
     doucmentUploadScreen: undefined
     verificationStatusScreen: undefined
     subscriptionConsent: undefined
+    dlVerification: any
 
     addJob: undefined
     jobStep2: undefined
@@ -139,6 +140,7 @@ export const STACKS = {
     TRANSPORTER_CONSENT: 'transporterConsent',
     DRIVER_CONSENT: 'driverConsent',
     SUBSCRIPTION_CONSENT: 'subscriptionConsent',
+    DL_VERIFICATION: 'dlVerification',
     MEMBERSHIP_CARD: 'membershipCard',
     VERIFICATION: 'verification',
     DOCUMENTUPLOAD: 'doucmentUploadScreen',
