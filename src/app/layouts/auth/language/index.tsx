@@ -49,53 +49,26 @@ export default function Language() {
     return (
         <View style={{ flex: 1, backgroundColor: colors.white }}>
             <Space height={safeAreaInsets.top} />
-            <Space height={responsiveHeight(7)} />
-            <View style={{ width: '100%', padding: responsiveWidth(5), alignItems: 'center' }}>
-                <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(2.8), fontWeight: '600' }}>
+
+            <View style={{ flex: 1, paddingHorizontal: responsiveWidth(6), alignItems: 'center', paddingTop: responsiveHeight(5) }}>
+                {/* Header Section */}
+                <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(3.2), fontWeight: '700', marginBottom: responsiveHeight(1) }}>
                     {i18n.t('welcomeToTruckMitr')}
                 </Text>
-                <Text style={{ width: responsiveWidth(80), color: colors.blackOpacity(.7), textAlign: 'center', marginTop: responsiveFontSize(.5) }}>
+                <Text style={{ width: responsiveWidth(80), color: colors.blackOpacity(0.6), textAlign: 'center', fontSize: responsiveFontSize(1.8), lineHeight: responsiveFontSize(2.4) }}>
                     {i18n.t('language_description')}
                 </Text>
-                <Space height={responsiveHeight(4)} />
-                {/* <FlatList
-                    data={LANGUAGES}
-                    renderItem={({ item, index }) => {
-                        const isSelected = selectedLanguage === item.name;
-                        return (
-                            <TouchableOpacity
-                                onPress={_selectLanguage(item)}
-                                style={{
-                                    width: '100%',
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    backgroundColor: isSelected ? colors.royalBlue : colors.royalBlueOpacity(.05),
-                                    padding: responsiveFontSize(2),
-                                    borderRadius: 10,
-                                    marginBottom: responsiveFontSize(2)
-                                }}>
-                                <Ionicons
-                                    name={isSelected ? 'radio-button-on' : 'radio-button-off'}
-                                    size={20}
-                                    color={isSelected ? colors.white : colors.royalBlue}
-                                />
-                                <View>
-                                    <Text style={{ marginLeft: 10, fontSize: responsiveFontSize(2), color: isSelected ? colors.white : colors.royalBlue, fontWeight: '500' }}>{item.name}</Text>
-                                    <Text style={{ marginLeft: 10, fontSize: responsiveFontSize(1.6), color: isSelected ? colors.whiteOpacity(.9) : colors.royalBlueOpacity(.9), fontWeight: '500' }}>{`${item.title}`}{isSelected ? <Text style={{ fontWeight: '400' }}>{` (device's language)`}</Text> : ``}</Text>
-                                </View>
-                            </TouchableOpacity>
-                        )
-                    }}
-                    style={{ width: '100%' }}
-                    keyExtractor={(item, index) => index.toString()}
-                /> */}
 
+                <Space height={responsiveHeight(4)} />
+
+                {/* Language Selection Grid */}
                 <View
                     style={{
                         width: '100%',
                         flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        marginTop: responsiveHeight(2),
+                        justifyContent: 'center',
+                        gap: responsiveWidth(4),
+                        flexWrap: 'wrap'
                     }}
                 >
                     {LANGUAGES.map(item => {
@@ -107,87 +80,88 @@ export default function Language() {
                                 onPress={_selectLanguage(item)}
                                 activeOpacity={0.8}
                                 style={{
-                                    width: '47%',
-                                    paddingVertical: responsiveHeight(2.2),
-                                    paddingHorizontal: responsiveWidth(3),
-                                    borderRadius: 12,
+                                    width: '45%',
+                                    paddingVertical: responsiveHeight(2.5),
+                                    paddingHorizontal: responsiveWidth(2),
+                                    borderRadius: 16,
                                     backgroundColor: isSelected
                                         ? colors.royalBlue
-                                        : colors.royalBlueOpacity(0.06),
-                                    borderWidth: 1,
+                                        : colors.white,
+                                    borderWidth: 1.5,
                                     borderColor: isSelected
                                         ? colors.royalBlue
-                                        : colors.royalBlueOpacity(0.3),
+                                        : colors.blackOpacity(0.1),
                                     alignItems: 'center',
+                                    shadowColor: colors.black,
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: isSelected ? 0.3 : 0.05,
+                                    shadowRadius: 4,
+                                    elevation: isSelected ? 6 : 2,
                                 }}
                             >
-                                {/* Radio Icon */}
-                                {/* <Ionicons
-                                    name={isSelected ? 'radio-button-on' : 'radio-button-off'}
-                                    size={22}
-                                    color={isSelected ? colors.white : colors.royalBlue}
-                                    style={{ marginBottom: responsiveHeight(1) }}
-                                /> */}
-
-                                {/* Language Name */}
                                 <Text
                                     style={{
-                                        fontSize: responsiveFontSize(2.2),
-                                        fontWeight: '600',
-                                        color: isSelected ? colors.white : colors.royalBlue,
+                                        fontSize: responsiveFontSize(2.4),
+                                        fontWeight: '700',
+                                        color: isSelected ? colors.white : colors.blackOpacity(0.8),
+                                        marginBottom: responsiveHeight(0.5)
                                     }}
                                 >
                                     {item.name}
                                 </Text>
 
-                                {/* Subtitle */}
                                 <Text
                                     style={{
                                         fontSize: responsiveFontSize(1.6),
-                                        marginTop: responsiveHeight(0.4),
                                         color: isSelected
                                             ? colors.whiteOpacity(0.9)
-                                            : colors.royalBlueOpacity(0.8),
+                                            : colors.blackOpacity(0.5),
                                         textAlign: 'center',
+                                        fontWeight: '500'
                                     }}
                                 >
                                     {item.title}
-                                    {isSelected ? ' (device)' : ''}
                                 </Text>
                             </TouchableOpacity>
                         );
                     })}
                 </View>
 
+                <Space style={{ flex: 1 }} />
+
+                {/* Continue Button */}
+                <TouchableOpacity
+                    onPress={_navigateNextScreen}
+                    activeOpacity={0.8}
+                    style={{
+                        width: '100%',
+                        height: responsiveHeight(6.5),
+                        backgroundColor: colors.royalBlue,
+                        borderRadius: 100,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: responsiveHeight(3),
+                        elevation: 4,
+                        shadowColor: colors.royalBlue,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 5
+                    }}
+                >
+                    <Text style={{ color: colors.white, fontSize: responsiveFontSize(2), fontWeight: '600' }}>
+                        {i18n.t('next')}
+                    </Text>
+                </TouchableOpacity>
+
             </View>
-            <Space height={responsiveHeight(1)} />
-            {/* <Text style={{ width: responsiveWidth(80), color: colors.blackOpacity(.7), fontSize: responsiveFontSize(1.8), fontWeight: '500', textAlign: 'center', marginTop: responsiveFontSize(.5), textDecorationLine: 'underline', alignSelf: 'center' }}>
-                {i18n.t('moreLanguagesComingSoon')}
-            </Text> */}
-            <Space style={{ flex: 1 }} />
+
+            {/* Footer */}
             <View style={{ backgroundColor: colors.royalBlue }}>
-                <Text style={{ color: colors.white, fontSize: responsiveFontSize(1.6), textAlign: 'center', margin: responsiveFontSize(1.5) }}>
-                    {`© 2025 TruckMitr Corporate Services Private Limited. \nAll Rights Reserved.`}
+                <Text style={{ color: colors.whiteOpacity(0.8), fontSize: responsiveFontSize(1.4), textAlign: 'center', paddingVertical: responsiveHeight(2) }}>
+                    {`© 2026 TruckMitr Corporate Services Private Limited.\nAll Rights Reserved.`}
                 </Text>
                 <Space height={safeAreaInsets.bottom} />
             </View>
-
-            <AnimatedFAB
-                icon="chevron-right"
-                label=""
-                color={colors.white}
-                extended={false}
-                visible={true}
-                onPress={_navigateNextScreen}
-                iconMode="static"
-                style={{
-                    position: 'absolute',
-                    bottom: responsiveHeight(12),
-                    right: responsiveWidth(5),
-                    backgroundColor: colors.royalBlue,
-                    elevation: 20
-                }}
-            />
 
         </View>
     )

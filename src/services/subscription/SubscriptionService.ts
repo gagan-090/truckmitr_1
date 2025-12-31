@@ -278,7 +278,39 @@ class SubscriptionService {
     }
 
     /**
+     * Check if user is a legacy driver (paid Rs 49)
+     * Legacy drivers have empty subscription_id but payment_status is captured
+     * They should be treated as having an active subscription (Legendary Driver)
+     * 
+     * @param subscriptionData - The subscription data object from API
+     * @returns Boolean indicating if this is a legacy driver subscription
+     */
+    isLegacyDriverSubscription(subscriptionData: any): boolean {
+        if (!subscriptionData) return false;
+
+        // Parse amount - handle both string and number formats
+        const amount = parseFloat(subscriptionData.amount) || 0;
+
+        // Legacy driver criteria:
+        // - Amount is Rs 49
+        // - Payment status is captured
+        // - Subscription is not expired
+        const isLegacyAmount = amount === 49 || amount === 49.00;
+        const isPaymentCaptured = subscriptionData.payment_status === 'captured';
+        const isNotExpired = Date.now() / 1000 < subscriptionData.end_at;
+
+        const isLegacy = isLegacyAmount && isPaymentCaptured && isNotExpired;
+
+        if (isLegacy) {
+            console.log('[SubscriptionService] Legacy driver detected (Rs 49 subscription)');
+        }
+
+        return isLegacy;
+    }
+
+    /**
      * Check if user has an active subscription from subscription details data
+     * Includes legacy driver support (Rs 49 payment with captured status)
      * 
      * @param subscriptionData - The subscription data object from API
      * @returns Boolean indicating if subscription is active
@@ -286,7 +318,13 @@ class SubscriptionService {
     hasActiveSubscription(subscriptionData: any): boolean {
         if (!subscriptionData) return false;
 
-        // Check required fields
+        // First check if this is a legacy driver (Rs 49 payment)
+        // Legacy drivers have empty subscription_id but are still valid
+        if (this.isLegacyDriverSubscription(subscriptionData)) {
+            return true;
+        }
+
+        // Standard subscription check
         const hasSubscriptionId = !!subscriptionData.subscription_id;
         const isPaymentCaptured = subscriptionData.payment_status === 'captured';
         const isNotExpired = Date.now() / 1000 < subscriptionData.end_at;

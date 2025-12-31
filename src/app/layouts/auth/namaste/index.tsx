@@ -21,8 +21,8 @@ export default function Namaste() {
 
   useEffect(() => {
     setTimeout(() => {
-       navigation.replace(STACKS.INTRO_VIDEO)
-      // navigation.replace(STACKS.LANGUAGE)
+      // navigation.replace(STACKS.INTRO_VIDEO)
+      navigation.replace(STACKS.LANGUAGE)
     }, 3000);
   }, [])
 

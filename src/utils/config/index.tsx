@@ -77,6 +77,8 @@ export const END_POINTS = {
     DRIVERVERIFICATIONSTART: `api/driver-verification/start`,
     DRIVERVERIFICATIONUPLOADDOCUMENTS: `api/driver-verification/upload-documents`,
     DRIVERVERIFICATIONPAYMENTCAPTURE: `api/driver-verification/payment/capture`,
+    DRIVERVERIFICATIONDLVERIFICATION: (user_id: any, dl_number: any) => `api/kyc/dl-verification?user_id=${user_id}&dl_number=${dl_number}`,
+    DRIVERVERIFICATIONPANVERIFICATION: (user_id: any, pan_number: any) => `api/kyc/pan-verification?user_id=${user_id}&pan=${pan_number}`,
 
     // Transporter Verification Endpoints
     TRANSPORTER_BULK_VERIFICATION: `api/driver-verification/transporter-bulk-verification`,
@@ -121,4 +123,6 @@ export const END_POINTS = {
     // Driving License Verification
     DL_VERIFY: `api/kyc/dl`,
     PAN_VERIFY: `api/kyc/pan`,
+    AADHAAR_VERIFY: `api/kyc/aadhaar`,
+    VOTER_VERIFY: `api/kyc/voter`,
 }

@@ -53,7 +53,7 @@ const BACKGROUND_TRUSTED = require('@truckmitr/src/assets/membership-card/member
 const BACKGROUND_JOB_READY = require('@truckmitr/src/assets/membership-card/membershipcard3.png');
 
 // Card tier configurations
-type TierType = 'JOB READY' | 'VERIFIED' | 'TRUSTED' | 'Standard';
+type TierType = 'JOB READY' | 'VERIFIED' | 'TRUSTED' | 'Standard' | 'LEGACY';
 
 interface TierConfig {
   background: any;
@@ -111,15 +111,34 @@ const TIER_CONFIGS: Record<TierType, TierConfig> = {
     ],
     categoryText: 'STANDARD MEMBER',
   },
+  'LEGACY': {
+    background: BACKGROUND_VERIFIED,
+    borderColors: ['#8B4513', '#CD853F', '#DEB887', '#CD853F', '#8B4513'],
+    chromeGradient: [
+      { offset: '0', color: '#DEB887' },
+      { offset: '0.25', color: '#CD853F' },
+      { offset: '0.5', color: '#8B4513' },
+      { offset: '0.75', color: '#CD853F' },
+      { offset: '1', color: '#DEB887' },
+    ],
+    categoryText: 'LEGACY DRIVER',
+  },
 };
 
 // Helper function to get tier from payment_type
-const getTierFromPaymentType = (paymentType: string): TierType => {
+// Now also accepts amount to detect legacy drivers (Rs 49 payment)
+const getTierFromPaymentType = (paymentType: string, amount?: number): TierType => {
+  // Legacy driver detection: Rs 49 payment = Legacy Driver
+  if (amount === 49 || amount === 49.00) {
+    return 'LEGACY';
+  }
+
   const normalizedType = paymentType?.toUpperCase().replace(/\s+/g, ' ').trim();
   if (normalizedType === 'TRUSTED') return 'TRUSTED';
   if (normalizedType === 'VERIFIED') return 'VERIFIED';
   if (normalizedType === 'JOB READY' || normalizedType === 'JOBREADY') return 'JOB READY';
   if (normalizedType === 'STANDARD') return 'Standard';
+  if (normalizedType === 'LEGACY') return 'LEGACY';
   return 'JOB READY';
 };
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
@@ -1011,9 +1030,10 @@ export default function Profile() {
 
         {/* Dynamic Membership Card - Show when user has an active subscription */}
         {(subscriptionDetails?.hasActiveSubscription || !subscriptionDetails?.showSubscriptionModel) && subscriptionDetails?.id && (() => {
-          // Get tier configuration based on payment_type
+          // Get tier configuration based on payment_type and amount (for legacy driver detection)
           const paymentType = subscriptionDetails?.payment_type || 'JOB READY';
-          const tier = getTierFromPaymentType(paymentType);
+          const amount = parseFloat(subscriptionDetails?.amount) || 0;
+          const tier = getTierFromPaymentType(paymentType, amount);
           const tierConfig = TIER_CONFIGS[tier];
 
           // User data

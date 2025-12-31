@@ -410,6 +410,45 @@ const Home = React.forwardRef((props, ref) => {
     }));
     const hasMoreThanFive = recommendedJobsList.length > 5;
 
+    // Find active subscription - handle both array and single object formats
+    const activeSubscription = (() => {
+        if (Array.isArray(subscriptionDetails)) {
+            return subscriptionDetails.find((item: any) => isSubscriptionActive(item));
+        }
+        // If it's a single object with an id, check if it's active
+        if (subscriptionDetails?.id && isSubscriptionActive(subscriptionDetails)) {
+            return subscriptionDetails;
+        }
+        return null;
+    })();
+
+    const planTitle = (() => {
+        if (isTransporter) return 'Transporter';
+        if (!activeSubscription) return 'Job Ready Driver';
+
+        // Check plan name, plan_name, and payment_type for the tier
+        const planName = activeSubscription?.plan?.name || activeSubscription?.plan_name || '';
+        const paymentType = activeSubscription?.payment_type || '';
+        const amount = parseFloat(activeSubscription?.amount) || 0;
+        const paymentStatus = activeSubscription?.payment_status || '';
+        const combinedName = `${planName} ${paymentType}`.toUpperCase();
+
+        console.log('Plan detection:', { planName, paymentType, amount, paymentStatus, combinedName, activeSubscription });
+
+        // Legacy driver detection: Rs 49 payment with captured status = Legacy Driver
+        if (amount === 49 && paymentStatus === 'captured') {
+            return 'Legacy Driver';
+        }
+
+        if (combinedName.includes('TRUSTED')) return 'Trusted Driver';
+        if (combinedName.includes('VERIFIED')) return 'Verified Driver';
+
+        // If we have a plan name, use it
+        if (planName) return planName;
+
+        return 'Job Ready Driver';
+    })();
+
     return (
         <View style={{ flex: 1, backgroundColor: colors.white }}>
             <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps='handled' contentContainerStyle={{ paddingBottom: 20 }}>
@@ -478,7 +517,7 @@ const Home = React.forwardRef((props, ref) => {
 
                             <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(1.6), fontFamily: 'Inter-Bold', fontWeight: 'bold', marginTop: 0 }}>{`${user?.unique_id || ''}`}</Text>
 
-                            <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(1.4), fontFamily: 'Inter-Bold', fontWeight: 'bold', marginTop: 0 }}>Job Ready Driver</Text>
+                            <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(1.4), fontFamily: 'Inter-Bold', fontWeight: 'bold', marginTop: 0 }}>{planTitle}</Text>
 
                         </View>
 
@@ -526,7 +565,7 @@ const Home = React.forwardRef((props, ref) => {
                                         key={curr}
                                         name="star"
                                         size={responsiveFontSize(1.6)}
-                                        color={curr <= (star_rating || 5) ? "#FFD700" : "#D3D3D3"}
+                                        color={curr <= (star_rating ?? 0) ? "#FFD700" : "#D3D3D3"}
                                     />
                                 ))}
                             </View>
@@ -1018,7 +1057,7 @@ const Home = React.forwardRef((props, ref) => {
                 </View>}
                 {isTransporter && <View>
                     {/* Group 1: Job Management */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: responsiveWidth(4), marginBottom: 5, marginTop: 0 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: responsiveWidth(4), marginBottom: 1, marginTop: 14 }}>
                         <Ionicons name="briefcase-outline" size={20} color={colors.royalBlue} />
                         <Text style={{ marginLeft: 8, fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>{t('jobManagement', 'Job Management')}</Text>
                     </View>
@@ -1066,7 +1105,7 @@ const Home = React.forwardRef((props, ref) => {
                     </View>
 
                     {/* Group 2: Driver Management */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: responsiveWidth(4), marginBottom: 5, marginTop: 15 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: responsiveWidth(4), marginBottom: 5, marginTop: 8 }}>
                         <Ionicons name="people-outline" size={20} color={colors.royalBlue} />
                         <Text style={{ marginLeft: 8, fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>{t('driverManagement', 'Driver Management')}</Text>
                     </View>

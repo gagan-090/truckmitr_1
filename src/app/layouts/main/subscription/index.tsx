@@ -602,7 +602,10 @@ export default function Subscription({ }: any) {
   const safeAreaInsets = useSafeAreaInsets();
   const { responsiveFontSize } = useResponsiveScale();
   const navigation = useNavigation<NavigatorProp>();
-  const { user, subscriptionModal } = useSelector((state: any) => state?.user);
+  const { user, subscriptionModal, subscriptionModalOptions } = useSelector((state: any) => state?.user);
+
+  // Check if we should only show upgrade plans (₹199 and ₹499)
+  const upgradeOnly = subscriptionModalOptions?.upgradeOnly || false;
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -1012,20 +1015,23 @@ export default function Subscription({ }: any) {
                 <Text style={styles.plansLoadingText}>{t('loading') || 'Loading plans...'}</Text>
               </View>
             ) : dynamicPlans.length > 0 ? (
-              dynamicPlans.map((plan: PlanDataType, index: number) => (
-                <PlanCard
-                  key={plan.id}
-                  plan={plan}
-                  isExpanded={expandedId === plan.id}
-                  onToggle={() => handleToggle(plan.id)}
-                  onSelect={() => handleSelectPlan(plan)}
-                  responsiveFontSize={responsiveFontSize}
-                  isPopular={dynamicPlans.length > 1 && index === Math.floor(dynamicPlans.length / 2)} // Middle plan is popular
-                  consentChecked={consentChecked}
-                  onConsentToggle={() => setConsentChecked(!consentChecked)}
-                  onOpenConsent={() => setConsentModalVisible(true)}
-                />
-              ))
+              // Filter plans based on upgradeOnly option (exclude ₹99 plan when upgrading)
+              dynamicPlans
+                .filter((plan: PlanDataType) => !upgradeOnly || plan.price >= 199)
+                .map((plan: PlanDataType, index: number, filteredPlans: PlanDataType[]) => (
+                  <PlanCard
+                    key={plan.id}
+                    plan={plan}
+                    isExpanded={expandedId === plan.id}
+                    onToggle={() => handleToggle(plan.id)}
+                    onSelect={() => handleSelectPlan(plan)}
+                    responsiveFontSize={responsiveFontSize}
+                    isPopular={filteredPlans.length > 1 && index === Math.floor(filteredPlans.length / 2)} // Middle plan is popular
+                    consentChecked={consentChecked}
+                    onConsentToggle={() => setConsentChecked(!consentChecked)}
+                    onOpenConsent={() => setConsentModalVisible(true)}
+                  />
+                ))
             ) : (
               <View style={styles.plansLoadingContainer}>
                 <Text style={styles.plansLoadingText}>{t('subNoPlansAvailable') || 'No plans available'}</Text>

@@ -92,95 +92,124 @@ export default function Login() {
 
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-            <View style={{ flex: 1, alignItems: 'center', backgroundColor: colors.white }}>
+            <View style={{ flex: 1, backgroundColor: colors.white }}>
                 <Space height={safeAreaInsets.top} />
-                <View style={{ width: '100%', padding: responsiveWidth(3) }}>
-                    <TouchableOpacity
-                        disabled={noBackButton}
-                        hitSlop={hitSlop(10)}
-                        onPress={_goback}
-                        style={{
-                            height: responsiveFontSize(4),
-                            width: responsiveFontSize(4),
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            backgroundColor: colors.white,
-                            borderRadius: 100,
-                        }}>
-                        {!noBackButton && <Ionicons name="chevron-back" size={24} color={colors.royalBlue} />}
-                    </TouchableOpacity>
+
+                {/* Header Back Button */}
+                <View style={{ width: '100%', paddingHorizontal: responsiveWidth(4), paddingTop: responsiveHeight(1) }}>
+                    {!noBackButton && (
+                        <TouchableOpacity
+                            hitSlop={hitSlop(10)}
+                            onPress={_goback}
+                            style={{
+                                height: responsiveFontSize(5),
+                                width: responsiveFontSize(5),
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: colors.royalBlueOpacity(0.05),
+                                borderRadius: 100,
+                            }}>
+                            <Ionicons name="chevron-back" size={24} color={colors.royalBlue} />
+                        </TouchableOpacity>
+                    )}
                 </View>
-                <Space height={responsiveHeight(12)} />
-                <View style={{ width: responsiveWidth(90), alignItems: 'center' }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={{ color: colors.black, fontSize: responsiveFontSize(3.2), fontWeight: '600' }}>{t(`welcomeToTruckMitr`)}</Text>
-                    </View>
-                    <Text
-                        style={{
-                            width: responsiveWidth(70),
-                            color: colors.blackOpacity(0.6),
-                            fontSize: responsiveFontSize(1.8),
-                            textAlign: 'center',
-                        }}>
+
+                <Space height={responsiveHeight(4)} />
+
+                {/* Main Content */}
+                <View style={{ flex: 1, paddingHorizontal: responsiveWidth(6) }}>
+
+                    {/* Title Section */}
+                    <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(3.5), fontWeight: '700', marginBottom: responsiveHeight(1) }}>
+                        {t(`welcomeToTruckMitr`)}
+                    </Text>
+                    <Text style={{ color: colors.blackOpacity(0.6), fontSize: responsiveFontSize(1.8), lineHeight: responsiveFontSize(2.6) }}>
                         {t(`enterYourMobileNumberTitle`)}
                     </Text>
-                </View>
-                <Space height={responsiveHeight(3)} />
-                <View style={{ width: '100%', paddingHorizontal: responsiveWidth(5), paddingVertical: responsiveWidth(2.5) }}>
-                    <PaperTextInput
-                        value={mobile}
-                        onChangeText={(text) => {
-                            setMobile(text)
-                            seterror(null)
-                        }}
-                        left={<PaperTextInput.Affix text="+91" textStyle={{color: colors.black}} />}
-                        mode="outlined"
-                        label={<Text>{t(`mobile`)} <Text style={{ color: 'red' }}>*</Text></Text>}
-                        keyboardType="phone-pad"
-                        maxLength={10}
-                        theme={{ colors: { primary: colors.royalBlue, background: colors.white, onSurface: colors.black } }}
-                        style={{ backgroundColor: colors.transparent }}
-                        outlineStyle={{ borderRadius: 10 }}
-                    />
-                    {error && <View style={{ flexDirection: 'row', marginTop: responsiveHeight(1) }}>
-                        <MaterialIcons name="error" size={14} color={colors.error} style={{ marginTop: responsiveFontSize(.3) }} />
-                        <Text style={{ color: colors.error, fontSize: responsiveFontSize(1.7), marginLeft: responsiveFontSize(0.5) }}>
-                            {error}
-                        </Text>
-                    </View>}
-                </View>
-                <Space height={responsiveHeight(4)} />
-                <TouchableOpacity
-                    onPress={_navigateOtp}
-                    activeOpacity={0.7}
-                    disabled={loading}
-                    style={{
-                        height: responsiveHeight(6),
-                        width: responsiveWidth(90),
-                        borderRadius: 100,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        overflow: 'hidden',
-                        opacity: loading ? 0.6 : 1,
-                    }}>
-                    <LinearGradient
-                        start={{ x: 1, y: 0 }}
-                        end={{ x: 0, y: 0 }}
-                        style={{ height: '100%', width: '100%', position: 'absolute' }}
-                        colors={imageColorGradient}
-                    />
-                    {loading ? (
-                        <ActivityIndicator color={colors.white} size="small" />
-                    ) : (
-                        <Text style={{ color: colors.white, fontSize: responsiveFontSize(2), fontWeight: '500' }}>{t(`sendOtp`)}</Text>
-                    )}
-                </TouchableOpacity>
-                <Space height={responsiveHeight(2)} />
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={{ color: colors.blackOpacity(0.6), fontSize: responsiveFontSize(1.9), fontWeight: '400' }}>{t(`needAnAccount`)} </Text>
-                    <TouchableOpacity onPress={_navigateSignup}>
-                        <Text style={{ color: colors.azureBlue, fontSize: responsiveFontSize(2), fontWeight: '600' }}>{t(`registerNow`)}</Text>
+
+                    <Space height={responsiveHeight(5)} />
+
+                    {/* Input Section */}
+                    <View>
+                        <PaperTextInput
+                            value={mobile}
+                            onChangeText={(text) => {
+                                setMobile(text)
+                                seterror(null)
+                            }}
+                            left={<PaperTextInput.Affix text="+91" textStyle={{ color: colors.black, fontSize: responsiveFontSize(2) }} />}
+                            mode="outlined"
+                            label={t(`mobile`)}
+                            contentStyle={{ color: colors.black, fontSize: responsiveFontSize(2) }}
+                            keyboardType="phone-pad"
+                            outlineColor={colors.blackOpacity(0.15)}
+                            activeOutlineColor={colors.royalBlue}
+                            maxLength={10}
+                            theme={{
+                                colors: {
+                                    primary: colors.royalBlue,
+                                    background: colors.white,
+                                    onSurface: colors.black,
+                                    outline: colors.blackOpacity(0.2)
+                                },
+                                roundness: 12
+                            }}
+                            style={{ backgroundColor: colors.white, fontSize: responsiveFontSize(2) }}
+                        />
+                        {error && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: responsiveHeight(0.8), marginLeft: responsiveWidth(1) }}>
+                                <MaterialIcons name="error-outline" size={16} color={colors.error} />
+                                <Text style={{ color: colors.error, fontSize: responsiveFontSize(1.6), marginLeft: responsiveFontSize(0.8) }}>
+                                    {error}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+
+                    <Space height={responsiveHeight(4)} />
+
+                    {/* Submit Button */}
+                    <TouchableOpacity
+                        onPress={_navigateOtp}
+                        activeOpacity={0.8}
+                        disabled={loading}
+                        style={{
+                            height: responsiveHeight(6.5),
+                            width: '100%',
+                            borderRadius: 100,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: colors.royalBlue,
+                            elevation: 5,
+                            shadowColor: colors.royalBlue,
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 5,
+                            opacity: loading ? 0.7 : 1,
+                        }}>
+                        {loading ? (
+                            <ActivityIndicator color={colors.white} size="small" />
+                        ) : (
+                            <Text style={{ color: colors.white, fontSize: responsiveFontSize(2.2), fontWeight: '600' }}>
+                                {t(`sendOtp`)}
+                            </Text>
+                        )}
                     </TouchableOpacity>
+
+                    <Space height={responsiveHeight(3)} />
+
+                    {/* Register Link */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ color: colors.blackOpacity(0.6), fontSize: responsiveFontSize(1.9) }}>
+                            {t(`needAnAccount`)}{' '}
+                        </Text>
+                        <TouchableOpacity onPress={_navigateSignup}>
+                            <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(2), fontWeight: '700' }}>
+                                {t(`registerNow`)}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+
                 </View>
             </View>
         </TouchableWithoutFeedback>

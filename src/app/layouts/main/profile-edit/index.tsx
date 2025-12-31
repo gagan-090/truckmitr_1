@@ -53,6 +53,7 @@ const DRIVER_STEPS = [
     { id: 'preferences', title: 'preferencesStep', subtitle: 'preferencesStepDesc' },
     { id: 'aadhar_details', title: 'aadharStep', subtitle: 'aadharStepDesc' },
     { id: 'license_details', title: 'licenseStep', subtitle: 'licenseStepDesc' },
+    { id: 'pan_details', title: 'panStep', subtitle: 'panStepDesc' },
 ];
 
 // Transporter Steps - Profile photo first
@@ -84,6 +85,7 @@ const DRIVER_VOICE_FILES: { [key: string]: any } = {
     'preferences': require('@truckmitr/src/assets/voice/step_preferences.mp3'),
     'aadhar_details': require('@truckmitr/src/assets/voice/step_aadhar.mp3'),
     'license_details': require('@truckmitr/src/assets/voice/step_license.mp3'),
+    'pan_details': require('@truckmitr/src/assets/voice/step_pan_gst.mp3'),
 };
 
 const TRANSPORTER_VOICE_FILES: { [key: string]: any } = {
@@ -557,6 +559,10 @@ export default function ProfileEdit() {
                     showToast(t('drivingLicenseRequired') || 'Driving license photo is required');
                     return false;
                 }
+                break;
+
+            case 'pan_details':
+                // Optional step
                 break;
 
             // Transporter steps
@@ -1200,6 +1206,16 @@ export default function ProfileEdit() {
                         <Space height={20} />
                         <DocumentUpload label={t('uploadDrivingLicense')} imagePath={userEdit?.drivingLicensePath} existingImage={userEdit?.Driving_License} fieldName="drivingLicensePath" />
                         <Modal visible={licenseExpiryModal} transparent animationType="fade"><View style={styles.modalOverlay}><View style={styles.datePickerBox}><Text style={styles.datePickerTitle}>{t('expiryDateOfLicense')}</Text><DatePicker mode="date" theme="light" date={licenseExpiry} minimumDate={new Date()} maximumDate={moment().add(30, 'years').toDate()} onDateChange={(date) => dispatch(userEditAction({ ...userEdit, Expiry_date_of_License: date }))} /><View style={styles.datePickerButtons}><TouchableOpacity style={styles.cancelBtn} onPress={() => setLicenseExpiryModal(false)}><Text style={styles.cancelBtnText}>{t('cancel')}</Text></TouchableOpacity><TouchableOpacity style={[styles.confirmBtn, { backgroundColor: colors.royalBlue }]} onPress={() => setLicenseExpiryModal(false)}><Text style={styles.confirmBtnText}>{t('confirm')}</Text></TouchableOpacity></View></View></View></Modal>
+                    </View>
+                );
+
+            case 'pan_details':
+                return (
+                    <View style={styles.stepContent}>
+                        <Text style={styles.inputLabel}>{t('panNumber') || 'PAN Number'}</Text>
+                        <TextInput style={styles.textInput} placeholder="ABCDE1234F" placeholderTextColor="#999" autoCapitalize="characters" maxLength={10} value={userEdit?.pan || userEdit?.PAN_Number || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, pan: text.toUpperCase(), PAN_Number: text.toUpperCase() }))} />
+                        <Space height={16} />
+                        <DocumentUpload label={t('uploadPanDocument') || 'Upload PAN Document'} imagePath={userEdit?.panImagePath} existingImage={userEdit?.PAN_Image} fieldName="panImagePath" />
                     </View>
                 );
 
