@@ -20,6 +20,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { subscriptionModalAction } from '@truckmitr/src/redux/actions/user.action';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
+import { ZegoSendCallInvitationButton } from '@zegocloud/zego-uikit-prebuilt-call-rn';
 
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 
@@ -38,12 +39,16 @@ export default function TransporterAppliedJob() {
     const [acceptJobId, setacceptJobId] = useState<any>(-1)
     const [rejectJobId, setrejectJobId] = useState<any>(-1)
     const [accpetRejectLoading, setaccpetRejectLoading] = useState(false)
+    const [showVideoInterviewModal, setShowVideoInterviewModal] = useState(false);
+    const [selectedDriver, setSelectedDriver] = useState<any>(null);
 
     const _fetchJobs = async () => {
         try {
             const response: any = await axiosInstance.get(END_POINTS?.TRANSPORTER_APPLIED_JOBS_LIST);
             if (response?.data?.status) {
                 setappliedJobList(response?.data?.data);
+                console.log('data-------------', response?.data?.data);
+
             } else {
                 setappliedJobList([]);
             }
@@ -103,15 +108,15 @@ export default function TransporterAppliedJob() {
 
     const callToDriver = async (item: any) => {
         try {
-         Linking.openURL(`tel:${item?.driver_mobile}`)
-         const formData = new FormData();
+            Linking.openURL(`tel:${item?.driver_mobile}`)
+            const formData = new FormData();
             formData.append('id', item.driver_id);
             formData.append('job_id', item.job_id);
             const response: any = await axiosInstance.post(END_POINTS?.CALL_TRANSPORTER, formData);
             if (response?.data?.status) {
                 console.log(response, "response")
             }
-        } catch(error){
+        } catch (error) {
             console.log(error)
         }
     }
@@ -155,7 +160,7 @@ export default function TransporterAppliedJob() {
                                         (status: any) => status.value === "Rejected" && status.selected
                                     );
                                     const isAcceptedOrRejectedSelected = isAcceptedSelected || isRejectedSelected;
-                                    if(item?.unique_id === "") return null;
+                                    if (item?.unique_id === "") return null;
                                     return (
                                         <View style={{ width: responsiveWidth(90), backgroundColor: colors.white, padding: responsiveFontSize(1.5), borderRadius: 10, marginBottom: responsiveFontSize(5), ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.2) : colors.blackOpacity(.4) }}>
                                             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -242,7 +247,7 @@ export default function TransporterAppliedJob() {
                                                 </TouchableOpacity>
                                             </View>}
                                             <Space height={responsiveFontSize(2)} />
-                                            { item?.driver_mobile && <View style={{ alignItems: 'center', width: '100%' }}>
+                                            {item?.driver_mobile && <View style={{ alignItems: 'center', width: '100%', }}>
                                                 <TouchableOpacity
                                                     onPress={() => callToDriver(item)}
                                                     style={{
@@ -252,20 +257,33 @@ export default function TransporterAppliedJob() {
                                                         alignItems: 'center',
                                                         justifyContent: 'center',
                                                         borderRadius: 5,
-                                                        flexDirection:'row'
+                                                        flexDirection: 'row'
                                                     }}
                                                 >
-                        <FontAwesome
-                            name="phone"
-                            size={responsiveFontSize(2)}
-                            color={colors.white}
-                            style={{ marginRight: responsiveFontSize(0.8) }}
-                        />   
-                                                                         <Text style={{ color: colors.white, fontSize: responsiveFontSize(1.8), fontWeight: '500' }}>
+                                                    <FontAwesome
+                                                        name="phone"
+                                                        size={responsiveFontSize(2)}
+                                                        color={colors.white}
+                                                        style={{ marginRight: responsiveFontSize(0.8) }}
+                                                    />
+                                                    <Text style={{ color: colors.white, fontSize: responsiveFontSize(1.8), fontWeight: '500' }}>
                                                         {t(`callToDriver`)}
                                                     </Text>
                                                 </TouchableOpacity>
-                                            </View> }
+                                                {/* <ZegoSendCallInvitationButton
+                                                    invitees={[{ userID: 'TM2512UPDR23435', userName: 'Abhishek' }]}
+                                                    isVideoCall={true}
+                                                    resourceID="TruckMitr"
+                                                    text="Start Video Interview"
+                                                    backgroundColor={colors.royalBlue}
+                                                    textColor={colors.white}
+                                                    width={200}
+                                                    height={responsiveHeight(4.5)}
+
+                                                    borderRadius={5}
+                                                // borderColor={colors.royalBlue}
+                                                /> */}
+                                            </View>}
                                         </View>
                                     );
                                 }}

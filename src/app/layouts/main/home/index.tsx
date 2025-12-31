@@ -184,10 +184,14 @@ const Home = React.forwardRef((props, ref) => {
                     if (subscriptionDetail?.data?.status) {
                         dispatch(subscriptionDetailsAction(subscriptionDetail?.data?.data))
                     }
+
+                    // Check for active subscription using the correct logic
                     let subsClosedCount = await AsyncStorage.getItem('subscription_modal_closed_count');
                     if (subsClosedCount !== '1') {
-                        const subscription = subscriptionDetail?.data?.data?.filter((item: SubscriptionItem) => item.payment_type === "subscription")[0];
-                        if (!isSubscriptionActive(subscription)) {
+                        const subscriptions = subscriptionDetail?.data?.data;
+                        const hasActive = checkHasActiveSubscription(subscriptions);
+
+                        if (!hasActive) {
                             dispatch(subscriptionModalAction(true))
                             await AsyncStorage.setItem('subscription_modal_closed_count', '1');
                         }
@@ -200,6 +204,25 @@ const Home = React.forwardRef((props, ref) => {
         }, [])
     );
 
+    /**
+     * Check if user has an active subscription
+     * Uses the logic: subscription_id exists, payment_status is 'captured', and end_at is in the future
+     */
+    const checkHasActiveSubscription = (subscriptions: any): boolean => {
+        if (!subscriptions) return false;
+
+        const subscriptionArray = Array.isArray(subscriptions) ? subscriptions : [subscriptions];
+
+        return subscriptionArray.some((data: any) => {
+            if (!data) return false;
+
+            const hasSubscriptionId = !!data.subscription_id;
+            const isPaymentCaptured = data.payment_status === 'captured';
+            const isNotExpired = Date.now() / 1000 < data.end_at;
+
+            return hasSubscriptionId && isPaymentCaptured && isNotExpired;
+        });
+    };
 
     const isSubscriptionActive = (item: any) => {
         if (!item) return false;
@@ -291,11 +314,12 @@ const Home = React.forwardRef((props, ref) => {
         navigation.navigate(STACKS.ADD_DRIVER)
     }
     const _navigateAppliedJobsTransporter = () => {
-        if (subscriptionDetails?.showSubscriptionModel && isTransporter) {
-            !subscriptionModal && dispatch(subscriptionModalAction(true))
-        } else {
-            navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
-        }
+        // if (subscriptionDetails?.showSubscriptionModel && isTransporter) {
+        //     !subscriptionModal && dispatch(subscriptionModalAction(true))
+        // } else {
+        //     navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
+        // }
+        navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
     }
     const _navigateDriverList = () => {
         navigation.navigate(STACKS.DRIVER_LIST)
@@ -437,48 +461,7 @@ const Home = React.forwardRef((props, ref) => {
                     <Space height={responsiveFontSize(isIOS() ? 7 : 4.5)} /> : <Space height={responsiveFontSize(isIOS() ? 5 : 0)} />}
                 {/* <View style={{ width: responsiveWidth(100), alignSelf: 'center' }}> */}
                 <MediaSwiper />
-                {/* <FlatList
-                        data={IMAGES}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        pagingEnabled
-                        nestedScrollEnabled
-                        keyExtractor={(item, index) => index.toString()}
-                        renderItem={({ item }: { item: any }) => {
-                            return (
-                                <Image style={{ height: responsiveHeight(20), width: responsiveWidth(95), marginRight: responsiveWidth(5), borderRadius: 10 }} source={{ uri: item }} />
-                            )
-                        }}
-                        contentContainerStyle={{ paddingHorizontal: responsiveWidth(2.5) }}
-                        onScroll={Animated.event(
-                            [{ nativeEvent: { contentOffset: { x: scrollValue } } }],
-                            { useNativeDriver: false },
-                        )} /> */}
-                {/* <View style={{ alignSelf: 'center', position: 'absolute', bottom: 5, flexDirection: 'row', }} pointerEvents="none"> */}
-                {/* {IMAGES.map(x => (
-                            <View key={x} style={{
-                                height: 10,
-                                width: 10,
-                                borderRadius: 5,
-                                backgroundColor: colors.blackOpacity(.7),
-                                marginHorizontal: 5,
-                            }} />
-                        ))}
-                        <Animated.View
-                            style={[
-                                {
-                                    height: 10,
-                                    width: 10,
-                                    borderRadius: 5,
-                                    backgroundColor: '#fff',
-                                    marginHorizontal: 5,
-                                },
-                                { position: 'absolute', transform: [{ translateX }] },
-                            ]}
-                        /> */}
-                {/* </View> */}
-                {/* </View> */}
-                {/* <Space height={responsiveFontSize(2)} /> */}
+
 
                 {whatsapp_link && <TouchableOpacity
                     onPress={() => Linking.openURL(whatsapp_link)}

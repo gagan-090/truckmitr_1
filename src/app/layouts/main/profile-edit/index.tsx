@@ -61,9 +61,9 @@ const TRANSPORTER_STEPS = [
     { id: 'personal_info', title: 'personalInfoStep', subtitle: 'personalInfoStepDesc' },
     { id: 'transport_details', title: 'transportDetailsStep', subtitle: 'transportDetailsStepDesc' },
     { id: 'address', title: 'addressStep', subtitle: 'addressStepDesc' },
-    { id: 'year_of_exp', title: 'experienceYearsStep', subtitle: 'experienceYearsStepDesc' },
+    { id: 'year_of_exp', title: 'selectYearsOfOperation', subtitle: 'selectYearsOfOperationDesc' },
     { id: 'fleet_size', title: 'fleetSizeStep', subtitle: 'fleetSizeStepDesc' },
-    { id: 'industry_segment', title: 'industryStep', subtitle: 'industryStepDesc' },
+    { id: 'industry_segment', title: 'selectOperationalSegment', subtitle: 'selectOperationalSegmentDesc' },
     { id: 'avg_km_run', title: 'avgKmStep', subtitle: 'avgKmStepDesc' },
     { id: 'vehicle', title: 'vehicleTypeStep', subtitle: 'vehicleTypeStepDescTransporter' },
     { id: 'pan_gst', title: 'panGstStep', subtitle: 'panGstStepDesc' },
@@ -192,6 +192,185 @@ export default function ProfileEdit() {
         };
         fetchData();
     }, []);
+
+    // Normalize transporter fields from API response (handle casing mismatches)
+    useEffect(() => {
+        // Debug logs to see what we're receiving
+        console.log('=== Normalization Effect Triggered ===');
+        console.log('User Role:', userRole);
+        console.log('User Object Keys:', user ? Object.keys(user) : 'null');
+
+        if (userRole === 'transporter' && user) {
+            const updates: any = {};
+            let shouldUpdate = false;
+
+            const checkAndSet = (targetKey: string, sourceValues: any[], mapping?: Record<string, string>) => {
+                // Determine source value first
+                let sourceValue = sourceValues.find(v => v !== undefined && v !== null && v !== '');
+
+                // key specific handling
+                if (targetKey === 'avg_km_run' && !sourceValue && sourceValues.some(v => v)) {
+                    const raw = String(sourceValues.find(v => v) || '');
+                    if (raw.includes('1000') && raw.includes('3000')) sourceValue = '1000_3000';
+                    else if (raw.includes('3000') && raw.includes('5000')) sourceValue = '3000_5000';
+                    else if (raw.includes('5000') && raw.includes('10000')) sourceValue = '5000_10000';
+                    else if (raw.includes('1000') && !raw.includes('3000') && (raw.includes('<') || raw.includes('less'))) sourceValue = 'less_1000';
+                    else if (raw.includes('10000') && (raw.includes('+') || raw.includes('Above'))) sourceValue = '10000_plus';
+                }
+
+                // Fallback for fleetsize if purely numeric
+                if (targetKey === 'fleet_size' && !sourceValue && sourceValues.some(v => v !== null)) {
+                    const rawNum = parseInt(String(sourceValues.find(v => v !== null)), 10);
+                    if (!isNaN(rawNum)) {
+                        if (rawNum <= 9) sourceValue = '0-9';
+                        else if (rawNum <= 50) sourceValue = '10-50';
+                        else if (rawNum <= 100) sourceValue = '51-100';
+                        else sourceValue = '100+';
+                    }
+                }
+
+                if (sourceValue) {
+                    // Apply mapping if exists
+                    if (mapping && mapping[sourceValue]) {
+                        sourceValue = mapping[sourceValue];
+                    }
+
+                    // Get current value in edit state
+                    const currentValue = userEdit?.[targetKey];
+
+                    // Update if missing or different
+                    if (!currentValue || currentValue !== sourceValue) {
+                        updates[targetKey] = sourceValue;
+                        shouldUpdate = true;
+                    }
+                }
+            };
+
+            // Mappings for Fleet Size (Legacy -> New UI)
+            const fleetMapping: Record<string, string> = {
+                '0-9': '0-9',
+                '10-50': '10-50',
+                '51-100': '51-100',
+                '101-250': '100+',
+                '251-500': '100+',
+                '501-1000': '100+',
+                'Above 1000': '100+',
+                '100+': '100+'
+            };
+
+            // Mappings for Avg Km (Legacy -> New UI)
+            const avgKmMapping: Record<string, string> = {
+                '< 1000 km': 'less_1000',
+                'less_1000': 'less_1000',
+                '1000 - 3000 km': '1000_3000',
+                '1000-3000': '1000_3000',
+                '1000_3000': '1000_3000',
+                '3000 - 5000 km': '3000_5000',
+                '3000-5000': '3000_5000',
+                '3000_5000': '3000_5000',
+                '5000 - 10000 km': '5000_10000',
+                '5000-10000': '5000_10000',
+                '5000_10000': '5000_10000',
+                '10000+ km': '10000_plus',
+                'Above 10000': '10000_plus',
+                '10000_plus': '10000_plus'
+            };
+
+            // Map API fields (PascalCase/snake_case) to UI fields (snake_case)
+            checkAndSet('fleet_size', [user.Fleet_Size, user.fleet_size], fleetMapping);
+            checkAndSet('industry_segment', [user.Industry_Segment, user.industry_segment]);
+            checkAndSet('avg_km_run', [user.Average_Km, user.average_km, user.avg_km_run, user.average_run], avgKmMapping);
+            checkAndSet('transport_name', [user.Transport_Name, user.transport_name]);
+
+            // Vehicle Type Normalization
+            if (!userEdit?.vehicle_type) {
+                let vType = user.Vehicle_Type || user.vehicle_type;
+                if (vType) {
+                    // Ensure vType is array
+                    const vList = Array.isArray(vType) ? vType : typeof vType === 'string' ? vType.split(',') : [vType];
+
+                    // Map to IDs if vehicleTypes list is available
+                    if (vehicleTypes.length > 0) {
+                        const mappedIds = vList.map((v: any) => {
+                            const match = vehicleTypes.find((vt: any) =>
+                                String(vt.id) === String(v) || // Match by ID
+                                vt.name?.toLowerCase() === String(v).toLowerCase() || // Match by Name
+                                vt.label?.toLowerCase() === String(v).toLowerCase() // Match by Label
+                            );
+                            return match ? match.id : v; // use id if found, else keep original
+                        });
+                        updates.vehicle_type = mappedIds.join(',');
+                        shouldUpdate = true;
+                    } else if (typeof vType === 'string') {
+                        // Fallback if vehicleTypes not loaded yet
+                        updates.vehicle_type = vType;
+                        shouldUpdate = true;
+                    } else {
+                        updates.vehicle_type = vList.join(',');
+                        shouldUpdate = true;
+                    }
+                }
+            }
+
+            // Operational Segment (Handle Array or String)
+            if (!userEdit?.operational_segment) {
+                const opSeg = user.Operational_Segment || user.operational_segment;
+                console.log('Operational Segment from User:', opSeg);
+
+                if (Array.isArray(opSeg)) {
+                    updates.operational_segment = opSeg.join(',');
+                    shouldUpdate = true;
+                } else if (typeof opSeg === 'string') {
+                    updates.operational_segment = opSeg;
+                    shouldUpdate = true;
+                }
+            }
+
+            // Year of Experience / Establishment
+            let expVal = user.Year_of_Exp || user.year_of_exp || user.Year_of_Establishment || user.year_of_establishment || user.establishment_year;
+            console.log('Experience Value from User:', expVal);
+
+            // Map API/DB values to UI values
+            const reverseExpMapping: { [key: string]: string } = {
+                '0': 'less_than_1',
+                '1': '1-2',
+                '2': '1-2',
+                '3': '3-5',
+                '4': '3-5',
+                '5': '3-5',
+                '6': '6-10',
+                '7': '6-10',
+                '8': '6-10',
+                '9': '6-10',
+                '10': '10+',
+                '10+': '10+'
+            };
+
+            // Apply mapping if value matches
+            if (expVal && reverseExpMapping[String(expVal)]) {
+                expVal = reverseExpMapping[String(expVal)];
+            }
+
+            if (expVal && (!userEdit?.year_of_exp || userEdit.year_of_exp !== expVal)) {
+                updates.year_of_exp = typeof expVal === 'number' ? String(expVal) : expVal;
+                shouldUpdate = true;
+            }
+            // Ensure year_of_establishment is consistent
+            if (expVal && (!userEdit?.year_of_establishment || userEdit.year_of_establishment !== expVal)) {
+                updates.year_of_establishment = typeof expVal === 'number' ? String(expVal) : expVal;
+                shouldUpdate = true;
+            }
+
+            if (shouldUpdate) {
+                console.log('Normalizing transporter data with updates:', updates);
+                // We must spread userEdit to preserve other fields, but avoid infinite loops
+                // strictly update only if values are different
+                dispatch(userEditAction({ ...(userEdit || {}), ...updates }));
+            } else {
+                console.log('No normalization updates needed');
+            }
+        }
+    }, [user, userRole, vehicleTypes]);
 
     // Play voice when step changes (only for Hindi language)
     useEffect(() => {
@@ -578,7 +757,7 @@ export default function ProfileEdit() {
             formData.append('pan_number', userEdit?.pan || userEdit?.PAN_Number || '');
             formData.append('gst_number', userEdit?.gst || userEdit?.GST_Number || '');
             formData.append('transport_name', userEdit?.transport_name || '');
-            formData.append('year_of_establishment', userEdit?.year_of_establishment || userEdit?.establishment_year || '');
+            formData.append('year_of_establishment', userEdit?.year_of_exp || userEdit?.year_of_establishment || userEdit?.establishment_year || '');
             formData.append('Referral_Code', userEdit?.Referral_Code || '');
 
             // Profile photo
@@ -1036,8 +1215,8 @@ export default function ProfileEdit() {
                                 { label: t('6to10Years') || '6-10 Years', value: '6-10' },
                                 { label: t('10PlusYears') || '10+ Years', value: '10+' }
                             ].map(e => (
-                                <TouchableOpacity key={e.value} style={[styles.gridTile, userEdit?.year_of_exp === e.value && styles.gridTileSelected]} onPress={() => dispatch(userEditAction({ ...userEdit, year_of_exp: e.value }))}>
-                                    <Text style={[styles.gridTileText, userEdit?.year_of_exp === e.value && styles.gridTileTextSelected]}>{e.label}</Text>
+                                <TouchableOpacity key={e.value} style={[styles.gridTile, (userEdit?.year_of_exp === e.value || userEdit?.year_of_establishment === e.value) && styles.gridTileSelected]} onPress={() => dispatch(userEditAction({ ...userEdit, year_of_exp: e.value, year_of_establishment: e.value }))}>
+                                    <Text style={[styles.gridTileText, (userEdit?.year_of_exp === e.value || userEdit?.year_of_establishment === e.value) && styles.gridTileTextSelected]}>{e.label}</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
@@ -1061,9 +1240,6 @@ export default function ProfileEdit() {
                     <View style={styles.stepContent}>
                         <Text style={styles.inputLabel}>{t('transportName') || 'Transport Name'} <Text style={styles.requiredAsterisk}>*</Text></Text>
                         <TextInput style={styles.textInput} placeholder={t('enterTransportName')} placeholderTextColor="#999" value={userEdit?.transport_name || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, transport_name: text }))} />
-                        <Space height={16} />
-                        <Text style={styles.inputLabel}>{t('yearOfEstablishment') || 'Year of Establishment'}</Text>
-                        <TextInput style={styles.textInput} placeholder="YYYY" maxLength={4} keyboardType="number-pad" placeholderTextColor="#999" value={userEdit?.year_of_establishment || userEdit?.establishment_year || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, year_of_establishment: text, establishment_year: text }))} />
                         <Space height={16} />
                         <Text style={styles.inputLabel}>{t('referralCode') || 'Referral Code'}</Text>
                         <TextInput style={styles.textInput} placeholder={t('enterReferralCode')} placeholderTextColor="#999" value={userEdit?.Referral_Code || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, Referral_Code: text }))} />
@@ -1112,10 +1288,10 @@ export default function ProfileEdit() {
                     <Animated.View style={animatedContentStyle}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.stepTitle}>{t(STEPS[currentStep].title)}</Text>
-                                <Text style={styles.stepSubtitle}>{t(STEPS[currentStep].subtitle)}</Text>
+                                <Text style={styles.stepTitle}>{STEPS[currentStep] ? t(STEPS[currentStep].title) : ''}</Text>
+                                <Text style={styles.stepSubtitle}>{STEPS[currentStep] ? t(STEPS[currentStep].subtitle) : ''}</Text>
                             </View>
-                            {i18n.language === 'hi' && ((userRole === 'driver' && DRIVER_VOICE_FILES[STEPS[currentStep].id]) || (userRole === 'transporter' && TRANSPORTER_VOICE_FILES[STEPS[currentStep].id])) && (
+                            {i18n.language === 'hi' && STEPS[currentStep] && ((userRole === 'driver' && DRIVER_VOICE_FILES[STEPS[currentStep].id]) || (userRole === 'transporter' && TRANSPORTER_VOICE_FILES[STEPS[currentStep].id])) && (
                                 <TouchableOpacity
                                     onPress={toggleVoiceMute}
                                     style={{

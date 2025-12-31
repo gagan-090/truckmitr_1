@@ -1,5 +1,16 @@
-import { Modal, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, ActivityIndicator, BackHandler } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import {
+    Modal,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+    ActivityIndicator,
+    BackHandler,
+    StyleSheet,
+    Dimensions,
+    ScrollView,
+} from 'react-native';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useColor, useResponsiveScale, useStatusBarStyle } from '@truckmitr/src/app/hooks';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,7 +18,6 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { NavigatorParams } from '@truckmitr/src/stacks/stacks';
 import LottieView from 'lottie-react-native';
-import { Space } from '@truckmitr/src/app/components';
 import { hitSlop } from '@truckmitr/src/app/functions';
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -17,14 +27,111 @@ import { END_POINTS } from '@truckmitr/src/utils/config';
 import { useDispatch, useSelector } from 'react-redux';
 import { subscriptionDetailsAction } from '@truckmitr/src/redux/actions/user.action';
 import moment from 'moment';
-import { shadow } from 'react-native-paper';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+    withDelay,
+    withTiming,
+    FadeIn,
+    FadeInDown,
+    FadeInUp,
+} from 'react-native-reanimated';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Classic Design Colors
+const COLORS = {
+    primary: '#1E3A8A',
+    primaryLight: '#3B82F6',
+    success: '#059669',
+    successLight: '#10B981',
+    gold: '#D97706',
+    white: '#FFFFFF',
+    background: '#F1F5F9',
+    text: '#1E293B',
+    textMuted: '#64748B',
+    textLight: '#94A3B8',
+    border: '#E2E8F0',
+};
+
+// Plan tier configurations with benefits
+const TIER_CONFIG: Record<string, {
+    color: string;
+    gradient: string[];
+    icon: string;
+    label: string;
+    benefitKeys: string[];
+    noteKeys: string[];
+    ctaKey: string;
+}> = {
+    'JOB READY': {
+        color: '#475569',
+        gradient: ['#475569', '#64748B'],
+        icon: '🚛',
+        label: 'Job Ready',
+        benefitKeys: [
+            'subBenefitCreateProfile',
+            'subBenefitBrowseJobs',
+            'subBenefitContactTransporters',
+            'subBenefitBasicTraining',
+            'subBenefitStayJobReady',
+        ],
+        noteKeys: [
+            'subNoteNoVerification',
+            'subNoteChooseJobs',
+        ],
+        ctaKey: 'subIdealLowPayment',
+    },
+    'VERIFIED': {
+        color: '#1E3A8A',
+        gradient: ['#1E3A8A', '#3B82F6'],
+        icon: '✅',
+        label: 'Verified',
+        benefitKeys: [
+            'subBenefitEverythingJobReady',
+            'subBenefitOneTimeVerification',
+            'subBenefitVerifiedBadge',
+            'subBenefitHigherTrust',
+            'subBenefitBetterShortlisting',
+            'subBenefitTruckMitrSupport',
+        ],
+        noteKeys: [
+            'subNoteVerificationAfterUpload',
+            'subNoteMayRequireOTP',
+            'subNoteNoGuarantee',
+        ],
+        ctaKey: 'subRecommendedSerious',
+    },
+    'TRUSTED': {
+        color: '#D97706',
+        gradient: ['#D97706', '#F59E0B'],
+        icon: '🛡️',
+        label: 'Trusted',
+        benefitKeys: [
+            'subBenefitEverythingVerified',
+            'subBenefitCourtCheck',
+            'subBenefitAddressVerify',
+            'subBenefitHomePhotoVerify',
+            'subBenefitTrustedBadge',
+            'subBenefitHighestCredibility',
+            'subBenefitPriorityPremium',
+        ],
+        noteKeys: [
+            'subNoteDigitallyProcessed',
+            'subNoteFollowInstructions',
+            'subNoteImprovesConfidence',
+        ],
+        ctaKey: 'subBestLongTerm',
+    },
+};
 
 export default function PaymentSuccess() {
     const route: any = useRoute();
     const { t } = useTranslation();
-    useStatusBarStyle('light-content')
-    const dispatch = useDispatch()
+    useStatusBarStyle('dark-content');
+    const dispatch = useDispatch();
     const colors = useColor();
     const safeAreaInsets = useSafeAreaInsets();
     const { responsiveHeight, responsiveWidth, responsiveFontSize } = useResponsiveScale();
@@ -32,8 +139,19 @@ export default function PaymentSuccess() {
     const [emailPopupVisible, setEmailPopupVisible] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
-    const { user, isDriver, subscriptionDetails } = useSelector((state: any) => { return state?.user })
+    const { user, isDriver, subscriptionDetails } = useSelector((state: any) => state?.user);
     const [email, setEmail] = useState(user?.email || '');
+
+    // Extract plan data
+    const plan = route?.params?.plan;
+    const planPrice = plan?.price || (isDriver ? 199 : 499);
+    const planName = plan?.name || (isDriver ? 'VERIFIED' : 'STANDARD');
+    const originalPrice = plan?.price === 99 ? 249 : plan?.price === 199 ? 499 : plan?.price === 499 ? 999 : 499;
+
+    const tierConfig = TIER_CONFIG[planName] || TIER_CONFIG['VERIFIED'];
+
+    // Animation
+    const checkScale = useSharedValue(0);
 
     const _goback = () => {
         navigation.goBack();
@@ -49,53 +167,31 @@ export default function PaymentSuccess() {
                 let emailFormData = new FormData();
                 emailFormData.append('email', email);
                 setEmailPopupVisible(false);
-                const response = await axiosInstance.post(END_POINTS.PAYMENT_SEND_INVOICE_EMAIL, emailFormData);
+                await axiosInstance.post(END_POINTS.PAYMENT_SEND_INVOICE_EMAIL, emailFormData);
             } catch (error) {
                 console.log('Email update error:', error);
             }
-        } else {
-            setEmailPopupVisible(false);
         }
         setEmailPopupVisible(false);
     };
 
     useEffect(() => {
-        const backAction = () => {
-            if (isLoading) {
-                return true;
-            }
-            return false;
-        };
-
-        const backHandler = BackHandler.addEventListener(
-            'hardwareBackPress',
-            backAction
-        );
-
+        const backAction = () => isLoading;
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
         return () => backHandler.remove();
     }, [isLoading]);
 
-    const _handleSkipEmail = async () => {
-        setEmailPopupVisible(false);
-    };
+    const _handleSkipEmail = () => setEmailPopupVisible(false);
 
     const _syncSubscriptionStatus = async () => {
         setIsLoading(true);
         try {
-            // Get subscription details from backend
-            // The webhook will have already processed the payment
             const response = await axiosInstance.get(END_POINTS.PAYMENT_SUBSCRIPTION_DETAILS);
-
             if (response?.data?.status) {
                 dispatch(subscriptionDetailsAction(response?.data?.data));
-
-                // Check if email is required
-                if (response?.data?.email_required) {
-                    setEmailPopupVisible(true);
-                }
+                if (response?.data?.email_required) setEmailPopupVisible(true);
             }
 
-            // Also try to sync the payment (fallback if webhook hasn't processed yet)
             const subscriptionId = route?.params?.data?.razorpay_subscription_id;
             const paymentId = route?.params?.data?.razorpay_payment_id;
 
@@ -105,14 +201,8 @@ export default function PaymentSuccess() {
                     syncFormData.append('subscription_id', subscriptionId);
                     syncFormData.append('payment_id', paymentId);
                     syncFormData.append('payment_type', 'subscription');
-
                     const syncResponse = await axiosInstance.post(END_POINTS.PAYMENT_SUBSCRIPTION_CAPTURE, syncFormData);
-
-                    if (syncResponse?.data?.email_required) {
-                        setEmailPopupVisible(true);
-                    }
-
-                    // Refresh subscription details after sync
+                    if (syncResponse?.data?.email_required) setEmailPopupVisible(true);
                     if (syncResponse?.data?.status) {
                         const updatedDetails = await axiosInstance.get(END_POINTS.PAYMENT_SUBSCRIPTION_DETAILS);
                         if (updatedDetails?.data?.status) {
@@ -120,7 +210,6 @@ export default function PaymentSuccess() {
                         }
                     }
                 } catch (syncError) {
-                    // Sync might fail if already processed by webhook - that's okay
                     console.log('Payment sync note:', syncError);
                 }
             }
@@ -128,6 +217,7 @@ export default function PaymentSuccess() {
             console.error('Subscription status error:', error.response?.data || error.message);
         } finally {
             setIsLoading(false);
+            checkScale.value = withDelay(200, withSpring(1, { damping: 12 }));
         }
     };
 
@@ -135,199 +225,537 @@ export default function PaymentSuccess() {
         _syncSubscriptionStatus();
     }, []);
 
+    const checkAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: checkScale.value }],
+    }));
 
     return (
-        <View style={{ flex: 1, backgroundColor: colors.royalBlue, alignItems: 'center' }}>
+        <View style={styles.container}>
+            {/* Loading */}
             {isLoading && (
-                <View style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.3)',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    zIndex: 1000
-                }}>
-                    <ActivityIndicator size="large" color={colors.white} />
+                <View style={styles.loadingOverlay}>
+                    <ActivityIndicator size="large" color={COLORS.primary} />
+                    <Text style={styles.loadingText}>{t('subConfirmingPayment')}</Text>
                 </View>
             )}
-            <Space height={safeAreaInsets.top} />
-            <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center', padding: responsiveWidth(3) }}>
-                <TouchableOpacity hitSlop={hitSlop(10)} onPress={_goback} style={{ height: responsiveFontSize(4), width: responsiveFontSize(4), alignItems: 'center', justifyContent: 'center', backgroundColor: colors.royalBlue, borderRadius: 100, zIndex: 100 }}>
-                    <Ionicons name={'chevron-back'} size={24} color={colors.white} />
+
+            {/* Header - Slim */}
+            <View style={[styles.header, { paddingTop: safeAreaInsets.top + 8 }]}>
+                <TouchableOpacity hitSlop={hitSlop(10)} onPress={_goback} style={styles.backBtn}>
+                    <Ionicons name="chevron-back" size={22} color={COLORS.text} />
                 </TouchableOpacity>
-                <Text style={{ width: responsiveWidth(100), fontSize: responsiveFontSize(2.2), color: colors.white, fontWeight: 'bold', textAlign: 'center', position: 'absolute', zIndex: 1 }}>{t(`checkout`)}</Text>
+                <Text style={styles.headerTitle}>{t('subPaymentHeader')}</Text>
+                <View style={{ width: 32 }} />
             </View>
-            <Space height={responsiveHeight(4)} />
-            <Text style={{ color: colors.white, fontSize: responsiveFontSize(3), fontWeight: '600' }}>{t(`thankYou`)}</Text>
-            <Text style={{ color: colors.whiteOpacity(.7), fontSize: responsiveFontSize(1.8), fontWeight: '400' }}>{t(`paymentSuccessful`)}</Text>
-            <Space height={responsiveHeight(1)} />
-            {isDriver ? <Text style={{ color: colors.white, fontSize: responsiveFontSize(4), fontWeight: '600' }}>{(`₹199`)}</Text> :
-                <Text style={{ color: colors.white, fontSize: responsiveFontSize(4), fontWeight: '600' }}>{(`₹499`)}</Text>}
-            <View style={{ height: responsiveHeight(75), width: responsiveWidth(100), backgroundColor: colors.white, alignItems: 'center', position: 'absolute', bottom: 0, borderTopStartRadius: 30, borderTopEndRadius: 30 }}>
-                <LottieView style={{ height: responsiveHeight(10), width: responsiveHeight(10), marginVertical: responsiveFontSize(5) }} source={require('@truckmitr/res/lotties/complete.json')} autoPlay loop />
-                <Text style={{ color: colors.black, fontSize: responsiveFontSize(2.6), fontWeight: 'bold', letterSpacing: -.2 }}>{t(`thanksForJoiningTruckMitr`)}</Text>
-                <Space height={responsiveHeight(.5)} />
-                <Text style={{ width: responsiveWidth(70), color: colors.blackOpacity(.7), fontSize: responsiveFontSize(1.8), fontWeight: '400', textAlign: 'center' }}>{t(`yourMembershipIsLive`)}</Text>
-                <Space height={responsiveHeight(5)} />
-                <View style={{
-                    width: responsiveWidth(90), backgroundColor: colors.greenOpacitiy(.05), paddingVertical: responsiveFontSize(2), paddingHorizontal: responsiveFontSize(2),
-                    borderRadius: 10,
-                    borderColor: colors.green,
-                    borderWidth: 1,
-                    borderStyle: 'dashed'
-                }}>
-                    <View style={{ flexDirection: 'row' }}>
-                        <View style={{ flex: 1 }}>
-                            <View style={{ flexDirection: 'row' }}>
-                                <Text style={{ color: colors.black, fontSize: responsiveFontSize(2.5), fontWeight: 'bold', }}>{t(`yearly`)}</Text>
-                                <LinearGradient colors={['#FFD700', '#FFCC00']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ alignSelf: 'center', paddingVertical: responsiveFontSize(.2), paddingHorizontal: responsiveFontSize(1), borderRadius: 100, marginStart: responsiveFontSize(1) }}>
-                                    <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.6), fontWeight: '600' }}> {t('subscribed')}</Text>
-                                </LinearGradient>
-                            </View>
-                            <Space height={responsiveHeight(.5)} />
-                            <Text style={{ color: colors.blackOpacity(.7), fontSize: responsiveFontSize(1.6), fontWeight: '500' }}>{`${t(`save`)} ${isDriver ? `60%` : `50%`}`}</Text>
-                        </View>
-                        <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                            {isDriver ? <Text style={{ color: colors.black, fontSize: responsiveFontSize(3.5), fontWeight: 'bold' }}>{`₹199/`}<Text style={{ color: colors.blackOpacity(.5), fontSize: responsiveFontSize(2), textDecorationLine: 'line-through', fontWeight: '400' }}>{`₹499`}</Text></Text> :
-                                <Text style={{ color: colors.black, fontSize: responsiveFontSize(3.5), fontWeight: 'bold' }}>{`₹499/`}<Text style={{ color: colors.blackOpacity(.5), fontSize: responsiveFontSize(2), textDecorationLine: 'line-through', fontWeight: '400' }}>{`₹999`}</Text></Text>}
-                            {isDriver ?
-                                < Text style={{ color: colors.blackOpacity(.7), fontSize: responsiveFontSize(1.4), fontWeight: '500', textAlign: 'center' }}>{t(`billedAnnual`)}</Text> : // add quater string here
-                                <Text style={{ color: colors.blackOpacity(.7), fontSize: responsiveFontSize(1.4), fontWeight: '500', textAlign: 'center' }}>{t(`billedQuarter`)}</Text>}
-                        </View>
+
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Success Card */}
+                <Animated.View
+                    entering={FadeInDown.delay(100).duration(400)}
+                    style={styles.successCard}
+                >
+                    {/* Success Icon */}
+                    <Animated.View style={[styles.successIcon, checkAnimatedStyle]}>
+                        <Ionicons name="checkmark-circle" size={72} color={COLORS.success} />
+                    </Animated.View>
+
+                    <Animated.Text
+                        entering={FadeIn.delay(300)}
+                        style={styles.successTitle}
+                    >
+                        {t('subPaymentSuccessful')}
+                    </Animated.Text>
+
+                    <Animated.Text
+                        entering={FadeIn.delay(400)}
+                        style={styles.successSubtitle}
+                    >
+                        {t('subSubscriptionActive')}
+                    </Animated.Text>
+
+                    {/* Amount */}
+                    <Animated.View
+                        entering={FadeInUp.delay(500)}
+                        style={styles.amountContainer}
+                    >
+                        <Text style={styles.amountLabel}>{t('subAmountPaid')}</Text>
+                        <Text style={[styles.amountValue, { color: tierConfig.color }]}>₹{planPrice}</Text>
+                    </Animated.View>
+                </Animated.View>
+
+                {/* Benefits */}
+                <Animated.View
+                    entering={FadeInUp.delay(700).duration(400)}
+                    style={styles.benefitsCard}
+                >
+                    <View style={styles.sectionHeader}>
+                        <View style={[styles.sectionDot, { backgroundColor: COLORS.success }]} />
+                        <Text style={styles.benefitsTitle}>{t('subYourBenefits')}</Text>
                     </View>
-                    {subscriptionDetails?.end_at && moment.unix(subscriptionDetails.end_at).isValid() && (
-                        <Text
-                            style={{
-                                alignSelf: 'flex-end',
-                                color: colors.black,
-                                fontSize: responsiveFontSize(1.6),
-                                fontWeight: 'bold',
-                                marginTop: responsiveHeight(0.5)
-                            }}>
-                            {t('expired')}:
-                            <Text style={{
-                                color: colors.blackOpacity(1),
-                                fontSize: responsiveFontSize(1.4),
-                                fontWeight: '500'
-                            }}>
-                                {moment
-                                    .unix(subscriptionDetails.end_at)
-                                    .subtract(1, 'day')
-                                    .format('DD/MM/YYYY')}
-                            </Text>
+                    {tierConfig.benefitKeys.map((key, idx) => (
+                        <BenefitItem key={idx} text={t(key)} />
+                    ))}
+
+                    <View style={styles.ctaNote}>
+                        <Text style={[styles.ctaNoteText, { color: tierConfig.color }]}>
+                            ✨ {t(tierConfig.ctaKey)}
                         </Text>
-                    )}
-                </View>
-                <Space style={{ flex: 1 }} />
+                    </View>
+                </Animated.View>
+
+                {/* Important Notes */}
+                <Animated.View
+                    entering={FadeInUp.delay(800).duration(400)}
+                    style={styles.notesCard}
+                >
+                    <View style={styles.sectionHeader}>
+                        <View style={[styles.sectionDot, { backgroundColor: COLORS.gold }]} />
+                        <Text style={styles.notesTitle}>{t('subPleaseNote')}</Text>
+                    </View>
+                    {tierConfig.noteKeys.map((key, idx) => (
+                        <NoteItem key={idx} text={t(key)} />
+                    ))}
+                </Animated.View>
+
+                {/* Spacer for button */}
+                <View style={{ height: 100 }} />
+            </ScrollView>
+
+            {/* Fixed Bottom Button */}
+            <Animated.View
+                entering={FadeInUp.delay(900).duration(400)}
+                style={[styles.bottomContainer, { paddingBottom: safeAreaInsets.bottom + 16 }]}
+            >
                 <TouchableOpacity
                     onPress={_goback}
-                    activeOpacity={0.7}
-                    style={{
-                        height: responsiveHeight(6.2),
-                        width: responsiveWidth(90),
-                        backgroundColor: colors.royalBlue,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        alignSelf: 'center',
-                        borderRadius: 100,
-                    }}>
-                    <Text style={{ color: colors.white, fontSize: responsiveFontSize(2), fontWeight: '500' }}>{t('backToHome')}</Text>
+                    activeOpacity={0.8}
+                    style={styles.homeButton}
+                >
+                    <LinearGradient
+                        colors={tierConfig.gradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.homeButtonGradient}
+                    >
+                        <Ionicons name="home-outline" size={20} color={COLORS.white} />
+                        <Text style={styles.homeButtonText}>{t('backToHome')}</Text>
+                    </LinearGradient>
                 </TouchableOpacity>
-                <Space height={responsiveHeight(8)} />
-                <Space height={safeAreaInsets.bottom} />
-            </View>
-            {/* Email Input Popup Modal */}
+            </Animated.View>
+
+            {/* Email Modal */}
             <Modal
                 animationType="fade"
-                transparent={true}
+                transparent
                 visible={emailPopupVisible}
-                onRequestClose={() => setEmailPopupVisible(false)}>
-                <View style={{
-                    flex: 1,
-                    backgroundColor: colors.blackOpacity(0.5),
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                }}>
-                    <TouchableWithoutFeedback>
-                        <View style={{
-                            width: responsiveWidth(90),
-                            backgroundColor: colors.white,
-                            borderRadius: 16,
-                            padding: responsiveWidth(5),
-                            ...shadow
-                        }}>
-                            <View style={{ alignItems: 'center', marginBottom: responsiveHeight(2) }}>
-                                <Text style={{
-                                    fontSize: responsiveFontSize(2.2),
-                                    fontWeight: 'bold',
-                                    textAlign: 'center',
-                                }}>
-                                    {t('emailReceipt')}
-                                </Text>
-                            </View>
-                            <Text style={{
-                                fontSize: responsiveFontSize(1.7),
-                                color: colors.blackOpacity(0.7),
-                                textAlign: 'center',
-                                marginBottom: responsiveHeight(2.5),
-                                lineHeight: responsiveFontSize(2.2)
-                            }}>
-                                {t('weNeedYourEmail')}
-                            </Text>
-                            <TextInput
-                                style={{
-                                    borderWidth: 1,
-                                    borderColor: colors.blackOpacity(0.2),
-                                    borderRadius: 8,
-                                    padding: responsiveWidth(3),
-                                    marginBottom: responsiveHeight(2),
-                                    fontSize: responsiveFontSize(1.8),
-                                }}
-                                placeholder={t('Email Address')}
-                                placeholderTextColor={colors.blackOpacity(0.4)}
-                                value={email}
-                                onChangeText={(text) => {
-                                    setEmail(text);
-                                }}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                                autoComplete="email"
-                            />
+                onRequestClose={() => setEmailPopupVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalCard}>
+                        <Ionicons name="mail-outline" size={40} color={COLORS.primary} />
+                        <Text style={styles.modalTitle}>{t('emailReceipt')}</Text>
+                        <Text style={styles.modalSubtitle}>{t('weNeedYourEmail')}</Text>
 
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10 }}>
-                                <TouchableOpacity
-                                    onPress={_handleSkipEmail}
-                                    style={{
-                                        padding: responsiveWidth(3),
-                                        marginRight: 2,
-                                        borderRadius: 8,
-                                        alignItems: 'center',
-                                        borderWidth: 1,
-                                        borderColor: colors.blackOpacity(0.2),
-                                        paddingHorizontal: responsiveWidth(5),
-                                    }}>
-                                    <Text style={{ color: colors.blackOpacity(0.7), fontWeight: '500' }}>{t('skip')}</Text>
-                                </TouchableOpacity>
+                        <TextInput
+                            style={styles.emailInput}
+                            placeholder={t('subEnterEmail')}
+                            placeholderTextColor={COLORS.textLight}
+                            value={email}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                        />
 
-                                <TouchableOpacity
-                                    onPress={_handleEmailSubmit}
-                                    style={{
-                                        backgroundColor: colors.royalBlue,
-                                        padding: responsiveWidth(3),
-                                        borderRadius: 8,
-                                        alignItems: 'center',
-                                        paddingHorizontal: responsiveWidth(5),
-                                    }}>
-                                    <Text style={{ color: colors.white, fontWeight: '500' }}>{t('submit')}</Text>
-                                </TouchableOpacity>
-                            </View>
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity onPress={_handleSkipEmail} style={styles.skipBtn}>
+                                <Text style={styles.skipBtnText}>{t('subSkip')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={_handleEmailSubmit} style={styles.submitBtn}>
+                                <Text style={styles.submitBtnText}>{t('subSubmit')}</Text>
+                            </TouchableOpacity>
                         </View>
-                    </TouchableWithoutFeedback>
+                    </View>
                 </View>
             </Modal>
-        </View >
-    )
+        </View>
+    );
 }
+
+// Benefit Item Component
+const BenefitItem = ({ text }: { text: string }) => (
+    <View style={styles.benefitItem}>
+        <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+        <Text style={styles.benefitText}>{text}</Text>
+    </View>
+);
+
+// Note Item Component
+const NoteItem = ({ text }: { text: string }) => (
+    <View style={styles.noteItem}>
+        <Ionicons name="information-circle-outline" size={18} color={COLORS.gold} />
+        <Text style={styles.noteText}>{text}</Text>
+    </View>
+);
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: COLORS.background,
+    },
+    loadingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(255,255,255,0.9)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 100,
+    },
+    loadingText: {
+        marginTop: 12,
+        fontSize: 15,
+        color: COLORS.textMuted,
+        fontWeight: '500',
+    },
+    // Header - Slim
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingBottom: 12,
+        backgroundColor: COLORS.white,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.border,
+    },
+    backBtn: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: COLORS.text,
+    },
+    scrollContent: {
+        padding: 20,
+    },
+    // Success Card
+    successCard: {
+        backgroundColor: COLORS.white,
+        borderRadius: 16,
+        padding: 24,
+        alignItems: 'center',
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+    },
+    successIcon: {
+        marginBottom: 16,
+    },
+    successTitle: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: COLORS.text,
+        marginBottom: 4,
+    },
+    successSubtitle: {
+        fontSize: 15,
+        color: COLORS.textMuted,
+        marginBottom: 20,
+    },
+    amountContainer: {
+        alignItems: 'center',
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: COLORS.border,
+        width: '100%',
+    },
+    amountLabel: {
+        fontSize: 13,
+        color: COLORS.textMuted,
+        marginBottom: 4,
+    },
+    amountValue: {
+        fontSize: 36,
+        fontWeight: '800',
+        letterSpacing: -1,
+    },
+    // Plan Card
+    planCard: {
+        backgroundColor: COLORS.white,
+        borderRadius: 16,
+        padding: 20,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+    },
+    planHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    planInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    planIcon: {
+        fontSize: 32,
+    },
+    planName: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: COLORS.text,
+    },
+    planDuration: {
+        fontSize: 13,
+        color: COLORS.textMuted,
+        marginTop: 2,
+    },
+    activeBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    activeBadgeText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: COLORS.white,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: COLORS.border,
+        marginVertical: 16,
+    },
+    priceRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    priceLabel: {
+        fontSize: 14,
+        color: COLORS.textMuted,
+    },
+    priceValues: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    priceOriginal: {
+        fontSize: 14,
+        color: COLORS.textLight,
+        textDecorationLine: 'line-through',
+    },
+    priceCurrent: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: COLORS.text,
+    },
+    savingsValue: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    dateValue: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: COLORS.text,
+    },
+    // Benefits Card
+    benefitsCard: {
+        backgroundColor: COLORS.white,
+        borderRadius: 16,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+    },
+    benefitsTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: COLORS.text,
+        marginBottom: 16,
+    },
+    benefitItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 12,
+    },
+    benefitText: {
+        fontSize: 14,
+        color: COLORS.text,
+        fontWeight: '500',
+        flex: 1,
+    },
+    // Section Header
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 16,
+    },
+    sectionDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+    },
+    // CTA Note
+    ctaNote: {
+        marginTop: 16,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: COLORS.border,
+    },
+    ctaNoteText: {
+        fontSize: 14,
+        fontWeight: '600',
+        fontStyle: 'italic',
+        textAlign: 'center',
+    },
+    // Notes Card
+    notesCard: {
+        backgroundColor: '#FFFBEB', // Warm amber tint
+        borderRadius: 16,
+        padding: 20,
+        marginTop: 16,
+        borderWidth: 1,
+        borderColor: '#FEF3C7',
+    },
+    notesTitle: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: COLORS.gold,
+        marginBottom: 0,
+    },
+    noteItem: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 10,
+        marginBottom: 10,
+    },
+    noteText: {
+        fontSize: 13,
+        color: COLORS.textMuted,
+        fontStyle: 'italic',
+        flex: 1,
+        lineHeight: 18,
+    },
+    // Bottom Button
+    bottomContainer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        backgroundColor: COLORS.white,
+        borderTopWidth: 1,
+        borderTopColor: COLORS.border,
+    },
+    homeButton: {
+        borderRadius: 12,
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    homeButtonGradient: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 16,
+        gap: 8,
+    },
+    homeButtonText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: COLORS.white,
+    },
+    // Modal
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+    modalCard: {
+        width: '100%',
+        backgroundColor: COLORS.white,
+        borderRadius: 16,
+        padding: 24,
+        alignItems: 'center',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: COLORS.text,
+        marginTop: 16,
+        marginBottom: 8,
+    },
+    modalSubtitle: {
+        fontSize: 14,
+        color: COLORS.textMuted,
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    emailInput: {
+        width: '100%',
+        height: 48,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        borderRadius: 10,
+        paddingHorizontal: 14,
+        fontSize: 15,
+        color: COLORS.text,
+        marginBottom: 20,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%',
+    },
+    skipBtn: {
+        flex: 1,
+        height: 46,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    skipBtnText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: COLORS.textMuted,
+    },
+    submitBtn: {
+        flex: 1,
+        height: 46,
+        borderRadius: 10,
+        backgroundColor: COLORS.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    submitBtnText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: COLORS.white,
+    },
+});

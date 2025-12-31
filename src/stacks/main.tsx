@@ -15,6 +15,7 @@ import VerificationDriversByTransporter from '../app/layouts/main/transporter-ve
 import Verification from '../app/layouts/main/verification/verification-screen';
 import DriverDocumentUploadScreen from '../app/layouts/main/transporter-verification/drivers-document-upload-screen';
 import PaymentHistoryScreen from '../app/layouts/main/transporter-verification/payment-history-screen';
+import MembershipCard from '../app/layouts/main/membership-card';
 import { ZegoUIKitPrebuiltCallInCallScreen, ZegoUIKitPrebuiltCallWaitingScreen } from '@zegocloud/zego-uikit-prebuilt-call-rn';
 import { useSelector } from 'react-redux';
 import { initializeZeegoService } from '../utils/zegoService';
@@ -166,7 +167,8 @@ export default function Main() {
       <Stack.Screen name={STACKS.REFERRAL} component={Referral} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.VERIFIED_DRIVERS_DOCUMENTS_UPLOAD} component={DriverDocumentUploadScreen} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.PAYMENT_HISTORY_SCREEN} component={PaymentHistoryScreen} options={{ animation: 'fade' }} />
-      <Stack.Screen
+     <Stack.Screen name={STACKS.MEMBERSHIP_CARD} component={MembershipCard} options={{ animation: 'fade_from_bottom' }} />
+     <Stack.Screen
         options={{ headerShown: false }}
         // DO NOT change the name 
         name="ZegoUIKitPrebuiltCallWaitingScreen"

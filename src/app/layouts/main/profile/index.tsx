@@ -20,7 +20,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NavigatorParams, STACKS } from '@truckmitr/stacks/stacks';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Space } from '@truckmitr/src/app/components';
-import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from "react-native-svg";
+import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Text as SvgText } from "react-native-svg";
 import FontAwesome from 'react-native-vector-icons/FontAwesome'
 import Feather from 'react-native-vector-icons/Feather'
 import AntDesign from 'react-native-vector-icons/AntDesign'
@@ -39,10 +39,88 @@ import analytics from '@react-native-firebase/analytics';
 import { AppEventsLogger } from 'react-native-fbsdk-next';
 import RNFetchBlob from 'react-native-blob-util';
 import LinearGradient from 'react-native-linear-gradient';
+
+import { ImageBackground } from 'react-native';
 import { openOverlayPermission } from '@truckmitr/src/utils/permissions/appearOnTopPermission';
 import { ZegoSendCallInvitationButton } from '@zegocloud/zego-uikit-prebuilt-call-rn';
 import { startVideoCall } from '@truckmitr/src/utils/zegoService';
+// Membership Card Asset Images
+const LOGO_IMAGE = require('@truckmitr/src/assets/membership-card/logotrick.png');
+const PROFILE_PLACEHOLDER = require('@truckmitr/src/assets/membership-card/man.png');
+const BACKGROUND_VERIFIED = require('@truckmitr/src/assets/membership-card/membershipbg.png');
+const BACKGROUND_TRUSTED = require('@truckmitr/src/assets/membership-card/membershipcardbg2.png');
+const BACKGROUND_JOB_READY = require('@truckmitr/src/assets/membership-card/membershipcard3.png');
 
+// Card tier configurations
+type TierType = 'JOB READY' | 'VERIFIED' | 'TRUSTED' | 'Standard';
+
+interface TierConfig {
+  background: any;
+  borderColors: string[];
+  chromeGradient: { offset: string; color: string }[];
+  categoryText: string;
+}
+
+const TIER_CONFIGS: Record<TierType, TierConfig> = {
+  'JOB READY': {
+    background: BACKGROUND_JOB_READY,
+    borderColors: ['#000b29', '#002661', '#4A90E2', '#002661', '#000b29'],
+    chromeGradient: [
+      { offset: '0', color: '#E0E3E7' },
+      { offset: '0.25', color: '#BFC5CC' },
+      { offset: '0.5', color: '#9AA0A6' },
+      { offset: '0.75', color: '#BFC5CC' },
+      { offset: '1', color: '#E0E3E7' },
+    ],
+    categoryText: 'JOB READY DRIVER',
+  },
+  'VERIFIED': {
+    background: BACKGROUND_VERIFIED,
+    borderColors: ['#404040', '#E0E3E7', '#FFFFFF', '#E0E3E7', '#404040'],
+    chromeGradient: [
+      { offset: '0', color: '#E0E3E7' },
+      { offset: '0.25', color: '#BFC5CC' },
+      { offset: '0.5', color: '#9AA0A6' },
+      { offset: '0.75', color: '#BFC5CC' },
+      { offset: '1', color: '#E0E3E7' },
+    ],
+    categoryText: 'VERIFIED DRIVER',
+  },
+  'TRUSTED': {
+    background: BACKGROUND_TRUSTED,
+    borderColors: ['#A67C00', '#C9A23F', '#FFF6C8', '#C9A23F', '#A67C00'],
+    chromeGradient: [
+      { offset: '0', color: '#FFF6C8' },
+      { offset: '0.25', color: '#C9A23F' },
+      { offset: '0.5', color: '#A67C00' },
+      { offset: '0.75', color: '#C9A23F' },
+      { offset: '1', color: '#FFF6C8' },
+    ],
+    categoryText: 'TRUSTED DRIVER',
+  },
+  'Standard': {
+    background: BACKGROUND_JOB_READY,
+    borderColors: ['#000b29', '#002661', '#4A90E2', '#002661', '#000b29'],
+    chromeGradient: [
+      { offset: '0', color: '#E0E3E7' },
+      { offset: '0.25', color: '#BFC5CC' },
+      { offset: '0.5', color: '#9AA0A6' },
+      { offset: '0.75', color: '#BFC5CC' },
+      { offset: '1', color: '#E0E3E7' },
+    ],
+    categoryText: 'STANDARD MEMBER',
+  },
+};
+
+// Helper function to get tier from payment_type
+const getTierFromPaymentType = (paymentType: string): TierType => {
+  const normalizedType = paymentType?.toUpperCase().replace(/\s+/g, ' ').trim();
+  if (normalizedType === 'TRUSTED') return 'TRUSTED';
+  if (normalizedType === 'VERIFIED') return 'VERIFIED';
+  if (normalizedType === 'JOB READY' || normalizedType === 'JOBREADY') return 'JOB READY';
+  if (normalizedType === 'STANDARD') return 'Standard';
+  return 'JOB READY';
+};
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -370,6 +448,8 @@ export default function Profile() {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showVideoInterviewModal, setShowVideoInterviewModal] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<any>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -393,6 +473,50 @@ export default function Profile() {
     const endDate = moment.unix(subscriptionDetails?.end_at);
     const years = endDate.diff(startDate, 'years');
     return years;
+  };
+
+  // Get the actual paid amount from subscription
+  const getPaidAmount = (): number => {
+    // Amount is stored directly on subscription object as string (e.g., "99.00")
+    if (subscriptionDetails?.amount) {
+      return parseFloat(subscriptionDetails.amount);
+    }
+    // Fallback to payment_details.amount (in paise, needs /100)
+    if (subscriptionDetails?.payment_details?.amount) {
+      return subscriptionDetails.payment_details.amount / 100;
+    }
+    // Default fallback
+    return isDriver ? 199 : 499;
+  };
+
+  // Get original price based on the paid amount
+  const getOriginalPrice = (): string => {
+    const paidAmount = getPaidAmount();
+
+    // Map paid amounts to original prices based on subscription tiers
+    // Job Ready: ₹99 → ₹249 original
+    // Verified: ₹199 → ₹499 original  
+    // Trusted: ₹499 → ₹999 original
+    if (paidAmount <= 99) return '249';
+    if (paidAmount <= 199) return '499';
+    if (paidAmount <= 499) return '999';
+
+    // Fallback to membership_amount if available in payment_details
+    if (subscriptionDetails?.payment_details?.membership_amount) {
+      return subscriptionDetails.payment_details.membership_amount.toLocaleString('en-IN');
+    }
+
+    // Default fallback
+    return isDriver ? '599' : '999';
+  };
+
+  // Calculate savings percentage
+  const getSavingsPercent = (): string => {
+    const paidAmount = getPaidAmount();
+    const originalPrice = parseFloat(getOriginalPrice().replace(/,/g, ''));
+    if (originalPrice <= 0 || isNaN(originalPrice)) return '0';
+    const savings = ((originalPrice - paidAmount) / originalPrice) * 100;
+    return savings.toFixed(0);
   };
 
   const _navigateProfileEdit = () => {
@@ -798,192 +922,302 @@ export default function Profile() {
           </>
         )}
 
-        {/* Premium Membership Card */}
-        {!subscriptionDetails?.showSubscriptionModel && (
-          <>
-            <SectionHeader title={t('membership')} />
-            {/* Blue Border Wrapper */}
-            <View style={[
-              styles.premiumCardBorder,
-              { marginHorizontal: responsiveFontSize(1) }
-            ]}>
-              <LinearGradient
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFillObject}
-                colors={['#084489', '#0c78f0', '#4A90D9', '#0c78f0', '#084489']}
-              />
+        {/* Dynamic Membership Card - Show when user has an active subscription */}
+        {(subscriptionDetails?.hasActiveSubscription || !subscriptionDetails?.showSubscriptionModel) && subscriptionDetails?.id && (() => {
+          // Get tier configuration based on payment_type
+          const paymentType = subscriptionDetails?.payment_type || 'JOB READY';
+          const tier = getTierFromPaymentType(paymentType);
+          const tierConfig = TIER_CONFIGS[tier];
 
-              {/* Inner Card - White to Blue Gradient Background */}
-              <View style={[styles.premiumMembershipCard, { overflow: 'hidden' }]}>
+          // User data
+          const userName = user?.name?.toUpperCase() || 'MEMBER NAME';
+          const uniqueId = user?.unique_id || 'TM0000000000000';
+          const userLocation = user?.city?.toUpperCase() || user?.state?.toUpperCase() || 'INDIA';
+          const licenseType = user?.Type_of_License || 'HMV';
+          const profileImage = user?.images ? { uri: `${BASE_URL}public/${user?.images}` } : PROFILE_PLACEHOLDER;
+
+          const startDate = subscriptionDetails?.start_at
+            ? moment.unix(subscriptionDetails.start_at).format('DD/MM/YY')
+            : moment().format('DD/MM/YY');
+          const endDate = subscriptionDetails?.end_at
+            ? moment.unix(subscriptionDetails.end_at).format('DD/MM/YY')
+            : moment().add(1, 'year').format('DD/MM/YY');
+
+          // Card dimensions
+          const cardWidth = responsiveWidth(92);
+          const cardHeight = cardWidth / 1.586;
+
+          return (
+            <>
+              <SectionHeader title={t('membership')} />
+
+              {/* Membership ID Card */}
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => navigation.navigate(STACKS.MEMBERSHIP_CARD)}
+                style={{ marginHorizontal: responsiveFontSize(1) }}
+              >
+                {/* Card with metallic border */}
                 <LinearGradient
+                  colors={tierConfig.borderColors}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  style={StyleSheet.absoluteFillObject}
-                  colors={['#FFFFFF', '#F5F9FF', '#E8F1FF', '#DCE9FF']}
-                />
+                  style={{
+                    borderRadius: 16,
+                    padding: 3,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 10,
+                    elevation: 8,
+                  }}
+                >
+                  {/* Inner white border */}
+                  <View style={{
+                    borderRadius: 14,
+                    borderWidth: 2,
+                    borderColor: 'rgba(255,255,255,0.8)',
+                    overflow: 'hidden',
+                  }}>
+                    {/* Background Image */}
+                    <ImageBackground
+                      source={tierConfig.background}
+                      style={{ flex: 1, height: cardHeight }}
+                      resizeMode="cover"
+                    >
+                      {/* Dark overlay */}
+                      <View style={{
+                        ...StyleSheet.absoluteFillObject,
+                        backgroundColor: 'rgba(0,0,0,0.15)'
+                      }} />
 
-                {/* Subscribed Badge - Top Right */}
-                <View style={styles.premiumSubscribedBadge}>
+                      {/* Card Content */}
+                      <View style={{ flex: 1, padding: 12 }}>
+
+                        {/* Top Row: Logo and Profile Photo */}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          {/* Logo */}
+                          <Image
+                            source={LOGO_IMAGE}
+                            style={{ width: 120, height: 40 }}
+                            resizeMode="contain"
+                          />
+
+                          {/* Profile Photo with border */}
+                          <LinearGradient
+                            colors={tierConfig.borderColors}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={{
+                              padding: 2,
+                              borderRadius: 30,
+                            }}
+                          >
+                            <View style={{
+                              backgroundColor: '#fff',
+                              padding: 2,
+                              borderRadius: 28
+                            }}>
+                              <Image
+                                source={profileImage}
+                                style={{ width: 52, height: 52, borderRadius: 26 }}
+                                resizeMode="cover"
+                              />
+                            </View>
+                          </LinearGradient>
+                        </View>
+
+                        {/* Middle Section: Category & ID */}
+                        <View style={{ marginTop: 4 }}>
+                          {/* Category Label with SVG Gradient */}
+                          <View style={{ height: 22, width: 200 }}>
+                            <Svg height="100%" width="100%" viewBox="0 0 200 22">
+                              <Defs>
+                                <SvgLinearGradient id="chromeGradientCat" x1="0" y1="0" x2="0" y2="1">
+                                  {tierConfig.chromeGradient.map((stop, index) => (
+                                    <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
+                                  ))}
+                                </SvgLinearGradient>
+                              </Defs>
+                              {/* Shadow layer */}
+                              <SvgText fill="#000000" fillOpacity="0.7" fontSize="15" fontWeight="900" fontStyle="italic" letterSpacing="1" x="1.5" y="17">
+                                {tierConfig.categoryText}
+                              </SvgText>
+                              {/* Main gradient text */}
+                              <SvgText fill="url(#chromeGradientCat)" stroke="#000" strokeWidth="0.5" fontSize="15" fontWeight="900" fontStyle="italic" letterSpacing="1" x="0" y="15.5">
+                                {tierConfig.categoryText}
+                              </SvgText>
+                            </Svg>
+                          </View>
+
+                          {/* TM ID with SVG Gradient */}
+                          <View style={{ height: 38, width: '100%', marginTop: 2 }}>
+                            <Svg height="100%" width="100%" viewBox="0 0 340 38">
+                              <Defs>
+                                <SvgLinearGradient id="chromeGradientId" x1="0" y1="0" x2="0" y2="1">
+                                  {tierConfig.chromeGradient.map((stop, index) => (
+                                    <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
+                                  ))}
+                                </SvgLinearGradient>
+                              </Defs>
+                              {/* Shadow layer */}
+                              <SvgText fill="#000000" fillOpacity="0.8" fontSize="28" fontWeight="900" letterSpacing="2" x="2" y="30">
+                                {uniqueId}
+                              </SvgText>
+                              {/* Main gradient text */}
+                              <SvgText fill="url(#chromeGradientId)" stroke="#000" strokeWidth="0.8" fontSize="28" fontWeight="900" letterSpacing="2" x="0" y="28">
+                                {uniqueId}
+                              </SvgText>
+                            </Svg>
+                          </View>
+                        </View>
+
+                        {/* Bottom Section: Name, Location, Validity */}
+                        <View style={{
+                          marginTop: 'auto',
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-end',
+                        }}>
+                          {/* Left: Name, Location, License */}
+                          <View style={{ flex: 1 }}>
+                            {/* Name with SVG Gradient */}
+                            <View style={{ height: 20, width: 200 }}>
+                              <Svg height="100%" width="100%" viewBox="0 0 200 20">
+                                <Defs>
+                                  <SvgLinearGradient id="chromeGradientName" x1="0" y1="0" x2="0" y2="1">
+                                    {tierConfig.chromeGradient.map((stop, index) => (
+                                      <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
+                                    ))}
+                                  </SvgLinearGradient>
+                                </Defs>
+                                <SvgText fill="#000000" fillOpacity="0.7" fontSize="14" fontWeight="900" letterSpacing="1" x="1" y="16">
+                                  {userName}
+                                </SvgText>
+                                <SvgText fill="url(#chromeGradientName)" stroke="#000" strokeWidth="0.4" fontSize="14" fontWeight="900" letterSpacing="1" x="0" y="15">
+                                  {userName}
+                                </SvgText>
+                              </Svg>
+                            </View>
+                            <Text style={{
+                              color: '#fff',
+                              fontSize: responsiveFontSize(1.3),
+                              fontWeight: '700',
+                              marginTop: 1,
+                              textShadowColor: 'rgba(0,0,0,0.8)',
+                              textShadowOffset: { width: 1, height: 1 },
+                              textShadowRadius: 2,
+                            }}>
+                              {userLocation}
+                            </Text>
+                            <Text style={{
+                              color: 'rgba(255, 255, 255, 1)',
+                              fontSize: responsiveFontSize(1.1),
+                              fontWeight: '900',
+                              marginTop: 3,
+                              textShadowColor: 'rgba(0,0,0,0.6)',
+                              textShadowOffset: { width: 1, height: 1 },
+                              textShadowRadius: 1,
+                            }}>
+                              LICENSE TYPE: <Text style={{ fontWeight: '800' }}>{licenseType}</Text>
+                            </Text>
+                          </View>
+
+                          {/* Right: Validity Dates with SVG Gradient */}
+                          <View style={{ alignItems: 'flex-end' }}>
+                            <View style={{ flexDirection: 'row', gap: 10 }}>
+                              <View style={{ alignItems: 'center' }}>
+                                <Text style={{
+                                  color: 'rgba(255,255,255,0.7)',
+                                  fontSize: responsiveFontSize(1.2),
+                                  fontWeight: '800',
+                                  letterSpacing: 0.5,
+                                }}>
+                                  VALID FROM
+                                </Text>
+                                <View style={{ height: 16, width: 70, marginTop: 1 }}>
+                                  <Svg height="100%" width="100%" viewBox="0 0 70 16">
+                                    <Defs>
+                                      <SvgLinearGradient id="chromeGradientDate1" x1="0" y1="0" x2="0" y2="1">
+                                        {tierConfig.chromeGradient.map((stop, index) => (
+                                          <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
+                                        ))}
+                                      </SvgLinearGradient>
+                                    </Defs>
+                                    <SvgText fill="url(#chromeGradientDate1)" stroke="#000" strokeWidth="0.3" fontSize="12" fontWeight="900" x="35" y="13" textAnchor="middle">
+                                      {startDate}
+                                    </SvgText>
+                                  </Svg>
+                                </View>
+                              </View>
+                              <View style={{ alignItems: 'center' }}>
+                                <Text style={{
+                                  color: 'rgba(255,255,255,0.7)',
+                                  fontSize: responsiveFontSize(0.9),
+                                  fontWeight: '600',
+                                  letterSpacing: 0.5,
+                                }}>
+                                  VALID THRU
+                                </Text>
+                                <View style={{ height: 16, width: 70, marginTop: 1 }}>
+                                  <Svg height="100%" width="100%" viewBox="0 0 70 16">
+                                    <Defs>
+                                      <SvgLinearGradient id="chromeGradientDate2" x1="0" y1="0" x2="0" y2="1">
+                                        {tierConfig.chromeGradient.map((stop, index) => (
+                                          <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
+                                        ))}
+                                      </SvgLinearGradient>
+                                    </Defs>
+                                    <SvgText fill="url(#chromeGradientDate2)" stroke="#000" strokeWidth="0.3" fontSize="12" fontWeight="900" x="35" y="13" textAnchor="middle">
+                                      {endDate}
+                                    </SvgText>
+                                  </Svg>
+                                </View>
+                              </View>
+                            </View>
+                          </View>
+                        </View>
+                      </View>
+                    </ImageBackground>
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              {/* Download Verified ID Button */}
+              <View style={{ paddingHorizontal: responsiveFontSize(1), marginTop: responsiveFontSize(1.5) }}>
+                <TouchableOpacity
+                  onPress={downloadInvoice}
+                  activeOpacity={0.85}
+                  disabled={downloadingInvoice}
+                  style={[
+                    styles.premiumInvoiceButton,
+                    { opacity: downloadingInvoice ? 0.7 : 1 }
+                  ]}
+                >
                   <LinearGradient
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    style={[StyleSheet.absoluteFillObject, { borderRadius: 20 }]}
-                    colors={['#084489', '#0c78f0', '#4A90D9']}
+                    style={StyleSheet.absoluteFillObject}
+                    colors={['#084489', '#0c78f0', '#4A90D9', '#0c78f0', '#084489']}
                   />
-                  <Text style={[styles.premiumSubscribedText, { color: '#FFFFFF' }]}>
-                    {t('subscribed').toUpperCase()}
-                  </Text>
-                  <Ionicons name="checkmark" size={14} color="#FFFFFF" style={{ marginLeft: 3 }} />
-                </View>
-
-                {/* Card Content */}
-                <View style={{ padding: responsiveFontSize(1.5), paddingTop: responsiveFontSize(1.5) }}>
-                  {/* Title Section */}
-                  <Text style={[
-                    styles.premiumMembershipTitle,
-                    { fontSize: responsiveFontSize(2.4), color: '#084489' }
-                  ]}>
-                    {isDriver || getDuration() > 0 ? t('annualMembership') : t('quarterMembership')}
-                  </Text>
-                  <Text style={[
-                    styles.premiumMembershipSubtitle,
-                    { fontSize: responsiveFontSize(1.4), marginTop: 2, color: 'rgba(8, 68, 137, 0.6)' }
-                  ]}>
-                    {isDriver || getDuration() > 0 ? t('billedAnnual') : t('billedQuarter')}
-                  </Text>
-
-                  <Space height={responsiveFontSize(1.5)} />
-
-                  {/* Price and Dates Row */}
-                  <View style={styles.premiumPriceRow}>
-                    {/* Left - Price Section */}
-                    <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                        <Text style={[
-                          styles.premiumPriceText,
-                          { fontSize: responsiveFontSize(3.8), color: '#084489' }
-                        ]}>
-                          {`₹${subscriptionDetails?.payment_details?.amount / 100}`}
-                        </Text>
-                        <Text style={[
-                          styles.premiumOriginalPrice,
-                          { fontSize: responsiveFontSize(1.8), color: 'rgba(8, 68, 137, 0.4)' }
-                        ]}>
-                          {`₹${subscriptionDetails?.payment_details?.membership_amount
-                            ? subscriptionDetails.payment_details.membership_amount.toLocaleString('en-IN')
-                            : isDriver ? '599' : '999'}`}
-                        </Text>
-                      </View>
+                  {downloadingInvoice ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <>
+                      <MaterialIcons name="file-download" size={20} color="#FFFFFF" />
                       <Text style={[
-                        styles.premiumDurationText,
-                        { fontSize: responsiveFontSize(1.4), marginTop: 2, color: 'rgba(8, 68, 137, 0.6)' }
+                        styles.premiumInvoiceButtonText,
+                        { fontSize: responsiveFontSize(1.7), marginLeft: 8, color: '#FFFFFF' }
                       ]}>
-                        {isDriver || getDuration() > 0 ? t('forFirstYear') : t('for3Months')}
+                        {`Download ${tier} ID`}
                       </Text>
-
-                      {/* Savings Badge */}
-                      <View style={[styles.premiumSavingsBadge, { marginTop: responsiveFontSize(1) }]}>
-                        <LinearGradient
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                          style={[StyleSheet.absoluteFillObject, { borderRadius: 20 }]}
-                          colors={['#084489', '#0c78f0', '#4A90D9']}
-                        />
-                        <Text style={[
-                          styles.premiumSavingsText,
-                          { fontSize: responsiveFontSize(1.3), color: '#FFFFFF' }
-                        ]}>
-                          {`${t('save')} ${((((subscriptionDetails?.payment_details?.membership_amount || (isDriver ? 599 : 999)) - (subscriptionDetails?.payment_details?.amount / 100)) / (subscriptionDetails?.payment_details?.membership_amount || (isDriver ? 599 : 999))) * 100).toFixed(0)}%`}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* Right - Dates Section */}
-                    <View style={styles.premiumDateContainer}>
-                      {/* Start Date */}
-                      <View style={styles.premiumDateRow}>
-                        <View style={[styles.premiumDateIconContainer, { borderColor: 'rgba(8, 68, 137, 0.3)' }]}>
-                          <Ionicons name="calendar-outline" size={16} color="#0c78f0" />
-                        </View>
-                        <View style={{ marginLeft: 6 }}>
-                          <Text style={[
-                            styles.premiumDateLabel,
-                            { fontSize: responsiveFontSize(1.2), color: 'rgba(8, 68, 137, 0.6)' }
-                          ]}>
-                            {t('start')}:
-                          </Text>
-                          <Text style={[
-                            styles.premiumDateValue,
-                            { fontSize: responsiveFontSize(1.4), color: '#084489' }
-                          ]}>
-                            {moment.unix(subscriptionDetails?.start_at).format('DD MMM YYYY')}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <Space height={responsiveFontSize(0.8)} />
-
-                      {/* Expired Date */}
-                      <View style={styles.premiumDateRow}>
-                        <View style={[styles.premiumDateIconContainer, { borderColor: 'rgba(8, 68, 137, 0.3)' }]}>
-                          <Ionicons name="time-outline" size={16} color="#0c78f0" />
-                        </View>
-                        <View style={{ marginLeft: 6 }}>
-                          <Text style={[
-                            styles.premiumDateLabel,
-                            { fontSize: responsiveFontSize(1.2), color: 'rgba(8, 68, 137, 0.6)' }
-                          ]}>
-                            {t('expired')}:
-                          </Text>
-                          <Text style={[
-                            styles.premiumDateValue,
-                            { fontSize: responsiveFontSize(1.4), color: '#084489' }
-                          ]}>
-                            {moment.unix(subscriptionDetails?.end_at).subtract(1, 'day').format('DD MMM YYYY')}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-
-                  <Space height={responsiveFontSize(1.5)} />
-
-                  {/* Download Invoice Button */}
-                  <TouchableOpacity
-                    onPress={downloadInvoice}
-                    activeOpacity={0.85}
-                    disabled={downloadingInvoice}
-                    style={[
-                      styles.premiumInvoiceButton,
-                      { opacity: downloadingInvoice ? 0.7 : 1 }
-                    ]}
-                  >
-                    <LinearGradient
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={StyleSheet.absoluteFillObject}
-                      colors={['#084489', '#0c78f0', '#4A90D9', '#0c78f0', '#084489']}
-                    />
-                    {downloadingInvoice ? (
-                      <ActivityIndicator color="#FFFFFF" size="small" />
-                    ) : (
-                      <>
-                        <MaterialIcons name="file-download" size={20} color="#FFFFFF" />
-                        <Text style={[
-                          styles.premiumInvoiceButtonText,
-                          { fontSize: responsiveFontSize(1.7), marginLeft: 8, color: '#FFFFFF' }
-                        ]}>
-                          {t('downloadInvoice')}
-                        </Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </View>
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
-            </View>
-          </>
-        )}
+            </>
+          );
+        })()}
 
         {/* Account Section */}
         <SectionHeader title={t('account')} />
@@ -994,33 +1228,7 @@ export default function Profile() {
             onPress={_navigateProfileEdit}
           />
         </CardContainer>
-        {/* <TouchableOpacity 
-onPress={()=>{
-  openOverlayPermission()
-  console.log('pressed');
-  
-}}
->
-  <Text>Enable Appear on Top</Text>
-</TouchableOpacity> */}
 
-        {/* <ZegoSendCallInvitationButton
-          invitees={[{ userID: 'TM2512UPDR23435', userName: '"Abhishek"' }]}
-          isVideoCall={true}
-          resourceID={"TruckMitr"} // Please fill in the resource ID name that has been configured in the ZEGOCLOUD's console here.
-        /> */}
-        <ZegoSendCallInvitationButton
-          invitees={[{ userID: 'TM2512UPDR23435', userName: 'Abhishek' }]}
-          isVideoCall={true}
-          resourceID="TruckMitr"
-          text="Call Driver"
-          backgroundColor={colors.white}
-          textColor={colors.royalBlue}
-          width={160}
-          height={48}
-          borderRadius={12}
-          // borderColor={colors.royalBlue}
-        />
         {/* General Section */}
         <SectionHeader title={t('general')} />
         <CardContainer>
@@ -1395,6 +1603,128 @@ const styles = StyleSheet.create({
   premiumInvoiceButtonText: {
     color: '#0a1628',
     fontWeight: '700',
+  },
+
+  // New Dynamic Membership Card Styles
+  membershipCardContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dynamicMembershipCard: {
+    borderRadius: 28,
+    overflow: 'visible',
+  },
+  cardMetallicBorder: {
+    flex: 1,
+    borderRadius: 28,
+    padding: 3,
+    shadowColor: '#000000ff',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 15,
+  },
+  cardInnerBorder: {
+    flex: 1,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    overflow: 'hidden',
+  },
+  cardGradientBackground: {
+    flex: 1,
+    position: 'relative',
+  },
+  cardDarkOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.17)',
+    borderRadius: 25,
+  },
+  cardContentRow: {
+    flex: 1,
+    flexDirection: 'row',
+    padding: 18,
+  },
+  cardLeftSection: {
+    flex: 65,
+    paddingRight: 12,
+    justifyContent: 'space-between',
+  },
+  cardRightSection: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    alignItems: 'flex-end',
+    justifyContent: 'flex-start',
+    paddingTop: -4,
+  },
+  cardLogoArea: {
+    marginBottom: 4,
+    alignItems: 'flex-start',
+  },
+  cardLogoImage: {
+    width: 120,
+    height: 40,
+  },
+  cardIdCodeSection: {
+    marginTop: 4,
+    alignItems: 'flex-start',
+  },
+  cardMemberInfo: {
+    marginTop: 'auto',
+  },
+  cardMemberLocation: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    marginTop: 2,
+    textShadowColor: 'rgba(0,0,0,1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  cardPhotoMetallicBorder: {
+    padding: 2,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  cardPhotoInnerFrame: {
+    backgroundColor: '#FFFFFF',
+    padding: 2,
+    borderRadius: 28,
+  },
+  cardPhotoImage: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+  },
+  cardValidityAbsContainer: {
+    alignItems: 'flex-end',
+    marginTop: 'auto',
+  },
+  cardDatesRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cardValidityBlock: {
+    alignItems: 'center',
+  },
+  cardValidityLabelAbs: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 9,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    marginBottom: -2,
+    lineHeight: 10,
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
   },
 
   // Section & Menu

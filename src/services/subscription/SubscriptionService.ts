@@ -276,6 +276,83 @@ class SubscriptionService {
 
         return null;
     }
+
+    /**
+     * Check if user has an active subscription from subscription details data
+     * 
+     * @param subscriptionData - The subscription data object from API
+     * @returns Boolean indicating if subscription is active
+     */
+    hasActiveSubscription(subscriptionData: any): boolean {
+        if (!subscriptionData) return false;
+
+        // Check required fields
+        const hasSubscriptionId = !!subscriptionData.subscription_id;
+        const isPaymentCaptured = subscriptionData.payment_status === 'captured';
+        const isNotExpired = Date.now() / 1000 < subscriptionData.end_at;
+
+        return hasSubscriptionId && isPaymentCaptured && isNotExpired;
+    }
+
+    /**
+     * Check if user has an active subscription from an array of subscriptions
+     * Filters for payment_type === 'subscription' and checks if active
+     * 
+     * @param subscriptionsArray - Array of subscription data from API
+     * @returns Boolean indicating if any subscription is active
+     */
+    hasActiveSubscriptionFromArray(subscriptionsArray: any[]): boolean {
+        if (!subscriptionsArray || !Array.isArray(subscriptionsArray)) return false;
+
+        // Check ALL records for active subscriptions
+        // We check any record that has a subscription_id (meaning it's a subscription payment)
+        return subscriptionsArray.some((sub: any) => this.hasActiveSubscription(sub));
+    }
+
+    /**
+     * Fetch subscription details and check if user should see subscription modal
+     * 
+     * @returns Object with hasActiveSubscription boolean and subscriptionDetails
+     */
+    async fetchAndCheckSubscription(): Promise<{
+        hasActive: boolean;
+        subscriptionDetails: any;
+        activeSubscription: any | null;
+    }> {
+        try {
+            const response = await axiosInstance.get(END_POINTS.PAYMENT_SUBSCRIPTION_DETAILS);
+
+            if (response?.data?.status && response?.data?.data) {
+                const subscriptions = Array.isArray(response.data.data)
+                    ? response.data.data
+                    : [response.data.data];
+
+                // Find the active subscription
+                const activeSubscription = subscriptions.find((sub: any) =>
+                    this.hasActiveSubscription(sub)
+                );
+
+                return {
+                    hasActive: !!activeSubscription,
+                    subscriptionDetails: response.data.data,
+                    activeSubscription: activeSubscription || null,
+                };
+            }
+
+            return {
+                hasActive: false,
+                subscriptionDetails: null,
+                activeSubscription: null,
+            };
+        } catch (error) {
+            console.error('Failed to fetch subscription details:', error);
+            return {
+                hasActive: false,
+                subscriptionDetails: null,
+                activeSubscription: null,
+            };
+        }
+    }
 }
 
 export default SubscriptionService.getInstance();
