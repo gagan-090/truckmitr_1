@@ -497,7 +497,7 @@ export default function AppliedJob() {
                     marginRight: responsiveFontSize(4.5), // Balance the back button
                     letterSpacing: -0.3,
                 }}>
-                    Applied Jobs ({appliedJobsList?.length || 0})
+                    {t('appliedJobs', 'Applied Jobs')} ({appliedJobsList?.length || 0})
                 </Text>
             </Animated.View>
 

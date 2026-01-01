@@ -905,7 +905,22 @@ export default function Profile() {
                   fontSize: responsiveFontSize(1.4),
                 }
               ]}>
-                {capitalizeFirst(user?.role)}
+                {(() => {
+                  const hasSub = subscriptionDetails && (subscriptionDetails?.id || subscriptionDetails?.payment_id);
+                  if (hasSub) {
+                    const tier = getTierFromPaymentType(subscriptionDetails?.payment_type, getPaidAmount());
+                    let tierName = '';
+                    if (tier === 'JOB READY') tierName = 'Job Ready';
+                    else if (tier === 'VERIFIED') tierName = 'Verified';
+                    else if (tier === 'TRUSTED') tierName = 'Trusted';
+                    else if (tier === 'Standard') tierName = 'Standard';
+                    else if (tier === 'LEGACY') tierName = 'Legacy';
+                    else tierName = capitalizeFirst((tier as string)?.toLowerCase() || '');
+
+                    return `${tierName} ${capitalizeFirst(user?.role)}`;
+                  }
+                  return capitalizeFirst(user?.role);
+                })()}
               </Text>
             </View>
 

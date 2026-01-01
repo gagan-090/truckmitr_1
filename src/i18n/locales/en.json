@@ -1317,5 +1317,16 @@
   "supportDrivers": "Support fellow drivers",
   "strongerCommunity": "Be part of a stronger driver community",
   "driverKiBaat": "Kyunki Driver Ki Baat Zaroori Hai",
-  "stayTuned": "Stay tuned. Feature launching soon."
+  "stayTuned": "Stay tuned. Feature launching soon.",
+  "challanHistory": "Challan History",
+  "records": "records",
+  "loadingHistory": "Loading history...",
+  "noHistoryFound": "No History Found",
+  "noHistoryDesc": "Your checked challans will appear here",
+  "noOffenceDetails": "No offence details",
+  "challanPlace": "Place",
+  "challanDate": "Date & Time",
+  "accusedName": "Accused Name",
+  "challansFoundDesc": "Found {{count}} challan(s) for your vehicle.",
+  "offenceDetails": "Offence Details"
 }

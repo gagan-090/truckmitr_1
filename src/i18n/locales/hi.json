@@ -569,6 +569,7 @@
   "completePaymentToContinue": "जारी रखने के लिए भुगतान पूर्ण करें",
   "paymentNotCaptured": "भुगतान सफलतापूर्वक कैप्चर नहीं हुआ",
   "allDriver": "सभी ड्राइवर",
+  "quizResultAndCertificate": "Quiz Result & Certificate",
   "invite": "निमंत्रण",
   "inviteSentSuccessfully": "निमंत्रण सफलतापूर्वक भेजा गया!",
   "noInvitesAvailable": "कोई निमंत्रण उपलब्ध नहीं है",
@@ -1263,5 +1264,16 @@
   "supportDrivers": "साथी ड्राइवरों का समर्थन करें",
   "strongerCommunity": "एक मजबूत ड्राइवर समुदाय का हिस्सा बनें",
   "driverKiBaat": "क्योंकि ड्राइवर की बात जरूरी है",
-  "stayTuned": "जुड़े रहें। फीचर जल्द ही लॉन्च हो रहा है।"
+  "stayTuned": "जुड़े रहें। फीचर जल्द ही लॉन्च हो रहा है।",
+  "challanHistory": "चालान इतिहास",
+  "records": "रिकॉर्ड्स",
+  "loadingHistory": "इतिहास लोड हो रहा है...",
+  "noHistoryFound": "कोई इतिहास नहीं मिला",
+  "noHistoryDesc": "आपके चेक किए गए चालान यहाँ दिखाई देंगे",
+  "noOffenceDetails": "कोई उल्लंघन विवरण नहीं",
+  "challanPlace": "स्थान",
+  "challanDate": "दिनांक और समय",
+  "accusedName": "आरोपी का नाम",
+  "challansFoundDesc": "आपके वाहन के लिए {{count}} चालान मिला।",
+  "offenceDetails": "उल्लंघन विवरण"
 }

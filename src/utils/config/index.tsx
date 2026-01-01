@@ -126,6 +126,8 @@ export const END_POINTS = {
     AADHAAR_VERIFY: `api/kyc/aadhaar`,
     VOTER_VERIFY: `api/kyc/voter`,
     CHALLAN_VERIFY: `api/kyc/challan`,
+    CHALLAN_HISTORY: `api/kyc/challans`,
+    // GET 
     CHALLAN_VERIFY_VEHICLE_NUMBER: (vehicle_number: any) => `api/kyc/challan/${vehicle_number}`,
 
 }

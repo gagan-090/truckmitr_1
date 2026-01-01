@@ -374,6 +374,19 @@ export default function ProfileCompletion() {
     const STEPS = userRole === 'transporter' ? TRANSPORTER_STEPS : DRIVER_STEPS;
     const progressPercent = ((currentStep + 1) / STEPS.length) * 100;
 
+    // Animated progress bar width
+    const progressWidth = useSharedValue(progressPercent);
+
+    // Update progress animation when step changes
+    useEffect(() => {
+        const newProgress = ((currentStep + 1) / STEPS.length) * 100;
+        progressWidth.value = withSpring(newProgress, { damping: 15, stiffness: 90 });
+    }, [currentStep, STEPS.length]);
+
+    const animatedProgressStyle = useAnimatedStyle(() => ({
+        width: `${progressWidth.value}%`,
+    }));
+
     // Translated data arrays
     const translatedEducationList = [
         { label: t('noFormalEducation'), value: 'No Formal Education' },
@@ -919,9 +932,6 @@ export default function ProfileCompletion() {
 
             const method = source === 'camera' ? ImagePicker.openCamera : ImagePicker.openPicker;
             const image = await method({
-                cropping: true,
-                width: 600,
-                height: 600,
                 mediaType: 'photo',
                 compressImageQuality: 0.8,
             });
@@ -929,11 +939,11 @@ export default function ProfileCompletion() {
             if (image && image.path) {
                 dispatch(userEditAction({ ...userEdit, profilePath: image }));
                 setProfileModalOpen(false);
-                showToast("Photo selected!");
+                showToast(t('photoSelected') || "Photo selected!");
             }
         } catch (error: any) {
             if (error.code !== 'E_PICKER_CANCELLED') {
-                showToast('Failed to select image');
+                showToast(t('failedToSelectImage') || 'Failed to select image');
             }
         }
     };
@@ -1579,11 +1589,21 @@ export default function ProfileCompletion() {
                     </TouchableOpacity>
                 ) : <View style={styles.navBtn} />}
 
-                <Text style={styles.headerTitle}>{t('completeProfile')}</Text>
+                <View style={styles.headerCenterContent}>
+                    <Text style={styles.headerTitle}>{t('completeProfile')}</Text>
+                    <Text style={styles.stepCounterText}>
+                        {t('step') || 'Step'} {currentStep + 1} {t('of') || 'of'} {STEPS.length}
+                    </Text>
+                </View>
                 <View style={styles.navBtn} />
             </View>
 
-
+            {/* --- Progress Bar with Moving Line Animation --- */}
+            <View style={styles.progressContainer}>
+                <View style={styles.progressBar}>
+                    <Animated.View style={[styles.progressFill, animatedProgressStyle]} />
+                </View>
+            </View>
 
             {/* --- Main Content --- */}
             <ScrollView
@@ -1760,6 +1780,31 @@ const styles = StyleSheet.create({
         color: '#333',
         textTransform: 'uppercase',
         letterSpacing: 1,
+    },
+    headerCenterContent: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    stepCounterText: {
+        fontSize: 12,
+        fontWeight: '500',
+        color: '#6C757D',
+        marginTop: 2,
+    },
+    progressContainer: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+    },
+    progressBar: {
+        height: 6,
+        backgroundColor: '#E9ECEF',
+        borderRadius: 3,
+        overflow: 'hidden',
+    },
+    progressFill: {
+        height: '100%',
+        backgroundColor: '#246BFD',
+        borderRadius: 3,
     },
     animationContainer: {
         height: 80,
