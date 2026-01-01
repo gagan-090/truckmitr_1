@@ -45,5 +45,13 @@ import DocumentUploadScreen from "./verification/document-upload"
 import VerificationStatusScreen from "./verification/verification-status"
 import TransporterVerificationScreen from "./transporter-verification/transporter-verification"
 import DLVerification from "./subscription/dl-verification"
+import DriverKiAwazInfo from "./driver-ki-awaz-info"
+import CallJobManagerList from "./call-job-manager-list"
+import CallJobManagerInfo from "./call-job-manager-info"
+import ChallanCheckInfo from "./challan-check-info"
+import ChallanCheckResult from "./challan-check-result"
+import CourtCheckInfo from "./court-check-info"
+import DigitalAddressCheckInfo from "./digital-address-check-info"
+import DriverInvites from "./driver-invites/driver-invites"
 
-export { Home, Training, Job, HealthHygiene, Profile, Modules, Quiz, Player, AvailableJob, AppliedJob, Search, Settings, LanguageMain, Notification, Rating, ContactUs, Privacy, Terms, ProfileEdit, DrivingDetails, UploadDocuments, Dashboard, SuitsJob, QuizResult, AddJob, ViewJobs, AddDriver, TransporterAppliedJob, DriverList, ProfileEditTransporter, DrivingDetailsTransporter, UploadDocumentsTransporter, JobStep2, JobStep3, DriverProfileEditByTransporter, DriverDrivingDetailsByTransporter, DriverUploadDocumentsByTransporter, PreferredColor, PaymentSuccess, ExcelImport, AddLoad, LocationSearch, LocationMap, DocumentUploadScreen, VerificationStatusScreen, TransporterVerificationScreen, DLVerification }
+export { Home, Training, Job, HealthHygiene, Profile, Modules, Quiz, Player, AvailableJob, AppliedJob, Search, Settings, LanguageMain, Notification, Rating, ContactUs, Privacy, Terms, ProfileEdit, DrivingDetails, UploadDocuments, Dashboard, SuitsJob, QuizResult, AddJob, ViewJobs, AddDriver, TransporterAppliedJob, DriverList, ProfileEditTransporter, DrivingDetailsTransporter, UploadDocumentsTransporter, JobStep2, JobStep3, DriverProfileEditByTransporter, DriverDrivingDetailsByTransporter, DriverUploadDocumentsByTransporter, PreferredColor, PaymentSuccess, ExcelImport, AddLoad, LocationSearch, LocationMap, DocumentUploadScreen, VerificationStatusScreen, TransporterVerificationScreen, DLVerification, DriverKiAwazInfo, CallJobManagerList, CallJobManagerInfo, ChallanCheckInfo, ChallanCheckResult, CourtCheckInfo, DigitalAddressCheckInfo, DriverInvites }

@@ -226,6 +226,7 @@ export default function DocumentVerification() {
 
     // Validation Errors
     const [inputError, setInputError] = useState<string | null>(null);
+    const [isUpgradeError, setIsUpgradeError] = useState(false);
 
     // Animation
     const cardScale = useSharedValue(0);
@@ -246,11 +247,11 @@ export default function DocumentVerification() {
     }, []);
 
     // Format error message - show custom message for subscription required errors
-    const getFormattedError = useCallback((errorMsg: string): string => {
-        if (isUpgradeRequired(errorMsg)) {
-            return t('upgradeForAccess') || 'Upgrade your plan for accessing this feature';
-        }
-        return errorMsg;
+    // Process error and determine if upgrade is needed
+    const processError = useCallback((errorMsg: string) => {
+        const upgradeNeeded = isUpgradeRequired(errorMsg);
+        setIsUpgradeError(upgradeNeeded);
+        setError(upgradeNeeded ? (t('upgradeForAccess') || 'Upgrade your plan for accessing this feature') : errorMsg);
     }, [isUpgradeRequired, t]);
 
     // Auto-fill from user profile
@@ -427,6 +428,7 @@ export default function DocumentVerification() {
     useEffect(() => {
         setError(null);
         setInputError(null);
+        setIsUpgradeError(false);
         setConsentChecked(false);
     }, [activeTab]);
 
@@ -518,6 +520,7 @@ export default function DocumentVerification() {
     // API Call
     const handleVerify = async () => {
         setError(null);
+        setIsUpgradeError(false);
 
         if (activeTab === 'DL') {
             if (!validateDL(dlNumber)) return;
@@ -542,11 +545,11 @@ export default function DocumentVerification() {
                     cardScale.value = 0;
                 } else {
                     const apiError = response?.data?.message || t('verificationFailed') || 'Verification failed';
-                    setError(getFormattedError(apiError));
+                    processError(apiError);
                 }
             } catch (err: any) {
                 const apiError = err?.response?.data?.message || t('errorOccurred') || 'An error occurred';
-                setError(getFormattedError(apiError));
+                processError(apiError);
             } finally {
                 setIsLoading(false);
             }
@@ -565,11 +568,11 @@ export default function DocumentVerification() {
                     cardScale.value = 0;
                 } else {
                     const apiError = response?.data?.message || t('verificationFailed') || 'Verification failed';
-                    setError(getFormattedError(apiError));
+                    processError(apiError);
                 }
             } catch (err: any) {
                 const msg = err?.response?.data?.message || err?.response?.data?.error || t('errorOccurred') || 'An error occurred';
-                setError(getFormattedError(msg));
+                processError(msg);
             } finally {
                 setIsLoading(false);
             }
@@ -587,11 +590,11 @@ export default function DocumentVerification() {
                     cardScale.value = 0;
                 } else {
                     const apiError = response?.data?.message || t('verificationFailed') || 'Verification failed';
-                    setError(getFormattedError(apiError));
+                    processError(apiError);
                 }
             } catch (err: any) {
                 const msg = err?.response?.data?.message || t('errorOccurred') || 'An error occurred';
-                setError(getFormattedError(msg));
+                processError(msg);
             } finally {
                 setIsLoading(false);
             }
@@ -609,11 +612,11 @@ export default function DocumentVerification() {
                     cardScale.value = 0;
                 } else {
                     const apiError = response?.data?.message || t('verificationFailed') || 'Verification failed';
-                    setError(getFormattedError(apiError));
+                    processError(apiError);
                 }
             } catch (err: any) {
                 const msg = err?.response?.data?.message || t('errorOccurred') || 'An error occurred';
-                setError(getFormattedError(msg));
+                processError(msg);
             } finally {
                 setIsLoading(false);
             }
@@ -941,7 +944,7 @@ export default function DocumentVerification() {
                             )}
 
                             {/* Button Section - Show Upgrade or Verify based on error */}
-                            {isUpgradeRequired(error) ? (
+                            {isUpgradeError ? (
                                 <TouchableOpacity
                                     onPress={handleOpenUpgradeModal}
                                     activeOpacity={0.9}

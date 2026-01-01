@@ -66,12 +66,12 @@ const COLORS = {
   success: '#089720ff', // Emerald
   warning: '#F59E0B', // Amber
   danger: '#EF4444', // Red
-  base: '#6B7280',
-  verified: '#3B82F6',
-  trusted: '#F59E0B',
-  verifiedBg: '#EFF6FF',
-  trustedBg: '#FFFBEB',
-  baseBg: '#F9FAFB',
+  base: '#F97316', // Orange
+  verified: '#10B981', // Green
+  trusted: '#2563EB', // Royal Blue
+  verifiedBg: '#ECFDF5',
+  trustedBg: '#EFF6FF',
+  baseBg: '#FFF7ED',
   overlay: 'rgba(0, 0, 0, 0.5)',
 };
 
@@ -80,24 +80,28 @@ const getPlanData = (t: (key: string) => string) => [
   {
     id: 99,
     tier: 'base',
-    name: t('subJobReadyName'),
-    subtitle: t('subDriverSubtitle'),
-    tagline: t('subStartYourJourney'),
+    name: 'JOB READY DRIVER',
+    subtitle: 'Start Your Journey — ₹99',
+    tagline: 'Best for drivers who want to explore jobs on their own',
     badge: '🚛',
     price: 99,
     duration: t('subYear'),
-    intro: t('subJobReadyIntro'),
+    intro: 'Best for drivers who want to explore jobs on their own',
     benefits: [
-      t('subBenefitCreateProfile'),
-      t('subBenefitBrowseJobs'),
-      t('subBenefitContactTransporters'),
-      t('subBenefitBasicTraining'),
-      t('subBenefitStayJobReady'),
+      'Create your driver profile',
+      'Browse and apply for job opportunities',
+      'Contact transporters using in-app calling',
+      'Access basic training & guidance content',
+      'Stay job-ready and visible on the platform',
+    ],
+    footerNotes: [
+      'No verification or background checks included',
+      'You choose and finalize jobs yourself'
     ],
     ctaText: t('subGetStarted'),
     color: COLORS.base,
     bgColor: COLORS.baseBg,
-    gradient: ['#6B7280', '#9CA3AF'],
+    gradient: ['#F97316', '#FB923C'],
   },
   {
     id: 199,
@@ -117,9 +121,10 @@ const getPlanData = (t: (key: string) => string) => [
       t('subBenefitBetterShortlisting'),
     ],
     ctaText: t('subGetVerified'),
-    color: COLORS.primary,
+    ctxText: t('subGetVerified'),
+    color: COLORS.verified,
     bgColor: COLORS.verifiedBg,
-    gradient: ['#4F46E5', '#6366F1'],
+    gradient: ['#10B981', '#34D399'],
   },
   {
     id: 499,
@@ -142,7 +147,7 @@ const getPlanData = (t: (key: string) => string) => [
     ctaText: t('subGetTrusted'),
     color: COLORS.trusted,
     bgColor: COLORS.trustedBg,
-    gradient: ['#F59E0B', '#FBBF24'],
+    gradient: ['#2563EB', '#60A5FA'],
   },
 ];
 
@@ -362,15 +367,15 @@ const FeatureTable = React.memo(({ responsiveFontSize, t }: { responsiveFontSize
 
   return (
     <View style={styles.tableContainer}>
-      <Text style={[styles.tableTitle, { fontSize: responsiveFontSize(1.8) }]}>
+      <Text style={[styles.tableTitle, { fontSize: responsiveFontSize(2.2) }]}>
         {t('subComparePlans')}
       </Text>
 
       {/* Header Row */}
       <View style={styles.tableHeaderRow}>
         <Text style={[styles.tableHeaderCell, { flex: 1.2, textAlign: 'left' }]}>{comparisonData.columns[0]}</Text>
-        <Text style={styles.tableHeaderCell}>{comparisonData.columns[1]}</Text>
-        <Text style={styles.tableHeaderCell}>{comparisonData.columns[2]}</Text>
+        <Text style={[styles.tableHeaderCell, { color: COLORS.base }]}>{comparisonData.columns[1]}</Text>
+        <Text style={[styles.tableHeaderCell, { color: COLORS.verified }]}>{comparisonData.columns[2]}</Text>
         <Text style={[styles.tableHeaderCell, { color: COLORS.trusted }]}>{comparisonData.columns[3]}</Text>
       </View>
 
@@ -379,7 +384,7 @@ const FeatureTable = React.memo(({ responsiveFontSize, t }: { responsiveFontSize
         <View key={idx} style={[styles.tableRow, idx === comparisonData.rows.length - 1 && styles.tableRowLast]}>
           <Text style={[
             styles.tableCellLabel,
-            { fontSize: responsiveFontSize(1.3) },
+            { fontSize: responsiveFontSize(1.5) },
           ]}>
             {row.label}
           </Text>
@@ -392,7 +397,7 @@ const FeatureTable = React.memo(({ responsiveFontSize, t }: { responsiveFontSize
               ) : (
                 <Text style={[
                   styles.tableCellValue,
-                  { fontSize: responsiveFontSize(1.3) },
+                  { fontSize: responsiveFontSize(1.5) },
                 ]}>
                   {val}
                 </Text>
@@ -429,6 +434,7 @@ interface PlanDataType {
   bgColor: string;
   gradient: string[];
   is_recurring?: number | boolean;
+  footerNotes?: string[];
 }
 
 const PlanCard = React.memo(({
@@ -546,6 +552,18 @@ const PlanCard = React.memo(({
             ))}
           </View>
 
+          {/* Footer Notes */}
+          {plan.footerNotes && plan.footerNotes.length > 0 && (
+            <View style={styles.planFooterNotesContainer}>
+              {plan.footerNotes.map((note, idx) => (
+                <View key={idx} style={styles.planFooterNoteRow}>
+                  <Ionicons name="information-circle-outline" size={16} color={COLORS.textMuted} style={{ marginTop: 2 }} />
+                  <Text style={[styles.planFooterNoteText, { fontSize: responsiveFontSize(1.2) }]}>{note}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
           {/* Consent Checkbox */}
           <View style={styles.consentRow}>
             <TouchableOpacity
@@ -639,7 +657,7 @@ export default function Subscription({ }: any) {
           let tier = 'base';
           let color = COLORS.base;
           let bgColor = COLORS.baseBg;
-          let gradient = ['#6B7280', '#9CA3AF'];
+          let gradient = ['#F97316', '#FB923C'];
           let badge = '🚛';
 
           const planName = (apiPlan.name || '').toLowerCase();
@@ -649,19 +667,41 @@ export default function Subscription({ }: any) {
             tier = 'trusted';
             color = COLORS.trusted;
             bgColor = COLORS.trustedBg;
-            gradient = ['#F59E0B', '#FBBF24'];
+            gradient = ['#2563EB', '#60A5FA'];
             badge = '🛡️';
           } else if (planName.includes('verified') || planName.includes('standard') || amount >= 150) {
             tier = 'verified';
-            color = COLORS.primary;
+            color = COLORS.verified;
             bgColor = COLORS.verifiedBg;
-            gradient = ['#4F46E5', '#6366F1'];
+            gradient = ['#10B981', '#34D399'];
             badge = '✅';
+          }
+
+          // Special override for 99 Plan to be "JOB READY"
+          if (amount === 99 || (amount >= 90 && amount <= 100)) {
+            tier = 'base';
+            color = COLORS.base;
+            bgColor = COLORS.baseBg;
+            gradient = ['#F97316', '#FB923C'];
+            badge = '🚛';
           }
 
           // Extract benefits from API or use defaults based on tier
           let benefits: string[] = [];
-          if (apiPlan.features && Array.isArray(apiPlan.features)) {
+
+          // Helper for Job Ready Benefits
+          const jobReadyBenefits = [
+            'Create your driver profile',
+            'Browse and apply for job opportunities',
+            'Contact transporters using in-app calling',
+            'Access basic training & guidance content',
+            'Stay job-ready and visible on the platform',
+          ];
+
+          if (tier === 'base') {
+            // Force benefits for Job Ready
+            benefits = jobReadyBenefits;
+          } else if (apiPlan.features && Array.isArray(apiPlan.features)) {
             benefits = apiPlan.features.map((f: any) => typeof f === 'string' ? f : f.name || f.feature || '');
           } else if (apiPlan.benefits && Array.isArray(apiPlan.benefits)) {
             benefits = apiPlan.benefits.map((b: any) => typeof b === 'string' ? b : b.name || b.benefit || '');
@@ -674,21 +714,30 @@ export default function Subscription({ }: any) {
             } else if (tier === 'verified') {
               benefits = [t('subBenefitEverythingJobReady'), t('subBenefitOneTimeVerification'), t('subBenefitVerifiedBadge'), t('subBenefitHigherTrust')];
             } else {
-              benefits = [t('subBenefitCreateProfile'), t('subBenefitBrowseJobs'), t('subBenefitContactTransporters')];
+              benefits = jobReadyBenefits;
             }
+          }
+
+          let footerNotes: string[] | undefined = undefined;
+          if (tier === 'base') {
+            footerNotes = [
+              'No verification or background checks included',
+              'You choose and finalize jobs yourself'
+            ];
           }
 
           return {
             id: apiPlan.id,
             tier,
-            name: apiPlan.name || `Plan ${index + 1}`,
-            subtitle: role === 'transporter' ? t('subTransporterSubtitle') || 'For Transporters' : t('subDriverSubtitle'),
-            tagline: apiPlan.tagline || (tier === 'trusted' ? t('subMaximumOpportunities') : tier === 'verified' ? t('subStandOutWithTrust') : t('subStartYourJourney')),
+            name: tier === 'base' ? 'JOB READY DRIVER' : (apiPlan.name || `Plan ${index + 1}`),
+            subtitle: tier === 'base' ? 'DRIVER' : (role === 'transporter' ? t('subTransporterSubtitle') || 'For Transporters' : t('subDriverSubtitle')),
+            tagline: tier === 'base' ? 'Best for drivers who want to explore jobs on their own' : (apiPlan.tagline || (tier === 'trusted' ? t('subMaximumOpportunities') : tier === 'verified' ? t('subStandOutWithTrust') : t('subStartYourJourney'))),
             badge,
             price: amount,
             duration: apiPlan.duration || t('subYear'),
-            intro: apiPlan.description || apiPlan.intro || '',
+            intro: tier === 'base' ? 'Best for drivers who want to explore jobs on their own' : (apiPlan.description || apiPlan.intro || ''),
             benefits,
+            footerNotes,
             is_recurring: apiPlan.is_recurring,
             ctaText: tier === 'trusted' ? t('subGetTrusted') : tier === 'verified' ? t('subGetVerified') : t('subGetStarted'),
             color,
@@ -1491,7 +1540,7 @@ const styles = StyleSheet.create({
   },
   tableHeaderCell: {
     flex: 1,
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '800',
     color: COLORS.textMuted,
     textAlign: 'center',
@@ -1608,5 +1657,23 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 16,
     fontWeight: '700',
+  },
+  planFooterNotesContainer: {
+    marginBottom: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  planFooterNoteRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 6,
+    gap: 6,
+  },
+  planFooterNoteText: {
+    flex: 1,
+    color: COLORS.textMuted,
+    lineHeight: 18,
+    fontStyle: 'italic',
   },
 });

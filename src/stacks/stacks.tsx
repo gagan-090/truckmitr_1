@@ -41,7 +41,7 @@ export type NavigatorParams = {
     terms: undefined
     transporterConsent: undefined,
     driverConsent: undefined,
-    membershipCard: undefined,
+
     verification: undefined
     paymentScreen: undefined
     doucmentUploadScreen: undefined
@@ -93,6 +93,21 @@ export type NavigatorParams = {
     "All Drivers": { job_id?: any } | undefined
     Verification: undefined
     referral: undefined
+    membershipCard: undefined
+    idCheckInfo: undefined
+    courtCheckInfo: undefined
+    digitalAddressCheckInfo: undefined
+    videoInterviewInfo: undefined
+    scheduledInterviews: undefined
+    transporterInvitationInfo: undefined
+    jobInvitationsList: undefined
+    callJobManagerInfo: undefined
+    callJobManagerList: undefined
+    rcCheckInfo: undefined
+    rcCheckResult: { rcNumber: string }
+    challanCheckInfo: undefined
+    challanCheckResult: undefined
+    driverKiAwazInfo: undefined
 };
 
 export const STACKS = {
@@ -199,4 +214,19 @@ export const STACKS = {
     // MODALS
     GENDER_MODAL: 'genderModal',
     LOADING_MODAL: 'loadingModal',
+
+    ID_CHECK_INFO: 'idCheckInfo',
+    COURT_CHECK_INFO: 'courtCheckInfo',
+    DIGITAL_ADDRESS_CHECK_INFO: 'digitalAddressCheckInfo',
+    VIDEO_INTERVIEW_INFO: 'videoInterviewInfo',
+    SCHEDULED_INTERVIEWS: 'scheduledInterviews',
+    TRANSPORTER_INVITATION_INFO: 'transporterInvitationInfo',
+    JOB_INVITATIONS_LIST: 'jobInvitationsList',
+    CALL_JOB_MANAGER_INFO: 'callJobManagerInfo',
+    CALL_JOB_MANAGER_LIST: 'callJobManagerList',
+    RC_CHECK_INFO: 'rcCheckInfo',
+    RC_CHECK_RESULT: 'rcCheckResult',
+    CHALLAN_CHECK_INFO: 'challanCheckInfo',
+    CHALLAN_CHECK_RESULT: 'challanCheckResult',
+    DRIVER_KI_AWAZ_INFO: 'driverKiAwazInfo',
 } as const;

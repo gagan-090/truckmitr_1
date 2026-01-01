@@ -62,7 +62,7 @@ interface TierConfig {
   categoryText: string;
 }
 
-const TIER_CONFIGS: Record<TierType, TierConfig> = {
+const getTierConfigs = (t: any): Record<TierType, TierConfig> => ({
   'JOB READY': {
     background: BACKGROUND_JOB_READY,
     borderColors: ['#000b29', '#002661', '#4A90E2', '#002661', '#000b29'],
@@ -73,7 +73,7 @@ const TIER_CONFIGS: Record<TierType, TierConfig> = {
       { offset: '0.75', color: '#BFC5CC' },
       { offset: '1', color: '#E0E3E7' },
     ],
-    categoryText: 'JOB READY DRIVER',
+    categoryText: t('cardJobReadyDriver'),
   },
   'VERIFIED': {
     background: BACKGROUND_VERIFIED,
@@ -85,7 +85,7 @@ const TIER_CONFIGS: Record<TierType, TierConfig> = {
       { offset: '0.75', color: '#BFC5CC' },
       { offset: '1', color: '#E0E3E7' },
     ],
-    categoryText: 'VERIFIED DRIVER',
+    categoryText: t('cardVerifiedDriver'),
   },
   'TRUSTED': {
     background: BACKGROUND_TRUSTED,
@@ -97,7 +97,7 @@ const TIER_CONFIGS: Record<TierType, TierConfig> = {
       { offset: '0.75', color: '#C9A23F' },
       { offset: '1', color: '#FFF6C8' },
     ],
-    categoryText: 'TRUSTED DRIVER',
+    categoryText: t('cardTrustedDriver'),
   },
   'Standard': {
     background: BACKGROUND_JOB_READY,
@@ -109,7 +109,7 @@ const TIER_CONFIGS: Record<TierType, TierConfig> = {
       { offset: '0.75', color: '#BFC5CC' },
       { offset: '1', color: '#E0E3E7' },
     ],
-    categoryText: 'STANDARD MEMBER',
+    categoryText: t('cardJobReady'),
   },
   'LEGACY': {
     background: BACKGROUND_VERIFIED,
@@ -121,9 +121,9 @@ const TIER_CONFIGS: Record<TierType, TierConfig> = {
       { offset: '0.75', color: '#CD853F' },
       { offset: '1', color: '#DEB887' },
     ],
-    categoryText: 'LEGACY DRIVER',
+    categoryText: t('cardLegacyDriver'),
   },
-};
+});
 
 // Helper function to get tier from payment_type
 // Now also accepts amount to detect legacy drivers (Rs 49 payment)
@@ -609,7 +609,7 @@ export default function Profile() {
   const _onPressShareApp = async () => {
     try {
       const result = await Share.share({
-        message: `🚛 At TruckMitr.com, we're more than just a platform – we're the driving force behind a revolution in the Indian trucking industry. \n👷‍♂️For Drivers: Apply for verified jobs, watch training videos, and take quizzes to upskill. \n🏢 For Transporters: Post jobs and connect instantly with skilled, trusted drivers.  the movement transforming Indian logistics – download the TruckMitr app now!   \n\n👉 https://play.google.com/store/apps/details?id=com.truckmitr`
+        message: t('shareAppMessage'),
       });
     } catch (error) {
       console.error('Error sharing the app:', error);
@@ -665,7 +665,7 @@ export default function Profile() {
       const paymentId = subscriptionDetails?.payment_id || subscriptionDetails?.id;
 
       if (!paymentId) {
-        showToast('Unable to download invoice. Payment ID not found.');
+        showToast(t('unableToDownloadInvoicePaymentIdNotFound'));
         return;
       }
 
@@ -681,8 +681,8 @@ export default function Profile() {
             useDownloadManager: true,
             notification: true,
             path: filePath,
-            description: 'Downloading invoice',
-            title: 'TruckMitr Invoice',
+            description: t('downloadingInvoiceStatus'),
+            title: t('truckMitrInvoice'),
             mime: 'application/pdf',
             mediaScannable: true,
           },
@@ -690,17 +690,17 @@ export default function Profile() {
           .fetch('GET', getPDFLink?.data?.invoice_url)
           .then((res) => {
             android.actionViewIntent(res.path(), 'application/pdf');
-            showToast('Invoice downloaded successfully!');
+            showToast(t('invoiceDownloadedSuccessfully'));
           })
           .catch((e) => {
             Alert.alert('Error', e.message);
           });
       } else {
-        showToast(getPDFLink?.data?.message || 'Unable to download invoice.');
+        showToast(getPDFLink?.data?.message || t('unableToDownloadInvoice'));
       }
     } catch (error: any) {
       console.error('Download invoice error:', error);
-      showToast(error?.message || 'Failed to download invoice. Please try again.');
+      showToast(error?.message || t('failedToDownloadInvoice'));
     } finally {
       setDownloadingInvoice(false);
     }
@@ -711,7 +711,7 @@ export default function Profile() {
       setSharingCard(true);
 
       if (!membershipCardRef.current?.capture) {
-        showToast('Unable to capture membership card.');
+        showToast(t('unableToCaptureMembershipCard'));
         return;
       }
 
@@ -719,21 +719,21 @@ export default function Profile() {
       const uri = await membershipCardRef.current.capture();
 
       if (!uri) {
-        showToast('Failed to capture membership card.');
+        showToast(t('failedToCaptureMembershipCard'));
         return;
       }
 
       if (action === 'share') {
         // Share the membership card
         const shareOptions = {
-          title: 'TruckMitr Membership Card',
-          message: `Check out my TruckMitr Membership Card! 🚛\n\nDownload the TruckMitr app: https://play.google.com/store/apps/details?id=com.truckmitr`,
+          title: t('truckMitrMembershipCard'),
+          message: t('checkOutMyMembershipCard'),
           url: Platform.OS === 'android' ? `file://${uri}` : uri,
           type: 'image/png',
         };
 
         await RNShare.open(shareOptions);
-        showToast('Membership card shared successfully!');
+        showToast(t('membershipCardSharedSuccessfully'));
       } else {
         // Download/save the membership card
         const { fs } = RNFetchBlob;
@@ -743,7 +743,7 @@ export default function Profile() {
         // Copy the file to Downloads folder
         await fs.cp(uri, destPath);
 
-        showToast('Membership card saved to Downloads!');
+        showToast(t('membershipCardSavedToDownloads'));
       }
     } catch (error: any) {
       // User cancelled the share dialog
@@ -751,7 +751,7 @@ export default function Profile() {
         return;
       }
       console.error('Share membership card error:', error);
-      showToast(error?.message || 'Failed to share membership card.');
+      showToast(error?.message || t('failedToShareMembershipCard'));
     } finally {
       setSharingCard(false);
     }
@@ -1034,12 +1034,12 @@ export default function Profile() {
           const paymentType = subscriptionDetails?.payment_type || 'JOB READY';
           const amount = parseFloat(subscriptionDetails?.amount) || 0;
           const tier = getTierFromPaymentType(paymentType, amount);
-          const tierConfig = TIER_CONFIGS[tier];
+          const tierConfig = getTierConfigs(t)[tier];
 
           // User data
-          const userName = user?.name?.toUpperCase() || 'MEMBER NAME';
+          const userName = user?.name?.toUpperCase() || t('memberNameDefault').toUpperCase();
           const uniqueId = user?.unique_id || 'TM0000000000000';
-          const userLocation = user?.city?.toUpperCase() || user?.state?.toUpperCase() || 'INDIA';
+          const userLocation = user?.city?.toUpperCase() || user?.state?.toUpperCase() || t('userLocationDefault').toUpperCase();
           const licenseType = user?.Type_of_License || 'HMV';
           const profileImage = user?.images ? { uri: `${BASE_URL}public/${user?.images}` } : PROFILE_PLACEHOLDER;
 
@@ -1230,7 +1230,7 @@ export default function Profile() {
                                 textShadowOffset: { width: 1, height: 1 },
                                 textShadowRadius: 1,
                               }}>
-                                LICENSE TYPE: <Text style={{ fontWeight: '800' }}>{licenseType}</Text>
+                                {t('licenseType')}: <Text style={{ fontWeight: '800' }}>{licenseType}</Text>
                               </Text>
                             </View>
 
@@ -1244,7 +1244,7 @@ export default function Profile() {
                                     fontWeight: '800',
                                     letterSpacing: 0.5,
                                   }}>
-                                    VALID FROM
+                                    {t('validFrom')?.toUpperCase()}
                                   </Text>
                                   <View style={{ height: 16, width: 70, marginTop: 1 }}>
                                     <Svg height="100%" width="100%" viewBox="0 0 70 16">
@@ -1264,11 +1264,11 @@ export default function Profile() {
                                 <View style={{ alignItems: 'center' }}>
                                   <Text style={{
                                     color: 'rgba(255,255,255,0.7)',
-                                    fontSize: responsiveFontSize(0.9),
-                                    fontWeight: '600',
+                                    fontSize: responsiveFontSize(1.2),
+                                    fontWeight: '800',
                                     letterSpacing: 0.5,
                                   }}>
-                                    VALID THRU
+                                    {t('validUntil')?.toUpperCase()}
                                   </Text>
                                   <View style={{ height: 16, width: 70, marginTop: 1 }}>
                                     <Svg height="100%" width="100%" viewBox="0 0 70 16">
@@ -1320,7 +1320,7 @@ export default function Profile() {
                         styles.premiumInvoiceButtonText,
                         { fontSize: responsiveFontSize(1.5), marginLeft: 6, color: '#FFFFFF' }
                       ]}>
-                        {t('downloadInvoice') || 'Invoice'}
+                        {t('downloadInvoice')}
                       </Text>
                     </>
                   )}
@@ -1349,7 +1349,7 @@ export default function Profile() {
                         styles.premiumInvoiceButtonText,
                         { fontSize: responsiveFontSize(1.5), marginLeft: 6, color: '#FFFFFF' }
                       ]}>
-                        {t('shareMembershipCard') || 'Share Card'}
+                        {t('shareCard')}
                       </Text>
                     </>
                   )}
@@ -1372,7 +1372,7 @@ export default function Profile() {
               <View style={[styles.divider, { backgroundColor: colors.blackOpacity(0.06) }]} />
               <MenuItem
                 icon={<MaterialCommunityIcons name="card-account-details-outline" size={20} color="#059669" />}
-                title={t('dlVerification') || 'DL Verification'}
+                title={t('dlVerification')}
                 onPress={_navigateDLVerification}
               />
             </>

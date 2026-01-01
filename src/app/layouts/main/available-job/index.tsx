@@ -617,7 +617,7 @@ export default function AvailableJob() {
                         fontWeight: '700',
                         letterSpacing: -0.3
                     }}>
-                        {t(`availableJobs`)}
+                        Available Jobs ({item?.data?.length || 0})
                     </Text>
                 </View>
             </Animated.View>

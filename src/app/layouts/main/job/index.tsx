@@ -930,14 +930,15 @@ export default function AvailableJob() {
         elevation: 2,
       }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Image
-            source={images.TRUCKMITR_HORIZONTAL}
-            style={{
-              height: responsiveHeight(6),
-              width: responsiveWidth(28),
-              resizeMode: 'contain'
-            }}
-          />
+          <Text style={{
+            fontSize: responsiveFontSize(2.4),
+            color: colors.black,
+            alignSelf: 'center',
+            fontWeight: '700',
+            letterSpacing: -0.3
+          }}>
+            Available Jobs ({availableJobsList?.length || 0})
+          </Text>
           <Pressable
             onPress={() => setfilterModel(true)}
             hitSlop={hitSlop(15)}

@@ -2,10 +2,10 @@ import React, { useEffect } from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { STACKS } from '@truckmitr/stacks/stacks';
 import Bottom from './tabs/bottom';
-import { AddDriver, AddJob, AddLoad, AppliedJob, AvailableJob, ContactUs, Dashboard, DriverDrivingDetailsByTransporter, DriverList, DriverProfileEditByTransporter, DriverUploadDocumentsByTransporter, DrivingDetails, DrivingDetailsTransporter, ExcelImport, JobStep2, JobStep3, LanguageMain, LocationSearch, LocationMap, Modules, Notification, PaymentSuccess, Player, PreferredColor, Privacy, ProfileEdit, ProfileEditTransporter, Quiz, QuizResult, Rating, Search, Settings, SuitsJob, TransporterAppliedJob, TransporterVerificationScreen, UploadDocuments, UploadDocumentsTransporter, ViewJobs, DLVerification } from '@truckmitr/layouts/index';
+import { AddDriver, AddJob, AddLoad, AppliedJob, AvailableJob, ContactUs, Dashboard, DriverDrivingDetailsByTransporter, DriverList, DriverProfileEditByTransporter, DriverUploadDocumentsByTransporter, DrivingDetails, DrivingDetailsTransporter, ExcelImport, JobStep2, JobStep3, LanguageMain, LocationSearch, LocationMap, Modules, Notification, PaymentSuccess, Player, PreferredColor, Privacy, ProfileEdit, ProfileEditTransporter, Quiz, QuizResult, Rating, Search, Settings, SuitsJob, TransporterAppliedJob, TransporterVerificationScreen, UploadDocuments, UploadDocumentsTransporter, ViewJobs, DLVerification, DriverKiAwazInfo, CallJobManagerList, CallJobManagerInfo, ChallanCheckInfo, ChallanCheckResult, CourtCheckInfo, DigitalAddressCheckInfo, DriverInvites } from '@truckmitr/layouts/index';
 import { setupFirebaseNotifications, initializeNotificationChannel } from '@truckmitr/src/utils/notification';
 import { DocumentUploadScreen, VerificationStatusScreen, } from '../app/layouts/main';
-import DriverInvites from '@truckmitr/src/app/layouts/main/driver-invites/driver-invites';
+// import DriverInvites from '@truckmitr/src/app/layouts/main/driver-invites/driver-invites';
 import InviteDriver from '@truckmitr/src/app/layouts/main/all-driver-list/all-drivers-invitation-tab';
 import { Referral } from '../app/layouts/main/home/referral-driver';
 import TransporterConsent from '../app/layouts/main/add-job/transporter-consent';
@@ -168,6 +168,17 @@ export default function Main() {
       <Stack.Screen name={STACKS.REFERRAL} component={Referral} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.VERIFIED_DRIVERS_DOCUMENTS_UPLOAD} component={DriverDocumentUploadScreen} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.PAYMENT_HISTORY_SCREEN} component={PaymentHistoryScreen} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.DRIVER_KI_AWAZ_INFO} component={DriverKiAwazInfo} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.CALL_JOB_MANAGER_LIST} component={CallJobManagerList} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.CALL_JOB_MANAGER_INFO} component={CallJobManagerInfo} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.CHALLAN_CHECK_INFO} component={ChallanCheckInfo} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.CHALLAN_CHECK_RESULT} component={ChallanCheckResult} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.COURT_CHECK_INFO} component={CourtCheckInfo} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.DIGITAL_ADDRESS_CHECK_INFO} component={DigitalAddressCheckInfo} options={{ animation: 'fade' }} />
+      {/* DriverInvites usually mapped to STACKS.DRIVERINVITES, but checking stacks definition: invites */}
+      {/* already there at line 165 as invites? No line 165 is DriverInvites component from local import. */}
+      {/* I will remove the specific DriverInvites import if I am importing from layouts index now, to avoid duplication or confusion, but keep using it if it works. NO, I should use the one from layouts/index for consistency. */}
+
       <Stack.Screen
         options={{ headerShown: false }}
         // DO NOT change the name 
