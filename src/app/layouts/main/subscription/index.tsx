@@ -66,8 +66,8 @@ const COLORS = {
   success: '#089720ff', // Emerald
   warning: '#F59E0B', // Amber
   danger: '#EF4444', // Red
-  base: '#F97316', // Orange
-  verified: '#10B981', // Green
+  base: '#f2a50bff', // Orange
+  verified: '#348f02ff', // Green
   trusted: '#2563EB', // Royal Blue
   verifiedBg: '#ECFDF5',
   trustedBg: '#EFF6FF',
@@ -80,71 +80,84 @@ const getPlanData = (t: (key: string) => string) => [
   {
     id: 99,
     tier: 'base',
-    name: 'JOB READY DRIVER',
-    subtitle: 'Start Your Journey — ₹99',
-    tagline: 'Best for drivers who want to explore jobs on their own',
+    name: t('subJobReadyDriver'),
+    subtitle: t('subJobReadySubtitle'),
+    tagline: t('subJobReadyTagline'),
     badge: '🚛',
     price: 99,
     duration: t('subYear'),
-    intro: 'Best for drivers who want to explore jobs on their own',
+    intro: t('subJobReadyIntro'),
     benefits: [
-      'Create your driver profile',
-      'Browse and apply for job opportunities',
-      'Contact transporters using in-app calling',
-      'Access basic training & guidance content',
-      'Stay job-ready and visible on the platform',
+      t('subBenefitCreateProfileDrive'),
+      t('subBrowse5Jobs'),
+      t('subBenefitContactInApp'),
+      t('subBenefitBasicTraining'),
+      t('subBenefitStayJobReady'),
     ],
     footerNotes: [
-      'No verification or background checks included',
-      'You choose and finalize jobs yourself'
+      t('subFooterNoVerification'),
+      t('subFooterChooseJobs')
     ],
-    ctaText: t('subGetStarted'),
+    ctaText: t('subGetJobReady'),
     color: COLORS.base,
     bgColor: COLORS.baseBg,
-    gradient: ['#F97316', '#FB923C'],
+    gradient: ['#ccc207ff', '#f5fb3cff'],
   },
   {
     id: 199,
     tier: 'verified',
-    name: t('subVerifiedName'),
-    subtitle: t('subDriverSubtitle'),
-    tagline: t('subStandOutWithTrust'),
+    name: t('subVerifiedDriverName'),
+    subtitle: t('subVerifiedSubtitle'),
+    tagline: t('subVerifiedTagline'),
     badge: '✅',
     price: 199,
     duration: t('subYear'),
     intro: t('subVerifiedIntro'),
     benefits: [
-      t('subBenefitEverythingJobReady'),
+      t('subBenefitCreateProfileDrive'),
+      t('subBrowse20Jobs'),
       t('subBenefitOneTimeVerification'),
       t('subBenefitVerifiedBadge'),
       t('subBenefitHigherTrust'),
       t('subBenefitBetterShortlisting'),
+      t('subBenefitSupportTruckMitr'),
     ],
-    ctaText: t('subGetVerified'),
-    ctxText: t('subGetVerified'),
+    footerNotes: [
+      t('subFooterVerifyAfterUpload'),
+      t('subFooterOtpVerify'),
+      t('subFooterNoJobGuarantee')
+    ],
+    ctaText: t('subBecomeVerified'),
     color: COLORS.verified,
     bgColor: COLORS.verifiedBg,
-    gradient: ['#10B981', '#34D399'],
+    gradient: ['#348f02ff', '#34D399'],
   },
   {
     id: 499,
     tier: 'trusted',
     name: t('subTrustedName'),
-    subtitle: t('subDriverSubtitle'),
-    tagline: t('subMaximumOpportunities'),
+    subtitle: t('subTrustedSubtitle'),
+    tagline: t('subTrustedTagline'),
     badge: '🛡️',
     price: 499,
     duration: t('subYear'),
     intro: t('subTrustedIntro'),
     benefits: [
-      t('subBenefitEverythingVerified'),
-      t('subBenefitCourtCheck'),
-      t('subBenefitAddressVerify'),
-      t('subBenefitHomePhotoVerify'),
+      t('subBenefitCreateProfileDrive'),
+      t('subBrowseUnlimitedJobs'),
+      t('subBenefitDigitalCourtCheck'),
+      t('subBenefitDigitalAddressVerify'),
+      t('subBenefitHomePhotoGeo'),
       t('subBenefitTrustedBadge'),
+      t('subBenefitHighestCredibility'),
       t('subBenefitPriorityPremium'),
     ],
-    ctaText: t('subGetTrusted'),
+    footerNotes: [
+      t('subFooterDigitalProcess'),
+      t('subFooterFollowInstructions'),
+      t('subFooterImproveConfidence')
+    ],
+    ctaText: t('subBecomeTrusted'),
     color: COLORS.trusted,
     bgColor: COLORS.trustedBg,
     gradient: ['#2563EB', '#60A5FA'],
@@ -472,7 +485,9 @@ const PlanCard = React.memo(({
   return (
     <Animated.View style={[
       styles.cardContainer,
+      { borderColor: plan.tier === 'base' ? plan.color : styles.cardContainer.borderColor },
       isExpanded && styles.cardContainerExpanded,
+      isExpanded && { borderColor: plan.color },
       isPopular && styles.cardPopular
     ]}>
       {isPopular && (
@@ -494,7 +509,7 @@ const PlanCard = React.memo(({
                 <Text style={styles.cardBadgeEmoji}>{plan.badge}</Text>
               </View>
               <View style={{ marginLeft: 12 }}>
-                <Text style={[styles.cardTitle, { fontSize: responsiveFontSize(2) }]}>{plan.name}</Text>
+                <Text style={[styles.cardTitle, { fontSize: responsiveFontSize(2), textTransform: 'uppercase' }]}>{plan.name}</Text>
                 <Text style={[styles.cardSubtitle, { fontSize: responsiveFontSize(1.2) }]}>{plan.subtitle}</Text>
               </View>
             </View>
@@ -682,20 +697,20 @@ export default function Subscription({ }: any) {
             tier = 'base';
             color = COLORS.base;
             bgColor = COLORS.baseBg;
-            gradient = ['#F97316', '#FB923C'];
+            gradient = ['#f9c416ff', '#eaca15ff'];
             badge = '🚛';
           }
 
-          // Extract benefits from API or use defaults based on tier
+          // Extract benefits from API or use defaults based on tier  
           let benefits: string[] = [];
 
           // Helper for Job Ready Benefits
           const jobReadyBenefits = [
-            'Create your driver profile',
-            'Browse and apply for job opportunities',
-            'Contact transporters using in-app calling',
-            'Access basic training & guidance content',
-            'Stay job-ready and visible on the platform',
+            t('subBenefitCreateProfileDrive'),
+            t('subBrowse5Jobs'),
+            t('subBenefitContactInApp'),
+            t('subBenefitBasicTraining'),
+            t('subBenefitStayJobReady'),
           ];
 
           if (tier === 'base') {
@@ -710,9 +725,26 @@ export default function Subscription({ }: any) {
           } else {
             // Default benefits based on tier
             if (tier === 'trusted') {
-              benefits = [t('subBenefitEverythingVerified'), t('subBenefitCourtCheck'), t('subBenefitAddressVerify'), t('subBenefitTrustedBadge')];
+              benefits = [
+                t('subBenefitCreateProfileDrive'),
+                t('subBrowseUnlimitedJobs'),
+                t('subBenefitDigitalCourtCheck'),
+                t('subBenefitDigitalAddressVerify'),
+                t('subBenefitHomePhotoGeo'),
+                t('subBenefitTrustedBadge'),
+                t('subBenefitHighestCredibility'),
+                t('subBenefitPriorityPremium'),
+              ];
             } else if (tier === 'verified') {
-              benefits = [t('subBenefitEverythingJobReady'), t('subBenefitOneTimeVerification'), t('subBenefitVerifiedBadge'), t('subBenefitHigherTrust')];
+              benefits = [
+                t('subBenefitCreateProfileDrive'),
+                t('subBrowse20Jobs'),
+                t('subBenefitOneTimeVerification'),
+                t('subBenefitVerifiedBadge'),
+                t('subBenefitHigherTrust'),
+                t('subBenefitBetterShortlisting'),
+                t('subBenefitSupportTruckMitr'),
+              ];
             } else {
               benefits = jobReadyBenefits;
             }
@@ -721,25 +753,37 @@ export default function Subscription({ }: any) {
           let footerNotes: string[] | undefined = undefined;
           if (tier === 'base') {
             footerNotes = [
-              'No verification or background checks included',
-              'You choose and finalize jobs yourself'
+              t('subFooterNoVerification'),
+              t('subFooterChooseJobs')
+            ];
+          } else if (tier === 'verified') {
+            footerNotes = [
+              t('subFooterVerifyAfterUpload'),
+              t('subFooterOtpVerify'),
+              t('subFooterNoJobGuarantee')
+            ];
+          } else if (tier === 'trusted') {
+            footerNotes = [
+              t('subFooterDigitalProcess'),
+              t('subFooterFollowInstructions'),
+              t('subFooterImproveConfidence')
             ];
           }
 
           return {
             id: apiPlan.id,
             tier,
-            name: tier === 'base' ? 'JOB READY DRIVER' : (apiPlan.name || `Plan ${index + 1}`),
-            subtitle: tier === 'base' ? 'DRIVER' : (role === 'transporter' ? t('subTransporterSubtitle') || 'For Transporters' : t('subDriverSubtitle')),
-            tagline: tier === 'base' ? 'Best for drivers who want to explore jobs on their own' : (apiPlan.tagline || (tier === 'trusted' ? t('subMaximumOpportunities') : tier === 'verified' ? t('subStandOutWithTrust') : t('subStartYourJourney'))),
+            name: tier === 'base' ? t('subJobReadyDriver') : (apiPlan.name || `Plan ${index + 1}`),
+            subtitle: tier === 'base' ? t('subJobReadySubtitle') : (role === 'transporter' ? t('subTransporterSubtitle') || 'For Transporters' : (tier === 'verified' ? t('subVerifiedSubtitle') : t('subTrustedSubtitle'))),
+            tagline: tier === 'base' ? t('subJobReadyTagline') : (apiPlan.tagline || (tier === 'trusted' ? t('subTrustedTagline') : tier === 'verified' ? t('subVerifiedTagline') : t('subStartYourJourney'))),
             badge,
             price: amount,
             duration: apiPlan.duration || t('subYear'),
-            intro: tier === 'base' ? 'Best for drivers who want to explore jobs on their own' : (apiPlan.description || apiPlan.intro || ''),
+            intro: tier === 'base' ? t('subJobReadyIntro') : (apiPlan.description || apiPlan.intro || ''),
             benefits,
             footerNotes,
             is_recurring: apiPlan.is_recurring,
-            ctaText: tier === 'trusted' ? t('subGetTrusted') : tier === 'verified' ? t('subGetVerified') : t('subGetStarted'),
+            ctaText: tier === 'trusted' ? t('subBecomeTrusted') : (tier === 'verified' ? t('subBecomeVerified') : t('subGetJobReady')),
             color,
             bgColor,
             gradient,
