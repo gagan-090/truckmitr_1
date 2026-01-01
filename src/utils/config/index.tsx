@@ -1,6 +1,6 @@
 
-export const BASE_URL = `https://development.truckmitr.com/`
-// export const BASE_URL = `https://truckmitr.com/`
+// export const BASE_URL = `https://development.truckmitr.com/`
+export const BASE_URL = `https://truckmitr.com/`
 // export const BASE_URL = `http://192.168.1.41:8000/`
 // export const BASE_URL = `http://192.168.29.246:8000/`
 export const STATICS = {
@@ -61,6 +61,7 @@ export const END_POINTS = {
     TRANSPORTER_DRIVERS: (payload: any) => `api/transporter/drivers?search=${payload}`,
     TRANSPORTER_UPDATE_DRIVERS_PROFILE: (payload: any) => `api/transporter/driver/update/${payload}`,
     TRANSPORTER_DELETE_DRIVERS: (payload: any) => `api/transporter/driver/delete/${payload}`,
+    MOBILE_BANNERS: `api/mobile-banners`,
 
     PAYMENT_SUBSCRIPTION_CAPTURE: `api/payment/subscription/capture`,
     PAYMENT_SUBSCRIPTION_DETAILS: `api/payment/subscription/details`,

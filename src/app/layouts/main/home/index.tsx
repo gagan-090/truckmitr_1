@@ -1,4 +1,10 @@
-import { ActivityIndicator, Animated, FlatList, ScrollView, Text, TouchableOpacity, View, Modal, Linking, PanResponder, Pressable } from 'react-native'
+import { ActivityIndicator, Animated, FlatList, ScrollView, Text, TouchableOpacity, View, Modal, Linking, PanResponder, Pressable, TouchableWithoutFeedback, LayoutAnimation, Platform, UIManager } from 'react-native'
+
+if (Platform.OS === 'android') {
+    if (UIManager.setLayoutAnimationEnabledExperimental) {
+        UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+}
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Video from 'react-native-video';
 import React, { useCallback, useEffect, useRef, useState } from 'react'
@@ -51,30 +57,7 @@ const Home = React.forwardRef((props, ref) => {
 
     const { shadow } = useShadow()
 
-    const pan = useRef(new Animated.ValueXY()).current;
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponder: () => false,
-            onMoveShouldSetPanResponder: (_, gestureState) => {
-                // Only claim the gesture if the user has moved more than 10 pixels
-                // This allows taps on buttons to work while still enabling drag
-                return Math.abs(gestureState.dx) > 10 || Math.abs(gestureState.dy) > 10;
-            },
-            onPanResponderGrant: () => {
-                pan.setOffset({
-                    x: (pan.x as any)._value,
-                    y: (pan.y as any)._value
-                });
-            },
-            onPanResponderMove: Animated.event(
-                [null, { dx: pan.x, dy: pan.y }],
-                { useNativeDriver: false }
-            ),
-            onPanResponderRelease: () => {
-                pan.flattenOffset();
-            }
-        })
-    ).current;
+
     const { responsiveHeight, responsiveWidth, responsiveFontSize } = useResponsiveScale();
     const navigation = useNavigation<NavigatorProp>();
     const [showWelcome, setShowWelcome] = useState(false)
@@ -105,23 +88,146 @@ const Home = React.forwardRef((props, ref) => {
     const [bannerIndex, setBannerIndex] = useState(0);
     const [isBannerPaused, setIsBannerPaused] = useState(false);
 
-    const BANNER_DATA = [
+    const [banners, setBanners] = useState<any[]>([
         { bg: require('src/assets/findjobbanner.png') },
         { bg: require('src/assets/refer&earnbanner.png') },
-    ];
+    ]);
+
+    const fetchBanners = async () => {
+        try {
+            const response: any = await axiosInstance.get(END_POINTS.MOBILE_BANNERS);
+            if (response?.data?.status === 'success' && Array.isArray(response?.data?.data)) {
+                const validBanners = response.data.data.filter((item: any) => {
+                    // Filter based on user type if needed
+                    if (item.user_type === 'driver' && !isDriver) return false;
+                    if (item.user_type === 'transporter' && !isTransporter) return false;
+                    return item.status === true; // Only show active banners
+                });
+
+                if (validBanners.length > 0) {
+                    setBanners(validBanners);
+                }
+            }
+        } catch (error) {
+            console.log('Error fetching banners:', error);
+        }
+    };
+
+    const handleBannerPress = (redirectLink: string | null) => {
+        if (!redirectLink) return;
+
+        switch (redirectLink.toLowerCase().replace(/\s/g, '')) {
+            case 'profile':
+                _navigateProfile();
+                break;
+            case 'appliedjobs':
+                _navigateAppliedJobs();
+                break;
+            case 'availablejobs':
+                _navigateAvailableJobs();
+                break;
+            case 'home':
+                // Already on home
+                break;
+            case 'search':
+                _navigateSearch();
+                break;
+            case 'dashboard':
+                _navigateDashboard();
+                break;
+            case 'training':
+                _navigateTraning();
+                break;
+            case 'suitsjobs':
+                _navigateSuitsJobs();
+                break;
+            case 'healthhygiene':
+                _navigateHealthHygiene();
+                break;
+            case 'quizresult':
+                _navigateQuizResult();
+                break;
+            case 'transporterinvitation':
+                _navigateTransporterInvitation();
+                break;
+            case 'invitedriver':
+                _navigateInviteDriver();
+                break;
+            case 'transporterverification':
+                _navigateTransporterVerification();
+                break;
+            case 'verification':
+                _navigateVerifiedNow();
+                break;
+            case 'idcheck':
+                _navigateIdCheck();
+                break;
+            case 'courtcheck':
+                _navigateCourtCheck();
+                break;
+            case 'digitaladdresscheck':
+                _navigateDigitalAddressCheck();
+                break;
+            case 'videointerview':
+                _navigateVideoInterviewInfo();
+                break;
+            case 'calljobmanager':
+                _navigateCallJobManager();
+                break;
+            case 'rccheck':
+                _navigateRcCheck();
+                break;
+            case 'challancheck':
+                _navigateChallanCheck();
+                break;
+            case 'driverkiawaz':
+                _navigateDriverKiAwazInfo();
+                break;
+            case 'calljobmanagerlist':
+                _navigateCallJobManagerList();
+                break;
+            case 'driverinvites':
+                _navigateDriverInvites();
+                break;
+            case 'contactus':
+                _navigateContactUs();
+                break;
+            case 'referral':
+                _navigateReferral();
+                break;
+            case 'addjob':
+                _navigateAddJob();
+                break;
+            case 'viewjobs':
+                _navigateViewJobs();
+                break;
+            case 'adddriver':
+                _navigateAddDriver();
+                break;
+            case 'transporterappliedjobs':
+                _navigateAppliedJobsTransporter();
+                break;
+            case 'driverlist':
+                _navigateDriverList();
+                break;
+            default:
+                console.log('No navigation handler for:', redirectLink);
+                break;
+        }
+    };
 
     useEffect(() => {
         if (isBannerPaused) return; // Pause auto-scroll if user is interacting
         const interval = setInterval(() => {
             setBannerIndex(prevIndex => {
-                const nextIndex = (prevIndex + 1) % BANNER_DATA.length;
+                const nextIndex = (prevIndex + 1) % banners.length;
                 bannerRef.current?.scrollToIndex({ index: nextIndex, animated: true });
                 return nextIndex;
             });
         }, 3000);
 
         return () => clearInterval(interval);
-    }, [isBannerPaused, BANNER_DATA.length]);
+    }, [isBannerPaused, banners.length]);
 
     const [expandedJobs, setExpandedJobs] = useState<{ [key: number]: boolean }>({});
     const [recommendedJobsList, setrecommendedJobsList] = useState([])
@@ -130,12 +236,67 @@ const Home = React.forwardRef((props, ref) => {
     const [showLottie, setshowLottie] = useState(false)
     const [checkBoxSelect, setCheckBoxSelect] = useState<{ [jobId: number]: boolean }>({});
     const [errorsJobs, setErrorsJobs] = useState<{ [jobId: number]: { checkBox?: string } }>({});
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [isMuted, setIsMuted] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(true);
+    const [isMuted, setIsMuted] = useState(true); // Start muted by default
     const [isFullScreen, setIsFullScreen] = useState(false);
-    const [isMinimized, setIsMinimized] = useState(false);
+    const [isMinimized, setIsMinimized] = useState(false); // Start NOT minimized so video shows
+    // Video carousel state
+    const [videoUrls, setVideoUrls] = useState<string[]>([]);
+    const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+    const [videoLoading, setVideoLoading] = useState(true);
+    const [showControls, setShowControls] = useState(false);
 
-    // New state for popup message
+    // Pan Gesture for Mini Player & Fullscreen Swipe Down
+    const pan = useRef(new Animated.ValueXY()).current;
+
+    // Keep track of isFullScreen for PanResponder
+    const isFullScreenRef = useRef(isFullScreen);
+    useEffect(() => {
+        isFullScreenRef.current = isFullScreen;
+    }, [isFullScreen]);
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => false,
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                if (isFullScreenRef.current) {
+                    // Fullscreen: Swipe down (dy positive and significant)
+                    return gestureState.dy > 10;
+                }
+                // Mini mode: Drag
+                return Math.abs(gestureState.dx) > 10 || Math.abs(gestureState.dy) > 10;
+            },
+            onPanResponderGrant: () => {
+                if (!isFullScreenRef.current) {
+                    pan.setOffset({
+                        x: (pan.x as any)._value,
+                        y: (pan.y as any)._value
+                    });
+                }
+            },
+            onPanResponderMove: (evt, gestureState) => {
+                if (isFullScreenRef.current) {
+                    // No visual drag yet, just tracking
+                    return;
+                }
+                return Animated.event(
+                    [null, { dx: pan.x, dy: pan.y }],
+                    { useNativeDriver: false }
+                )(evt, gestureState);
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                if (isFullScreenRef.current) {
+                    // Swipe Down Detection
+                    if (gestureState.dy > 50) {
+                        LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
+                        setIsFullScreen(false);
+                    }
+                } else {
+                    pan.flattenOffset();
+                }
+            }
+        })
+    ).current;
     const [popupData, setPopupData] = useState<{
         id: any,
         title: string;
@@ -259,8 +420,77 @@ const Home = React.forwardRef((props, ref) => {
             _fetchUser()
             _recommendedJobs()
             fetchPopupMessage()
+            fetchVideoUrl()
+            fetchBanners()
         }, [])
     );
+
+    // Auto-hide controls in fullscreen
+    useEffect(() => {
+        let timeout: any;
+        if (isFullScreen && isPlaying && showControls) {
+            timeout = setTimeout(() => {
+                setShowControls(false);
+            }, 3000);
+        }
+        return () => clearTimeout(timeout);
+    }, [isFullScreen, isPlaying, showControls]);
+
+    // Fallback local video URL - using BASE_URL for environment compatibility
+    const LOCAL_VIDEO_URL = `${BASE_URL}public/videos/intro-video.mp4`;
+
+    // Get current video URL
+    const videoUrl = videoUrls.length > 0 ? videoUrls[currentVideoIndex] : LOCAL_VIDEO_URL;
+
+    // Navigate to next video
+    const goToNextVideo = () => {
+        if (videoUrls.length > 1) {
+            setCurrentVideoIndex((prev) => (prev + 1) % videoUrls.length);
+            setIsPlaying(true);
+        }
+    };
+
+    // Navigate to previous video
+    const goToPreviousVideo = () => {
+        if (videoUrls.length > 1) {
+            setCurrentVideoIndex((prev) => (prev - 1 + videoUrls.length) % videoUrls.length);
+            setIsPlaying(true);
+        }
+    };
+
+    // Fetch video URLs from TRUCKMITRBANNERS API (same as MediaSwiper)
+    const fetchVideoUrl = async () => {
+        try {
+            setVideoLoading(true);
+            const response: any = await axiosInstance.get(END_POINTS.TRUCKMITRBANNERS);
+            console.log('Banners API Response:', JSON.stringify(response?.data));
+
+            if (response?.data?.status && response?.data?.data) {
+                // Get all video banners
+                const videoBanners = response.data.data.filter((banner: any) => banner.media_type === 'video');
+
+                if (videoBanners.length > 0) {
+                    // Construct URLs for all videos
+                    const urls = videoBanners.map((banner: any) => `${BASE_URL}public${banner.media_url}`);
+                    console.log('Setting video URLs from banners:', urls);
+                    setVideoUrls(urls);
+                    setCurrentVideoIndex(0);
+                } else {
+                    console.log('No video banners found, using fallback');
+                    setVideoUrls([LOCAL_VIDEO_URL]);
+                }
+            } else {
+                console.log('No banners data, using fallback');
+                setVideoUrls([LOCAL_VIDEO_URL]);
+            }
+        } catch (error: any) {
+            console.log('Error fetching banners:', error);
+            // Fallback to local/default video URL on error
+            setVideoUrls([LOCAL_VIDEO_URL]);
+        } finally {
+            setVideoLoading(false);
+        }
+    };
 
 
     const isSubscriptionActive = (item: any) => {
@@ -495,7 +725,7 @@ const Home = React.forwardRef((props, ref) => {
                     <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderBottomLeftRadius: 60, borderBottomRightRadius: 60, overflow: 'hidden' }}>
                         <FlatList
                             ref={bannerRef}
-                            data={BANNER_DATA}
+                            data={banners}
                             horizontal
                             pagingEnabled
                             showsHorizontalScrollIndicator={false}
@@ -511,8 +741,9 @@ const Home = React.forwardRef((props, ref) => {
                             }}
                             renderItem={({ item, index }) => (
                                 <Pressable
-                                    onPressIn={() => setIsBannerPaused(true)}
-                                    onPressOut={() => setIsBannerPaused(false)}
+                                    onPress={() => handleBannerPress(item.redirect_link)}
+                                    // onPressIn={() => setIsBannerPaused(true)}
+                                    // onPressOut={() => setIsBannerPaused(false)}
                                     style={{
                                         width: responsiveWidth(100),
                                         height: '100%'
@@ -524,7 +755,7 @@ const Home = React.forwardRef((props, ref) => {
                                             width: '100%',
                                             height: '100%'
                                         }}
-                                        source={item.bg}
+                                        source={item.bg ? item.bg : { uri: `${BASE_URL}public/${item.media_path}` }}
                                         resizeMode={(item.bgResize as any) || "cover"}
                                     />
 
@@ -1395,8 +1626,8 @@ const Home = React.forwardRef((props, ref) => {
                     position: 'absolute',
                     right: 15,
                     bottom: 80,
-                    width: responsiveWidth(35),
-                    height: responsiveHeight(35),
+                    width: responsiveWidth(28),
+                    height: responsiveHeight(25),
                     backgroundColor: colors.black,
                     borderRadius: 16,
                     ...shadow,
@@ -1405,9 +1636,9 @@ const Home = React.forwardRef((props, ref) => {
                     zIndex: 999,
                     overflow: 'hidden'
                 }}>
-                {/* Video Component */}
+                {/* Video Component - Loading from API */}
                 <Video
-                    source={require('@truckmitr/src/res/video/intro-video.mp4')}
+                    source={{ uri: videoUrl }}
                     muted={isMuted}
                     style={{ width: '100%', height: '100%', backgroundColor: colors.black }}
                     resizeMode={isFullScreen ? "contain" : "cover"}
@@ -1418,142 +1649,185 @@ const Home = React.forwardRef((props, ref) => {
                 />
 
                 {/* Custom Overlay - Always visible */}
-                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'space-between' }} pointerEvents="box-none">
+                <TouchableWithoutFeedback onPress={() => {
+                    if (isFullScreen) {
+                        setShowControls(!showControls);
+                    } else {
+                        LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
+                        setIsFullScreen(true);
+                    }
+                }}>
+                    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'space-between' }}>
 
-                    {/* Dark Overlay - visible only when paused for contrast */}
-                    {!isPlaying && <View style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: colors.blackOpacity(.3)
-                    }} />}
-
-                    {/* Top Controls Bar */}
-                    <View style={{
-                        position: 'absolute',
-                        top: isFullScreen ? responsiveHeight(4) : 0,
-                        left: 0,
-                        right: 0,
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        padding: 8
-                    }}>
-                        {/* Mute/Unmute Button */}
-                        <TouchableOpacity
-                            onPress={() => setIsMuted(!isMuted)}
-                            activeOpacity={0.7}
-                            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-                            style={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: 16,
-                                backgroundColor: colors.blackOpacity(.6),
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                zIndex: 1000
-                            }}
-                        >
-                            <Feather name={isMuted ? "volume-x" : "volume-2"} size={16} color="#fff" />
-                        </TouchableOpacity>
-
-                        {/* Close/Stop Button */}
-                        <TouchableOpacity
-                            onPress={() => {
-                                setIsPlaying(false);
-                                if (isFullScreen) {
-                                    setIsFullScreen(false);
-                                } else {
-                                    setIsMinimized(true);
-                                }
-                            }}
-                            activeOpacity={0.7}
-                            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-                            style={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: 16,
-                                backgroundColor: colors.blackOpacity(.6),
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                zIndex: 1000
-                            }}
-                        >
-                            <Feather name="x" size={16} color="#fff" />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Center Play/Pause Button */}
-                    <TouchableOpacity
-                        onPress={() => setIsPlaying(!isPlaying)}
-                        activeOpacity={0.8}
-                        style={{
+                        {/* Dark Overlay - visible when paused or controls shown */}
+                        {(!isPlaying || (isFullScreen && showControls)) && <View style={{
                             position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: [{ translateX: -30 }, { translateY: -30 }],
-                            width: 60,
-                            height: 60,
-                            borderRadius: 30,
-                            backgroundColor: colors.whiteOpacity(.9),
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            borderWidth: 2,
-                            borderColor: colors.white,
-                            zIndex: 20
-                        }}
-                    >
-                        <Feather name={isPlaying ? "pause" : "play"} size={28} color={colors.royalBlue} style={{ marginLeft: isPlaying ? 0 : 3 }} />
-                    </TouchableOpacity>
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: colors.blackOpacity(.3)
+                        }} />}
 
-                    {/* Bottom Info Bar */}
-                    <View style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        padding: 10,
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'flex-end'
-                    }}>
-                        <View style={{ flex: 1, marginRight: 8 }}>
-                            <Text style={{
-                                color: colors.white,
-                                fontSize: responsiveFontSize(1.2),
-                                fontWeight: '600',
-                                marginBottom: 2
+                        {/* Top Controls Bar - Hide when controls hidden in fullscreen */}
+                        {(!isFullScreen || showControls) && (
+                            <View style={{
+                                position: 'absolute',
+                                top: isFullScreen ? responsiveHeight(4) : 0,
+                                left: 0,
+                                right: 0,
+                                flexDirection: 'row',
+                                justifyContent: isFullScreen ? 'space-between' : 'flex-end',
+                                padding: 8,
+                                zIndex: 30
                             }}>
-                                Training Video
-                            </Text>
-                            <Text style={{
-                                color: colors.whiteOpacity(.8),
-                                fontSize: responsiveFontSize(1),
-                            }}>
-                                Tap to watch
-                            </Text>
-                        </View>
+                                {/* Mute/Unmute Button - Only in Fullscreen */}
+                                {isFullScreen && (
+                                    <TouchableOpacity
+                                        onPress={() => setIsMuted(!isMuted)}
+                                        activeOpacity={0.7}
+                                        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                                        style={{
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            padding: 5,
+                                            zIndex: 1000
+                                        }}
+                                    >
+                                        <Feather name={isMuted ? "volume-x" : "volume-2"} size={24} color="#fff" />
+                                    </TouchableOpacity>
+                                )}
+                                {/* Close/Stop Button - Simplified */}
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        if (isFullScreen) {
+                                            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                                            setIsFullScreen(false);
+                                            // Keep playing when exiting fullscreen
+                                        } else {
+                                            setIsPlaying(false);
+                                            setIsMinimized(true);
+                                        }
+                                    }}
+                                    activeOpacity={0.7}
+                                    hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                                    style={{
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        padding: 5,
+                                        zIndex: 1000
+                                    }}
+                                >
+                                    <Feather name="x" size={24} color="#fff" />
+                                </TouchableOpacity>
+                            </View>
+                        )}
 
-                        <TouchableOpacity
-                            onPress={() => setIsFullScreen(!isFullScreen)}
-                            activeOpacity={0.7}
-                            style={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: 18,
-                                backgroundColor: colors.blackOpacity(.6),
-                                justifyContent: 'center',
-                                alignItems: 'center'
-                            }}
-                        >
-                            <Feather name={isFullScreen ? "minimize" : "maximize"} size={18} color="#fff" />
-                        </TouchableOpacity>
+                        {/* Center Play/Pause Button - Hide in mini mode, show in fullscreen when controls visible or paused */}
+                        {isFullScreen && (showControls || !isPlaying) && (
+                            <TouchableOpacity
+                                onPress={() => setIsPlaying(!isPlaying)}
+                                activeOpacity={0.8}
+                                style={{
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    transform: [{ translateX: -20 }, { translateY: -20 }],
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: 20,
+                                    backgroundColor: colors.whiteOpacity(.9),
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    borderWidth: 2,
+                                    borderColor: colors.white,
+                                    zIndex: 30
+                                }}
+                            >
+                                <Feather name={isPlaying ? "pause" : "play"} size={18} color={colors.royalBlue} style={{ marginLeft: isPlaying ? 0 : 2 }} />
+                            </TouchableOpacity>
+                        )}
+
+                        {/* Carousel Navigation - Arrows (Only in Fullscreen & when controls shown) */}
+                        {isFullScreen && videoUrls.length > 1 && showControls && (
+                            <>
+                                {/* Previous Video Button */}
+                                <TouchableOpacity
+                                    onPress={goToPreviousVideo}
+                                    style={{
+                                        position: 'absolute',
+                                        left: 20,
+                                        top: '50%',
+                                        marginTop: -20,
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 20,
+                                        backgroundColor: colors.blackOpacity(.5),
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        zIndex: 30
+                                    }}
+                                >
+                                    <Feather name="chevron-left" size={24} color={colors.white} />
+                                </TouchableOpacity>
+
+                                {/* Next Video Button */}
+                                <TouchableOpacity
+                                    onPress={goToNextVideo}
+                                    style={{
+                                        position: 'absolute',
+                                        right: 20,
+                                        top: '50%',
+                                        marginTop: -20,
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 20,
+                                        backgroundColor: colors.blackOpacity(.5),
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        zIndex: 30
+                                    }}
+                                >
+                                    <Feather name="chevron-right" size={24} color={colors.white} />
+                                </TouchableOpacity>
+
+                                {/* Pagination Dots */}
+                                <View style={{
+                                    position: 'absolute',
+                                    bottom: 80,
+                                    left: 0,
+                                    right: 0,
+                                    flexDirection: 'row',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    zIndex: 30
+                                }}>
+                                    {videoUrls.map((_, index) => (
+                                        <View
+                                            key={index}
+                                            style={{
+                                                width: 8,
+                                                height: 8,
+                                                borderRadius: 4,
+                                                backgroundColor: currentVideoIndex === index ? colors.white : colors.whiteOpacity(.4),
+                                                marginHorizontal: 4
+                                            }}
+                                        />
+                                    ))}
+                                </View>
+                            </>
+                        )}
+
+                        {/* Empty view to satisfy flex justifyContent space-between if needed */}
+                        <View />
+
+
+
                     </View>
-                </View>
+                </TouchableWithoutFeedback>
+
             </Animated.View>}
 
-            {/* Minimized Floating Icon */}
             {/* Minimized Floating Icon */}
             {isDriver && isMinimized && (
                 <Animated.View
@@ -1563,9 +1837,9 @@ const Home = React.forwardRef((props, ref) => {
                         position: 'absolute',
                         right: 15,
                         bottom: 150, // Adjusted starting position slightly higher or as needed
-                        width: 60,
-                        height: 60,
-                        borderRadius: 30,
+                        width: 50,
+                        height: 50,
+                        borderRadius: 25,
                         backgroundColor: colors.black,
                         zIndex: 999,
                         ...shadow,
@@ -1575,7 +1849,10 @@ const Home = React.forwardRef((props, ref) => {
                     }}
                 >
                     <TouchableOpacity
-                        onPress={() => setIsMinimized(false)}
+                        onPress={() => {
+                            setIsMinimized(false);
+                            setIsPlaying(true);
+                        }}
                         activeOpacity={0.8}
                         style={{
                             width: '100%',
@@ -1584,11 +1861,11 @@ const Home = React.forwardRef((props, ref) => {
                             alignItems: 'center',
                             borderWidth: 2,
                             borderColor: colors.white,
-                            borderRadius: 30,
+                            borderRadius: 25,
                             backgroundColor: colors.black // Ensure solid black
                         }}
                     >
-                        <Feather name="play" size={24} color={colors.white} style={{ marginLeft: 3 }} />
+                        <Feather name="play" size={20} color={colors.white} style={{ marginLeft: 3 }} />
                     </TouchableOpacity>
                 </Animated.View>
             )}
