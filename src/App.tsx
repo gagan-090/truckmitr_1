@@ -11,6 +11,7 @@ import { useEffect } from 'react';
 import { initAnalyticsWithDeviceInfo } from './app/functions/init.analytics';
 import { AppEventsLogger, Settings } from 'react-native-fbsdk-next';
 import { LogBox } from 'react-native';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 export default function App() {
 
@@ -31,9 +32,11 @@ export default function App() {
             <Provider store={store}>
                 <PaperProvider>
                     <I18nextProvider i18n={i18n}>
-                        <TourGuideProvider preventOutsideInteraction androidStatusBarVisible={true} {...{}}>
-                            <Routes />
-                        </TourGuideProvider>
+                        <BottomSheetModalProvider>
+                            <TourGuideProvider preventOutsideInteraction androidStatusBarVisible={true} {...{}}>
+                                <Routes />
+                            </TourGuideProvider>
+                        </BottomSheetModalProvider>
                     </I18nextProvider>
                 </PaperProvider>
             </Provider>

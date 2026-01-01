@@ -406,7 +406,15 @@ const Otp = () => {
                         });
 
                         if (profile?.data?.status) {
-                            dispatch(userAction(profile?.data))
+                            dispatch(userAction({
+                                ...profile.data,
+                                data: {
+                                    ...profile.data.data,
+                                    profile_completed: true,
+                                },
+                            }));
+                            console.log('logging user data ------------', profile?.data);
+
                             // For new signups, navigate to congratulations screen first
                             if (flow !== 'login') {
                                 console.log("🔹 New signup - navigating to Congratulations...");

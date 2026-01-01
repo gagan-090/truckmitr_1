@@ -818,6 +818,13 @@ export default function ProfileEdit() {
                 const profile = await axiosInstance.get(END_POINTS.GET_PROFILE);
                 if (profile?.data?.status) {
                     dispatch(userAction(profile.data));
+                    // dispatch(userAction({
+                    //     ...profile.data,
+                    //     data: {
+                    //         ...profile.data.data,
+                    //         profile_completed: true,
+                    //     },
+                    // }));
                     navigation.navigate(STACKS.BOTTOM_TAB, { screen: STACKS.PROFILE });
                 }
             } else {
@@ -859,7 +866,7 @@ export default function ProfileEdit() {
         try {
             const hasPermission = await requestPhotoLibraryPermission();
             if (!hasPermission) { showToast(t('photoPermissionRequired')); return; }
-            const image = await ImagePicker.openPicker({ cropping: true, width: 512, height: 512, mediaType: 'photo', compressImageQuality: 0.8 });
+            const image = await ImagePicker.openPicker({ width: 512, height: 512, mediaType: 'photo', compressImageQuality: 0.8 });
             if (image?.path) {
                 dispatch(userEditAction({ ...userEdit, [field]: image }));
                 if (field === 'profilePath') setProfileModalOpen(false);
@@ -873,7 +880,7 @@ export default function ProfileEdit() {
         try {
             const hasPermission = await requestCameraPermission();
             if (!hasPermission) { showToast(t('cameraPermissionRequired')); return; }
-            const image = await ImagePicker.openCamera({ cropping: true, width: 512, height: 512, mediaType: 'photo', compressImageQuality: 0.8 });
+            const image = await ImagePicker.openCamera({ width: 512, height: 512, mediaType: 'photo', compressImageQuality: 0.8 });
             if (image?.path) {
                 dispatch(userEditAction({ ...userEdit, [field]: image }));
                 if (field === 'profilePath') setProfileModalOpen(false);

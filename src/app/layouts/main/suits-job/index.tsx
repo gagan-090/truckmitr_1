@@ -19,7 +19,8 @@ import { showToast } from '@truckmitr/src/app/hooks/toast';
 import LottieView from 'lottie-react-native';
 // import Tts from 'react-native-tts';
 import { useTranslation } from 'react-i18next';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { subscriptionModalAction } from '@truckmitr/src/redux/actions/user.action';
 import LinearGradient from 'react-native-linear-gradient';
 import Feather from 'react-native-vector-icons/Feather';
 import FullScreenLoader from '@truckmitr/components/fullScreenLoader';
@@ -39,6 +40,7 @@ export default function SuitsJob() {
     const { responsiveHeight, responsiveWidth, responsiveFontSize } = useResponsiveScale();
     const { profileCompletion } = useSelector((state: any) => { return state?.user }) || { profileCompletion: 0 };
     const navigation = useNavigation<NavigatorProp>();
+    const dispatch = useDispatch();
     const [recommendedJobsList, setrecommendedJobsList] = useState([])
     const [checkBoxSelect, setCheckBoxSelect] = useState<{ [jobId: number]: boolean }>({});
     const [errors, setErrors] = useState<{ [jobId: number]: { checkBox?: string } }>({});
@@ -138,10 +140,16 @@ export default function SuitsJob() {
                     setshowLottie(false)
                 }, 1200);
             } else {
+                if (response?.data?.message === "You have reached your cumulative job application limit for your subscriptions.") {
+                    dispatch(subscriptionModalAction(true));
+                }
                 showToast(response?.data?.message)
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error searching jobs:", error);
+            if (error?.response?.status === 403 || error?.response?.data?.message === "You have reached your cumulative job application limit for your subscriptions.") {
+                dispatch(subscriptionModalAction(true));
+            }
         } finally {
             setloadingApplyJob(-1)
         }

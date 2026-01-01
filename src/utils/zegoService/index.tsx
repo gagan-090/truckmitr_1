@@ -32,6 +32,7 @@ export const initializeZeegoService = async ({
           channelID: 'ZegoUIKit',
           channelName: 'ZegoUIKit',
         },
+        showNotificationOnMobileState: true, // Crucial for background state
       }
     );
 
@@ -43,26 +44,27 @@ export const initializeZeegoService = async ({
       deny: 'Deny',
     });
 
-    console.log('✅ Zego Call Service initialized');
+    // 🔔 Log push token for debugging offline calls
+    console.log('✅ Zego Call Service initialized for:', userID);
   } catch (error) {
     console.error('❌ Zego init failed:', error);
   }
 };
 
-export const startVideoCall = () => {
+export const startVideoCall = (userID: string, userName: string) => {
   const invitees = [
     {
-      userID: 'TM2512UPDR23435',
-      userName: 'Abhishek',
+      userID: userID,
+      userName: userName,
     },
   ];
 
   ZegoUIKitPrebuiltCallService.sendCallInvitation(
-    invitees,           // 1️⃣ invitees
-    true,               // 2️⃣ isVideoCall
-    navigationRef,      // 3️⃣ navigation
+    invitees,
+    true,
+    navigationRef,
     {
-      resourceID: 'TruckMitr', // 4️⃣ options
+      resourceID: 'TruckMitr',
     }
   );
 };

@@ -201,6 +201,9 @@ export default function PaymentSuccess() {
                     syncFormData.append('subscription_id', subscriptionId);
                     syncFormData.append('payment_id', paymentId);
                     syncFormData.append('payment_type', 'subscription');
+                    const subscriptionDates = route?.params?.subscriptionDates;
+                    if (subscriptionDates?.start_date) syncFormData.append('start_date', subscriptionDates.start_date);
+                    if (subscriptionDates?.end_date) syncFormData.append('end_date', subscriptionDates.end_date);
                     const syncResponse = await axiosInstance.post(END_POINTS.PAYMENT_SUBSCRIPTION_CAPTURE, syncFormData);
                     if (syncResponse?.data?.email_required) setEmailPopupVisible(true);
                     if (syncResponse?.data?.status) {

@@ -24,16 +24,8 @@ export default function Auth() {
         <Stack.Screen name={STACKS.APPROVAL} component={Approval} options={{ animation: 'fade' }} />
         <Stack.Screen name={STACKS.PRIVACY} component={Privacy} options={{ animation: 'fade' }} />
         <Stack.Screen name={STACKS.TERMS} component={Terms} options={{ animation: 'fade' }} />
-        {/* <Stack.Screen name={STACKS.OTP} component={Otp} options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name={STACKS.NAME} component={Name} options={{ animation: 'fade' }} />
-        <Stack.Screen name={STACKS.GENDER} component={Gender} options={{ animation: 'fade' }} />
-        <Stack.Screen name={STACKS.BIRTHDAY} component={Birthday} options={{ animation: 'fade' }} /> */}
         <Stack.Screen name={STACKS.MAIN} component={Main} options={{ animation: 'fade' }} />
       </Stack.Group>
-      {/* <Stack.Group screenOptions={{ presentation: 'transparentModal' }}>
-        <Stack.Screen name={STACKS.GENDER_MODAL} component={GenderModal} options={{ animation: 'fade' }} />
-        <Stack.Screen name={STACKS.LOADING_MODAL} component={LoadingModal} options={{ animation: 'fade' }} />
-      </Stack.Group> */}
     </Stack.Navigator>
   )
 }

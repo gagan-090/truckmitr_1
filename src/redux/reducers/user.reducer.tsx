@@ -7,6 +7,8 @@ const initialState = {
     isDriver: undefined,
     isTransporter: undefined,
     profileCompletion: null,
+    profileRequiredFieldsStatus: true, // Default to true to prevent flickering before data is loaded
+    missingFields: [],
     rank: null,
     star_rating: null,
     dashboard: null,
@@ -47,6 +49,8 @@ const userReducer = (state = initialState, action: any) => {
                 isDriver: payload?.user?.role === 'driver',
                 isTransporter: payload?.user?.role === 'transporter',
                 profileCompletion: payload?.profile_completion,
+                profileRequiredFieldsStatus: payload?.profile_required_fields_status ?? true,
+                missingFields: payload?.missing_required_fields || [],
                 dashboard: payload?.dashboard_status,
                 rank: payload?.rank,
                 star_rating: payload?.star_rating,

@@ -742,21 +742,21 @@ export default function ProfileCompletion() {
                 });
             }
 
-            // Driving Experience - API expects integer
+            // Driving Experience - API expects CamelCase matching the missing field list
             const expMapping: { [key: string]: string } = {
-                'less_than_1': '0',
+                'less_than_1': '0', // If "0" is rejected, we might need to change this later
                 '1-2': '1',
                 '3-5': '3',
                 '6-10': '6',
                 '10+': '10'
             };
-            formData.append('driving_experience', expMapping[userEdit?.Driving_Experience] || userEdit?.Driving_Experience || '0');
+            formData.append('Driving_Experience', expMapping[userEdit?.Driving_Experience] || userEdit?.Driving_Experience || '0');
 
             // Aadhar Number
             formData.append('Aadhar_Number', userEdit?.Aadhar_Number || '');
 
             // License Number
-            formData.append('license_number', userEdit?.License_Number || '');
+            formData.append('License_Number', userEdit?.license_number || userEdit?.License_Number || '');
 
             // License Expiry Date - format as d-m-Y
             if (userEdit?.Expiry_date_of_License) {
@@ -847,33 +847,46 @@ export default function ProfileCompletion() {
             }
 
             console.log('=== Sending profile update request ===');
+
+            console.log('=== formData ===', formData);
+
+
             const response = await axiosInstance.post(END_POINTS.EDIT_PROFILE, formData);
             console.log('=== Profile update response ===', response?.data);
 
             if (response?.data?.status) {
-                showToast(response.data.message || t('profileUpdated') || 'Profile updated successfully!');
-
-                // Fetch updated profile
+                // Fetch updated profile to verify gate
                 const profileResponse = await axiosInstance.get(END_POINTS.GET_PROFILE);
+                console.log('=== Profile GET response ===', profileResponse?.data);
+
                 if (profileResponse?.data?.status) {
-                    dispatch(userAction(profileResponse.data));
+                    const isStillMissing = profileResponse.data.profile_required_fields_status === false;
+                    const missing = profileResponse.data.missing_required_fields || [];
+
+                    dispatch(userAction({
+                        ...profileResponse.data,
+                        data: {
+                            ...profileResponse.data.data,
+                            profile_completed: !isStillMissing,
+                        },
+                    }));
+
+                    if (isStillMissing) {
+                        showToast(`${t('profileUpdated')} but still missing: ${missing.join(', ')}`);
+                        console.log('⚠️ Profile remains incomplete:', missing);
+                    } else {
+                        showToast(response.data.message || t('profileUpdated') || 'Profile complete!');
+                        // Dispatch authenticated action
+                        dispatch(userAuthenticatedAction(true));
+                        console.log('✅ Profile complete! Transitioning...');
+                    }
+
+                    // Clear saved signup data if complete
+                    if (!isStillMissing) {
+                        await AsyncStorage.removeItem('signup_incomplete');
+                    }
                 }
-
-                // Clear saved signup data
-                await AsyncStorage.removeItem('signup_incomplete');
-
-                // Dispatch authenticated action
-                dispatch(userAuthenticatedAction(true));
-                console.log('=== Dispatch completed ===');
-
-                // Navigate to Main stack
-                navigation.dispatch(
-                    CommonActions.reset({
-                        index: 0,
-                        routes: [{ name: STACKS.MAIN }],
-                    })
-                );
-                console.log('=== Navigation reset completed ===');
+                setFinishing(false);
             } else {
                 // API returned error
                 showToast(response?.data?.message || t('updateFailed') || 'Profile update failed');
@@ -919,7 +932,7 @@ export default function ProfileCompletion() {
 
             const method = source === 'camera' ? ImagePicker.openCamera : ImagePicker.openPicker;
             const image = await method({
-                cropping: true,
+                // cropping: true,
                 width: 600,
                 height: 600,
                 mediaType: 'photo',

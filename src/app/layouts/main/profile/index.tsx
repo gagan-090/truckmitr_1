@@ -39,11 +39,12 @@ import analytics from '@react-native-firebase/analytics';
 import { AppEventsLogger } from 'react-native-fbsdk-next';
 import RNFetchBlob from 'react-native-blob-util';
 import LinearGradient from 'react-native-linear-gradient';
-
 import { ImageBackground } from 'react-native';
 import { openOverlayPermission } from '@truckmitr/src/utils/permissions/appearOnTopPermission';
 import { ZegoSendCallInvitationButton } from '@zegocloud/zego-uikit-prebuilt-call-rn';
-import { startVideoCall } from '@truckmitr/src/utils/zegoService';
+import { onUserLogout, startVideoCall } from '@truckmitr/src/utils/zegoService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 // Membership Card Asset Images
 const LOGO_IMAGE = require('@truckmitr/src/assets/membership-card/logotrick.png');
 const PROFILE_PLACEHOLDER = require('@truckmitr/src/assets/membership-card/man.png');
@@ -519,6 +520,39 @@ export default function Profile() {
     return savings.toFixed(0);
   };
 
+
+  const logAllAsyncStorage = async () => {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+
+      if (!keys || keys.length === 0) {
+        console.log('📭 AsyncStorage is EMPTY');
+        return;
+      }
+
+      const entries = await AsyncStorage.multiGet(keys);
+
+      console.log('📦 ===== AsyncStorage DUMP START =====');
+
+      entries.forEach(([key, value]) => {
+        let parsedValue = value;
+
+        try {
+          parsedValue = value ? JSON.parse(value) : value;
+        } catch {
+          // value is plain string, not JSON
+        }
+
+        console.log('🔑 Key:', key);
+        console.log('📄 Value:', parsedValue);
+        console.log('------------------------------');
+      });
+
+      console.log('📦 ===== AsyncStorage DUMP END =====');
+    } catch (error) {
+      console.error('❌ Error reading AsyncStorage:', error);
+    }
+  };
   const _navigateProfileEdit = () => {
     isDriver && navigation.navigate(STACKS.PROFILE_EDIT)
     isTransporter && navigation.navigate(STACKS.PROFILE_EDIT_TRANSPORTER)
@@ -616,15 +650,26 @@ export default function Profile() {
     dispatch(userAuthenticatedAction(false));
     deleteUserData();
     setShowLogoutDialog(false);
+    onUserLogout()
   };
 
   const downloadInvoice = async () => {
     try {
       setDownloadingInvoice(true);
-      const getPDFLink: any = await axiosInstance.get(END_POINTS?.INVOICE_DOWNLOAD);
-      if (getPDFLink?.data?.url) {
+
+      // Get payment_id from subscriptionDetails
+      const paymentId = subscriptionDetails?.payment_id || subscriptionDetails?.id;
+
+      if (!paymentId) {
+        showToast('Unable to download invoice. Payment ID not found.');
+        return;
+      }
+
+      const getPDFLink: any = await axiosInstance.get(END_POINTS?.INVOICE_DOWNLOAD(paymentId));
+
+      if (getPDFLink?.data?.status && getPDFLink?.data?.invoice_url) {
         const { config, fs, android } = RNFetchBlob;
-        const timestamp = new Date().getTime()
+        const timestamp = new Date().getTime();
         const filePath = `${fs.dirs.DownloadDir}/Invoice${timestamp}.pdf`;
 
         await config({
@@ -638,14 +683,20 @@ export default function Profile() {
             mediaScannable: true,
           },
         })
-          .fetch('GET', getPDFLink?.data?.url)
+          .fetch('GET', getPDFLink?.data?.invoice_url)
           .then((res) => {
             android.actionViewIntent(res.path(), 'application/pdf');
+            showToast('Invoice downloaded successfully!');
           })
           .catch((e) => {
             Alert.alert('Error', e.message);
           });
+      } else {
+        showToast(getPDFLink?.data?.message || 'Unable to download invoice.');
       }
+    } catch (error: any) {
+      console.error('Download invoice error:', error);
+      showToast(error?.message || 'Failed to download invoice. Please try again.');
     } finally {
       setDownloadingInvoice(false);
     }
@@ -1225,7 +1276,9 @@ export default function Profile() {
           <MenuItem
             icon={<Feather name="user" size={20} color={colors.royalBlue} />}
             title={t('profile')}
-            onPress={_navigateProfileEdit}
+            // onPress={_navigateProfileEdit}
+            onPress={logAllAsyncStorage}
+
           />
         </CardContainer>
 
