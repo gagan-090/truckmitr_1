@@ -1389,6 +1389,47 @@ export default function ProfileCompletion() {
                             value={userEdit?.License_Number || ''}
                             onChangeText={(text) => dispatch(userEditAction({ ...userEdit, License_Number: text }))}
                         />
+
+                        <Space height={20} />
+                        <Text style={styles.classicLabel}>{t('expiryDateOfLicense')}</Text>
+                        <TouchableOpacity style={[styles.classicInput, { justifyContent: 'center' }]} onPress={() => setLicenseExpiryModal(true)}>
+                            <Text style={{ color: userEdit?.Expiry_date_of_License ? '#333' : '#999', fontSize: 16 }}>
+                                {userEdit?.Expiry_date_of_License ? moment(userEdit.Expiry_date_of_License).format('DD-MM-YYYY') : 'DD-MM-YYYY'}
+                            </Text>
+                            <Ionicons name="calendar" size={20} color={colors.royalBlue} style={{ position: 'absolute', right: 14, top: 14 }} />
+                        </TouchableOpacity>
+
+                        <Modal visible={licenseExpiryModal} transparent animationType="fade">
+                            <TouchableWithoutFeedback onPress={() => setLicenseExpiryModal(false)}>
+                                <View style={styles.modalOverlay}>
+                                    <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 20, width: '90%', alignItems: 'center' }}>
+                                        <Text style={{ fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 16 }}>{t('expiryDateOfLicense')}</Text>
+                                        <DatePicker
+                                            mode="date"
+                                            theme="light"
+                                            date={userEdit?.Expiry_date_of_License ? new Date(userEdit.Expiry_date_of_License) : new Date()}
+                                            minimumDate={new Date()}
+                                            maximumDate={moment().add(30, 'years').toDate()}
+                                            onDateChange={(date) => dispatch(userEditAction({ ...userEdit, Expiry_date_of_License: date }))}
+                                        />
+                                        <View style={{ flexDirection: 'row', marginTop: 16 }}>
+                                            <TouchableOpacity
+                                                style={{ flex: 1, paddingVertical: 12, alignItems: 'center', backgroundColor: '#F0F0F0', borderRadius: 8, marginRight: 8 }}
+                                                onPress={() => setLicenseExpiryModal(false)}
+                                            >
+                                                <Text style={{ fontSize: 15, fontWeight: '500', color: '#666' }}>{t('cancel')}</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={{ flex: 1, paddingVertical: 12, alignItems: 'center', backgroundColor: colors.royalBlue, borderRadius: 8 }}
+                                                onPress={() => setLicenseExpiryModal(false)}
+                                            >
+                                                <Text style={{ fontSize: 15, fontWeight: '600', color: 'white' }}>{t('confirm')}</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </View>
+                            </TouchableWithoutFeedback>
+                        </Modal>
                     </View>
                 );
             // === TRANSPORTER-SPECIFIC STEPS ===
