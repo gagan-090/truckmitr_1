@@ -808,9 +808,9 @@ export default function Profile() {
           >
             <Svg width={size} height={size} style={styles.progressRing}>
               <Defs>
-                <SvgLinearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <Stop offset="0%" stopColor="#084489" />
-                  <Stop offset="100%" stopColor="#0c78f0" />
+                <SvgLinearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <Stop offset="0%" stopColor="#FFD700" />
+                  <Stop offset="100%" stopColor="#FFA500" />
                 </SvgLinearGradient>
               </Defs>
               {/* Background Circle */}
@@ -828,7 +828,7 @@ export default function Profile() {
                 cy={size / 2}
                 r={radius}
                 stroke="url(#progressGradient)"
-                strokeWidth={strokeWidth}
+                strokeWidth={3}
                 fill="none"
                 strokeDasharray={circumference}
                 strokeDashoffset={progressOffset}

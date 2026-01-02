@@ -1358,6 +1358,6 @@
   "viewJobDetails": "View Job Details",
   "pleaseSelectFutureDateAndTime": "Please select a future date and time",
   "youAlreadyRejectedThisDriver": "You already rejected this driver",
-  "youHaveToAcceptThisApplicationFirst": "You have to accept this application first"
-
+  "youHaveToAcceptThisApplicationFirst": "You have to accept this application first",
+  "searchState": "Search State"
 }

@@ -930,15 +930,36 @@ export default function AvailableJob() {
         elevation: 2,
       }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* Back Button */}
+          <Pressable
+            hitSlop={hitSlop(10)}
+            onPress={() => navigation.goBack()}
+            style={({ pressed }) => [{
+              height: responsiveFontSize(4.5),
+              width: responsiveFontSize(4.5),
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.royalBlue + '12',
+              borderRadius: responsiveFontSize(2.25),
+              opacity: pressed ? 0.6 : 1
+            }]}
+          >
+            <Ionicons name={'chevron-back'} size={22} color={colors.royalBlue} />
+          </Pressable>
+
+          {/* Centered Title */}
           <Text style={{
-            fontSize: responsiveFontSize(2.4),
+            fontSize: responsiveFontSize(2.2),
             color: colors.black,
-            alignSelf: 'center',
             fontWeight: '700',
-            letterSpacing: -0.3
+            letterSpacing: -0.3,
+            flex: 1,
+            textAlign: 'center',
           }}>
-            Available Jobs ({availableJobsList?.length || 0})
+            {t('availableJobs', 'Available Jobs')} ({availableJobsList?.length || 0})
           </Text>
+
+          {/* Filter Button */}
           <Pressable
             onPress={() => setfilterModel(true)}
             hitSlop={hitSlop(15)}

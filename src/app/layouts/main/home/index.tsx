@@ -647,12 +647,11 @@ const Home = React.forwardRef((props, ref) => {
         navigation.navigate(STACKS.ADD_DRIVER)
     }
     const _navigateAppliedJobsTransporter = () => {
-        // if (subscriptionDetails?.showSubscriptionModel && isTransporter) {
-        //     !subscriptionModal && dispatch(subscriptionModalAction(true))
-        // } else {
-        //     navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
-        // }
-        navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
+        if (subscriptionDetails?.showSubscriptionModel && isTransporter) {
+            !subscriptionModal && dispatch(subscriptionModalAction(true))
+        } else {
+            navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
+        }
     }
     const _navigateDriverList = () => {
         navigation.navigate(STACKS.DRIVER_LIST)
@@ -807,21 +806,21 @@ const Home = React.forwardRef((props, ref) => {
                                         </SvgGradient>
                                     </Defs>
                                     {/* Background Circle */}
-                                    <Circle
+                                    {/* <Circle
                                         cx={size / 2}
                                         cy={size / 2}
                                         r={radius}
                                         stroke={colors.whiteOpacity(.3)}
                                         strokeWidth={strokeWidth}
                                         fill="none"
-                                    />
+                                    /> */}
                                     {/* Progress Circle */}
                                     <Circle
                                         cx={size / 2}
                                         cy={size / 2}
                                         r={radius}
                                         stroke="url(#grad)"
-                                        strokeWidth={strokeWidth}
+                                        strokeWidth={4}
                                         fill="none"
                                         strokeDasharray={circumference}
                                         strokeDashoffset={progressOffset}
