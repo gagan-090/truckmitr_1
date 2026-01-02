@@ -83,17 +83,15 @@ export default function Main() {
   }, [isMounted]);
 
   useEffect(() => {
-    if (!isMounted) return;
-    if (!isAuthenticated || !user) return;
+    if (!isAuthenticated || !user?.unique_id) return;
 
     if (hasInitZego.current) {
-      console.log('Zego already initialized, skipping...');
       return;
     }
 
     const initZego = async () => {
       try {
-        console.log('🚀 Initializing Zego Call Service...');
+        console.log('🚀 Initializing Zego Call Service for:', user.unique_id);
         await initializeZeegoService({
           userID: user.unique_id,
           userName: user.name ?? 'User',
@@ -106,7 +104,7 @@ export default function Main() {
     };
 
     initZego();
-  }, [isMounted, isAuthenticated, user]);
+  }, [isAuthenticated, user?.unique_id]);
 
 
   return (
@@ -168,6 +166,7 @@ export default function Main() {
       <Stack.Screen name={STACKS.REFERRAL} component={Referral} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.VERIFIED_DRIVERS_DOCUMENTS_UPLOAD} component={DriverDocumentUploadScreen} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.PAYMENT_HISTORY_SCREEN} component={PaymentHistoryScreen} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.MEMBERSHIP_CARD} component={MembershipCard} options={{ animation: 'fade_from_bottom' }} />
       <Stack.Screen name={STACKS.DRIVER_KI_AWAZ_INFO} component={DriverKiAwazInfo} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.CALL_JOB_MANAGER_LIST} component={CallJobManagerList} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.CALL_JOB_MANAGER_INFO} component={CallJobManagerInfo} options={{ animation: 'fade' }} />
@@ -179,7 +178,6 @@ export default function Main() {
       {/* DriverInvites usually mapped to STACKS.DRIVERINVITES, but checking stacks definition: invites */}
       {/* already there at line 165 as invites? No line 165 is DriverInvites component from local import. */}
       {/* I will remove the specific DriverInvites import if I am importing from layouts index now, to avoid duplication or confusion, but keep using it if it works. NO, I should use the one from layouts/index for consistency. */}
-
       <Stack.Screen
         options={{ headerShown: false }}
         // DO NOT change the name 

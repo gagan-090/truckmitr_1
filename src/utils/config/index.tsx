@@ -55,6 +55,7 @@ export const END_POINTS = {
     TRANSPORTER_ALL_JOBS: (payload: any) => `api/all-jobs?search=${payload}`,
     JOB_UPDATE_STATUS: `api/job/update-status`,
     TRANSPORTER_APPLIED_JOBS_LIST: `api/transporter/applied-jobs`,
+    TRANSPORTER_SCHEDULE_INTERVIEW: `api/schedule/interview`,
     TRANSPORTER_JOB_ACCEPT_REJECT: (id: any) => `api/transporter/job-application/${id}`,
     DRIVER_IMPORT: `api/transporter/drivers/import`,
     TRANSPORTER_DRIVER_CREATE: `api/transporter/drivers/create`,

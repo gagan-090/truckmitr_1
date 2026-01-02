@@ -853,6 +853,13 @@ export default function ProfileEdit() {
                 const profile = await axiosInstance.get(END_POINTS.GET_PROFILE);
                 if (profile?.data?.status) {
                     dispatch(userAction(profile.data));
+                    // dispatch(userAction({
+                    //     ...profile.data,
+                    //     data: {
+                    //         ...profile.data.data,
+                    //         profile_completed: true,
+                    //     },
+                    // }));
                     navigation.navigate(STACKS.BOTTOM_TAB, { screen: STACKS.PROFILE });
                 }
             } else {

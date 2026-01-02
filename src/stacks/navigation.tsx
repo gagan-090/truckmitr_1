@@ -1,6 +1,6 @@
 /* Packages */
 import { CommonActions, StackActions } from '@react-navigation/native';
-import { navigationRef } from '@ollnine/utils/global/global.ref';
+import { navigationRef } from '@truckmitr/utils/global/global.ref';
 
 type RootStackParamList = {
     [key: string]: object | undefined;

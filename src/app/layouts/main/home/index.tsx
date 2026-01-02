@@ -647,11 +647,12 @@ const Home = React.forwardRef((props, ref) => {
         navigation.navigate(STACKS.ADD_DRIVER)
     }
     const _navigateAppliedJobsTransporter = () => {
-        if (subscriptionDetails?.showSubscriptionModel && isTransporter) {
-            !subscriptionModal && dispatch(subscriptionModalAction(true))
-        } else {
-            navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
-        }
+        // if (subscriptionDetails?.showSubscriptionModel && isTransporter) {
+        //     !subscriptionModal && dispatch(subscriptionModalAction(true))
+        // } else {
+        //     navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
+        // }
+        navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
     }
     const _navigateDriverList = () => {
         navigation.navigate(STACKS.DRIVER_LIST)

@@ -2,7 +2,7 @@ import { StatusBar, useColorScheme, View, Image, AppState, Linking } from 'react
 import React, { useEffect, useRef, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { darkTheme, lightTheme } from '@truckmitr/res/colors';
-import { Auth, Main } from '@truckmitr/stacks/index';
+import { Auth, Main, ProfileCompletionStack } from '@truckmitr/stacks/index';
 import SystemNavigationBar from 'react-native-system-navigation-bar';
 import BootSplash from 'react-native-bootsplash';
 import { navigationRef } from '@truckmitr/utils/global/global.ref';
@@ -34,13 +34,16 @@ export const setNavigationReady = (ready: boolean) => {
   isNavigationReady = ready;
 };
 
+
 export default function Routes() {
   const dispatch = useDispatch();
   const colorScheme = useColorScheme();
   const { responsiveWidth, responsiveHeight } = useResponsiveScale();
   const theme = colorScheme === 'dark' ? darkTheme : lightTheme;
-  const { isAuthenticated, subscriptionModal, user } = useSelector((state: any) => state?.user);
+  const { isAuthenticated, subscriptionModal, user, profileRequiredFieldsStatus } = useSelector((state: any) => state?.user);
   const [isAppReady, setIsAppReady] = useState(false);
+
+  console.log('🛡️ AUTH GATE STATUS:', { isAuthenticated, profileRequiredFieldsStatus });
   const [isInitializing, setIsInitializing] = useState(true);
 
   const routeNameRef = useRef<string | undefined>(undefined);
@@ -49,6 +52,12 @@ export default function Routes() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const hasInitialized = useRef(false);
   const lastBackgroundTime = useRef<number>(0);
+  const isProfileCompleted = Boolean(
+    user?.data?.profile_completed
+  );
+
+  console.log('--------------------------user data------------------', user);
+  console.log('--------------------------is profile completed------------------', isProfileCompleted);
 
   // -------------------------------
   // 🔹 Logout and Redirect to Login
@@ -381,7 +390,13 @@ export default function Routes() {
     >
       <StatusBar translucent backgroundColor="transparent" />
       <ZegoCallInvitationDialog />
-      {isAuthenticated ? <Main /> : <Auth />}
+      {!isAuthenticated ? (
+        <Auth />
+      ) : profileRequiredFieldsStatus === false ? (
+        <ProfileCompletionStack />
+      ) : (
+        <Main />
+      )}
       {subscriptionModal && <Subscription />}
       <InAppUpdatePopup />
     </NavigationContainer>
