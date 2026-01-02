@@ -1,4 +1,4 @@
-import { ActivityIndicator, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View, Animated, Pressable } from 'react-native'
+import { ActivityIndicator, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View, Animated, Pressable, TextInput } from 'react-native'
 import React, { useEffect, useState, useRef } from 'react'
 import { useColor, useResponsiveScale, useShadow, useStatusBarStyle } from '@truckmitr/src/app/hooks';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,7 +16,6 @@ import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
 import { END_POINTS } from '@truckmitr/src/utils/config';
 import moment from 'moment';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
-import LottieView from 'lottie-react-native';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { subscriptionModalAction } from '@truckmitr/src/redux/actions/user.action';
@@ -27,6 +26,256 @@ import { playVoiceOnce, stopVoice } from '@truckmitr/src/utils/audio';
 
 
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
+
+// Premium Success Overlay Component (same as job screen)
+const SuccessOverlay = ({ colors, responsiveHeight, responsiveWidth, responsiveFontSize, t }: any) => {
+    const backdropOpacity = useRef(new Animated.Value(0)).current;
+    const checkScale = useRef(new Animated.Value(0)).current;
+    const checkOpacity = useRef(new Animated.Value(0)).current;
+    const textOpacity = useRef(new Animated.Value(0)).current;
+    const textSlide = useRef(new Animated.Value(20)).current;
+    const ringScale = useRef(new Animated.Value(0.5)).current;
+    const ringOpacity = useRef(new Animated.Value(0)).current;
+
+    // Confetti particles
+    const particles = useRef(
+        Array.from({ length: 12 }, () => ({
+            x: new Animated.Value(0),
+            y: new Animated.Value(0),
+            opacity: new Animated.Value(0),
+            scale: new Animated.Value(0),
+            rotation: new Animated.Value(0),
+        }))
+    ).current;
+
+    useEffect(() => {
+        // Backdrop fade in
+        Animated.timing(backdropOpacity, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+        }).start();
+
+        // Ring animation
+        Animated.sequence([
+            Animated.delay(100),
+            Animated.parallel([
+                Animated.spring(ringScale, {
+                    toValue: 1,
+                    tension: 50,
+                    friction: 6,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(ringOpacity, {
+                    toValue: 1,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+            ]),
+        ]).start();
+
+        // Checkmark animation
+        Animated.sequence([
+            Animated.delay(200),
+            Animated.parallel([
+                Animated.spring(checkScale, {
+                    toValue: 1,
+                    tension: 80,
+                    friction: 5,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(checkOpacity, {
+                    toValue: 1,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+            ]),
+        ]).start();
+
+        // Text animation
+        Animated.sequence([
+            Animated.delay(400),
+            Animated.parallel([
+                Animated.timing(textOpacity, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: true,
+                }),
+                Animated.spring(textSlide, {
+                    toValue: 0,
+                    tension: 60,
+                    friction: 8,
+                    useNativeDriver: true,
+                }),
+            ]),
+        ]).start();
+
+        // Confetti particles animation
+        particles.forEach((particle, index) => {
+            const angle = (index / 12) * Math.PI * 2;
+            const distance = 80 + Math.random() * 40;
+            const targetX = Math.cos(angle) * distance;
+            const targetY = Math.sin(angle) * distance;
+
+            Animated.sequence([
+                Animated.delay(300 + index * 30),
+                Animated.parallel([
+                    Animated.timing(particle.opacity, {
+                        toValue: 1,
+                        duration: 200,
+                        useNativeDriver: true,
+                    }),
+                    Animated.spring(particle.scale, {
+                        toValue: 1,
+                        tension: 100,
+                        friction: 6,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(particle.x, {
+                        toValue: targetX,
+                        duration: 600,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(particle.y, {
+                        toValue: targetY,
+                        duration: 600,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(particle.rotation, {
+                        toValue: Math.random() * 360,
+                        duration: 600,
+                        useNativeDriver: true,
+                    }),
+                ]),
+                Animated.timing(particle.opacity, {
+                    toValue: 0,
+                    duration: 300,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        });
+    }, []);
+
+    const particleColors = [
+        colors.royalBlue,
+        '#FFD700',
+        '#FF6B6B',
+        '#4ECDC4',
+        '#A78BFA',
+        '#F472B6',
+    ];
+
+    return (
+        <Animated.View
+            style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: backdropOpacity,
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                pointerEvents: 'none',
+            }}
+        >
+            {/* Confetti Particles */}
+            {particles.map((particle, index) => (
+                <Animated.View
+                    key={index}
+                    style={{
+                        position: 'absolute',
+                        width: 12,
+                        height: 12,
+                        borderRadius: index % 2 === 0 ? 6 : 2,
+                        backgroundColor: particleColors[index % particleColors.length],
+                        opacity: particle.opacity,
+                        transform: [
+                            { translateX: particle.x },
+                            { translateY: particle.y },
+                            { scale: particle.scale },
+                            {
+                                rotate: particle.rotation.interpolate({
+                                    inputRange: [0, 360],
+                                    outputRange: ['0deg', '360deg'],
+                                }),
+                            },
+                        ],
+                    }}
+                />
+            ))}
+
+            {/* Animated Ring */}
+            <Animated.View
+                style={{
+                    position: 'absolute',
+                    width: responsiveFontSize(18),
+                    height: responsiveFontSize(18),
+                    borderRadius: responsiveFontSize(9),
+                    borderWidth: 3,
+                    borderColor: colors.royalBlue + '30',
+                    opacity: ringOpacity,
+                    transform: [{ scale: ringScale }],
+                }}
+            />
+
+            {/* Success Circle */}
+            <Animated.View
+                style={{
+                    width: responsiveFontSize(14),
+                    height: responsiveFontSize(14),
+                    borderRadius: responsiveFontSize(7),
+                    backgroundColor: colors.royalBlue,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: checkOpacity,
+                    transform: [{ scale: checkScale }],
+                    shadowColor: colors.royalBlue,
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.35,
+                    shadowRadius: 16,
+                    elevation: 12,
+                }}
+            >
+                <Ionicons name="checkmark" size={responsiveFontSize(7)} color={colors.white} />
+            </Animated.View>
+
+            {/* Success Text */}
+            <Animated.View
+                style={{
+                    marginTop: responsiveFontSize(3),
+                    alignItems: 'center',
+                    opacity: textOpacity,
+                    transform: [{ translateY: textSlide }],
+                }}
+            >
+                <Text
+                    style={{
+                        fontSize: responsiveFontSize(2.8),
+                        fontWeight: '700',
+                        color: colors.black,
+                        letterSpacing: -0.5,
+                        marginBottom: responsiveFontSize(0.8),
+                    }}
+                >
+                    {t('applicationSubmitted') || 'Application Submitted!'}
+                </Text>
+                <Text
+                    style={{
+                        fontSize: responsiveFontSize(1.7),
+                        fontWeight: '500',
+                        color: colors.blackOpacity(0.6),
+                        textAlign: 'center',
+                        paddingHorizontal: responsiveFontSize(4),
+                    }}
+                >
+                    {t('applicationSuccessMessage') || 'Your job application has been sent successfully'}
+                </Text>
+            </Animated.View>
+        </Animated.View>
+    );
+};
 
 // Info Item Component
 const InfoItem = ({ icon, label, value, colors, responsiveFontSize, flex }: any) => (
@@ -484,6 +733,7 @@ export default function SuitsJob() {
     const [showLottie, setshowLottie] = useState(false)
     const [isLoading, setIsLoading] = useState(true);
     const headerOpacity = useRef(new Animated.Value(0)).current;
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         Animated.timing(headerOpacity, {
@@ -612,6 +862,32 @@ export default function SuitsJob() {
         navigation.navigate(STACKS.PROFILE_EDIT);
     };
 
+    // Filter jobs based on search query
+    const filteredJobs = recommendedJobsList.filter((job: any) => {
+        if (!searchQuery.trim()) return true;
+        const query = searchQuery.toLowerCase().trim();
+        const jobTitle = (job?.job_title || '').toLowerCase();
+        const jobLocation = (job?.job_location || '').toLowerCase();
+        const jobDescription = (job?.Job_Description || '').toLowerCase();
+        const vehicleType = (job?.vehicle_type || '').toLowerCase();
+        const licenseType = (job?.Type_of_License || '').toLowerCase();
+        let skills = '';
+        try {
+            const parsed = JSON.parse(job?.Preferred_Skills);
+            skills = Array.isArray(parsed) ? parsed.join(' ').toLowerCase() : parsed.toLowerCase();
+        } catch (e) {
+            skills = (job?.Preferred_Skills || '').toLowerCase();
+        }
+        return (
+            jobTitle.includes(query) ||
+            jobLocation.includes(query) ||
+            jobDescription.includes(query) ||
+            vehicleType.includes(query) ||
+            licenseType.includes(query) ||
+            skills.includes(query)
+        );
+    });
+
     return (
         <View style={{ flex: 1, backgroundColor: colors.blackOpacity(.02) }}>
             <Space height={safeAreaInsets.top} />
@@ -665,6 +941,64 @@ export default function SuitsJob() {
                     </Text>
                 </View>
             </Animated.View>
+
+            {/* Search Bar - Only show when profile is complete and jobs are loaded */}
+            {profileCompletion >= 90 && !isLoading && recommendedJobsList.length > 0 && (
+                <View style={{
+                    paddingHorizontal: responsiveWidth(4),
+                    paddingVertical: responsiveHeight(1.5),
+                    backgroundColor: colors.white,
+                }}>
+                    <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: colors.blackOpacity(0.04),
+                        borderRadius: responsiveFontSize(1.5),
+                        paddingHorizontal: responsiveFontSize(1.5),
+                        height: responsiveFontSize(5.5),
+                        borderWidth: 1,
+                        borderColor: colors.blackOpacity(0.08),
+                    }}>
+                        <Feather name="search" size={20} color={colors.blackOpacity(0.5)} />
+                        <TextInput
+                            style={{
+                                flex: 1,
+                                marginLeft: responsiveFontSize(1),
+                                fontSize: responsiveFontSize(1.8),
+                                color: colors.black,
+                                paddingVertical: 0,
+                            }}
+                            placeholder={t('searchJobs', 'Search jobs...')}
+                            placeholderTextColor={colors.blackOpacity(0.4)}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                        />
+                        {searchQuery.length > 0 && (
+                            <Pressable
+                                onPress={() => setSearchQuery('')}
+                                hitSlop={hitSlop(10)}
+                                style={({ pressed }) => [{
+                                    padding: responsiveFontSize(0.5),
+                                    opacity: pressed ? 0.5 : 1
+                                }]}
+                            >
+                                <Ionicons name="close-circle" size={20} color={colors.blackOpacity(0.4)} />
+                            </Pressable>
+                        )}
+                    </View>
+                    {searchQuery.trim() !== '' && (
+                        <Text style={{
+                            marginTop: responsiveFontSize(1),
+                            fontSize: responsiveFontSize(1.5),
+                            color: colors.blackOpacity(0.6),
+                        }}>
+                            {filteredJobs.length} {filteredJobs.length === 1 ? t('jobFound', 'job found') : t('jobsFound', 'jobs found')}
+                        </Text>
+                    )}
+                </View>
+            )}
 
             {/* ================= PROFILE NOT COMPLETED ================= */}
             {profileCompletion < 90 && (
@@ -800,35 +1134,72 @@ export default function SuitsJob() {
 
             {profileCompletion >= 90 && !isLoading && recommendedJobsList.length > 0 && (
                 <View style={{ flex: 1 }}>
-                    <FlatList
-                        showsHorizontalScrollIndicator={false}
-                        showsVerticalScrollIndicator={false}
-                        data={recommendedJobsList}
-                        renderItem={({ item }: any) => (
-                            <JobCard
-                                item={item}
-                                expandedJobs={expandedJobs}
-                                toggleExpand={toggleExpand}
-                                checkBoxSelect={checkBoxSelect}
-                                _onpressCheckBox={_onpressCheckBox}
-                                errors={errors}
-                                loadingApplyJob={loadingApplyJob}
-                                _applyJob={_applyJob}
-                                colors={colors}
-                                responsiveFontSize={responsiveFontSize}
-                                responsiveHeight={responsiveHeight}
-                                responsiveWidth={responsiveWidth}
-                                t={t}
-                                navigation={navigation}
-                            />
-                        )}
-                        contentContainerStyle={{
-                            paddingHorizontal: responsiveWidth(4),
-                            paddingTop: responsiveHeight(2.5),
-                            paddingBottom: responsiveHeight(10)
-                        }}
-                        keyExtractor={(item: any) => item.id.toString()}
-                    />
+                    {filteredJobs.length > 0 ? (
+                        <FlatList
+                            showsHorizontalScrollIndicator={false}
+                            showsVerticalScrollIndicator={false}
+                            data={filteredJobs}
+                            renderItem={({ item }: any) => (
+                                <JobCard
+                                    item={item}
+                                    expandedJobs={expandedJobs}
+                                    toggleExpand={toggleExpand}
+                                    checkBoxSelect={checkBoxSelect}
+                                    _onpressCheckBox={_onpressCheckBox}
+                                    errors={errors}
+                                    loadingApplyJob={loadingApplyJob}
+                                    _applyJob={_applyJob}
+                                    colors={colors}
+                                    responsiveFontSize={responsiveFontSize}
+                                    responsiveHeight={responsiveHeight}
+                                    responsiveWidth={responsiveWidth}
+                                    t={t}
+                                    navigation={navigation}
+                                />
+                            )}
+                            contentContainerStyle={{
+                                paddingHorizontal: responsiveWidth(4),
+                                paddingTop: responsiveHeight(1.5),
+                                paddingBottom: responsiveHeight(10)
+                            }}
+                            keyExtractor={(item: any) => item.id.toString()}
+                        />
+                    ) : (
+                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                            <View style={{
+                                backgroundColor: colors.white,
+                                borderRadius: responsiveFontSize(2.5),
+                                padding: responsiveFontSize(4),
+                                alignItems: 'center',
+                                shadowColor: colors.black,
+                                shadowOffset: { width: 0, height: 4 },
+                                shadowOpacity: 0.08,
+                                shadowRadius: 12,
+                                elevation: 5,
+                                marginHorizontal: responsiveWidth(8)
+                            }}>
+                                <Feather name="search" size={48} color={colors.blackOpacity(0.15)} />
+                                <Text style={{
+                                    marginTop: responsiveHeight(2),
+                                    color: colors.blackOpacity(.7),
+                                    fontSize: responsiveFontSize(2),
+                                    textAlign: 'center',
+                                    fontWeight: '500',
+                                    lineHeight: responsiveFontSize(3)
+                                }}>
+                                    {t('noJobsMatchSearch', 'No jobs match your search')}
+                                </Text>
+                                <Text style={{
+                                    marginTop: responsiveFontSize(1),
+                                    color: colors.blackOpacity(.5),
+                                    fontSize: responsiveFontSize(1.6),
+                                    textAlign: 'center',
+                                }}>
+                                    {t('tryDifferentKeywords', 'Try different keywords')}
+                                </Text>
+                            </View>
+                        </View>
+                    )}
                 </View>
             )}
 
@@ -868,24 +1239,15 @@ export default function SuitsJob() {
                 </View>
             )}
 
-            {/* Success Lottie */}
+            {/* Premium Success Animation Overlay */}
             {showLottie && (
-                <View style={{
-                    height: responsiveHeight(100),
-                    width: responsiveWidth(100),
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'absolute',
-                    pointerEvents: 'none',
-                    backgroundColor: colors.blackOpacity(0.3)
-                }}>
-                    <LottieView
-                        style={{ height: responsiveHeight(50), width: responsiveWidth(70) }}
-                        source={require('@truckmitr/res/lotties/boom.json')}
-                        autoPlay
-                        loop
-                    />
-                </View>
+                <SuccessOverlay
+                    colors={colors}
+                    responsiveHeight={responsiveHeight}
+                    responsiveWidth={responsiveWidth}
+                    responsiveFontSize={responsiveFontSize}
+                    t={t}
+                />
             )}
         </View>
     )

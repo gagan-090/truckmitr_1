@@ -392,8 +392,8 @@ export default function Routes() {
       <ZegoCallInvitationDialog />
       {!isAuthenticated ? (
         <Auth />
-      ) : profileRequiredFieldsStatus === false ? (
-        <ProfileCompletionStack />
+        // ) : profileRequiredFieldsStatus === false ? (
+        //   <ProfileCompletionStack />
       ) : (
         <Main />
       )}
