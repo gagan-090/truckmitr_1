@@ -880,12 +880,12 @@ const Home = React.forwardRef((props, ref) => {
                                 </View>
                             </View>
                             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: responsiveFontSize(1.5), gap: 2 }}>
-                                {[1, 2, 3, 4, 5].map((curr) => (
+                                {Array.from({ length: 5 }).map((_, i) => (
                                     <FontAwesome
-                                        key={curr}
-                                        name="star"
+                                        key={i}
+                                        name={i < (star_rating || 0) ? 'star' : 'star-o'}
                                         size={responsiveFontSize(1.6)}
-                                        color={curr <= (star_rating || 5) ? "#FFD700" : "#D3D3D3"}
+                                        color={i < (star_rating || 0) ? '#FFD700' : colors.blackOpacity(0.2)}
                                     />
                                 ))}
                             </View>

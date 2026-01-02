@@ -68,27 +68,27 @@ const TruckImages = {
 
 // Voice file mapping for Hindi step descriptions - Profile Completion
 const DRIVER_VOICE_FILES: { [key: string]: any } = {
-    'dob': require('@truckmitr/src/assets/voice/step_dob.mp3'),
+    'dob': require('@truckmitr/src/assets/voice/date-of-birth.mp3'),
     'gender': require('@truckmitr/src/assets/voice/step_gender.mp3'),
     'education': require('@truckmitr/src/assets/voice/step_education.mp3'),
     'vehicle': require('@truckmitr/src/assets/voice/step_vehicle.mp3'),
     'experience': require('@truckmitr/src/assets/voice/step_experience.mp3'),
-    'license': require('@truckmitr/src/assets/voice/step_license_type.mp3'),
-    'endorsement': require('@truckmitr/src/assets/voice/step_preferences.mp3'),
-    'current_salary': require('@truckmitr/src/assets/voice/step_salary.mp3'),
-    'expected_salary': require('@truckmitr/src/assets/voice/step_salary.mp3'),
-    'avatar': require('@truckmitr/src/assets/voice/step_profile_photo.mp3'),
-    'id_numbers': require('@truckmitr/src/assets/voice/step_aadhar.mp3'),
+    'license': require('@truckmitr/src/assets/voice/type-of-license.mp3'),
+    'endorsement': require('@truckmitr/src/assets/voice/driving-endorsement.mp3'),
+    'current_salary': require('@truckmitr/src/assets/voice/monthly-salary.mp3'),
+    'expected_salary': require('@truckmitr/src/assets/voice/expected-salary.mp3'),
+    'avatar': require('@truckmitr/src/assets/voice/profile-photo.mp3'),
+    'id_numbers': require('@truckmitr/src/assets/voice/id_details.mp3'),
 };
 
 const TRANSPORTER_VOICE_FILES: { [key: string]: any } = {
-    'year_of_exp': require('@truckmitr/src/assets/voice/step_experience_years.mp3'),
-    'fleet_size': require('@truckmitr/src/assets/voice/step_fleet_size.mp3'),
-    'industry_segment': require('@truckmitr/src/assets/voice/step_industry.mp3'),
-    'avg_km_run': require('@truckmitr/src/assets/voice/step_avg_km.mp3'),
-    'vehicle': require('@truckmitr/src/assets/voice/step_vehicle_transporter.mp3'),
-    'operational_segment': require('@truckmitr/src/assets/voice/step_preferences.mp3'),
-    'pan_gst': require('@truckmitr/src/assets/voice/step_pan_gst.mp3'),
+    'year_of_exp': null, // require('@truckmitr/src/assets/voice/step_experience_years.mp3'),
+    'fleet_size': null, // require('@truckmitr/src/assets/voice/step_fleet_size.mp3'),
+    'industry_segment': null, // require('@truckmitr/src/assets/voice/step_industry.mp3'),
+    'avg_km_run': null, // require('@truckmitr/src/assets/voice/step_avg_km.mp3'),
+    'vehicle': null, // require('@truckmitr/src/assets/voice/step_vehicle_transporter.mp3'),
+    'operational_segment': null, // require('@truckmitr/src/assets/voice/step_preferences.mp3'),
+    'pan_gst': null, // require('@truckmitr/src/assets/voice/step_pan_gst.mp3'),
 };
 
 const { width } = Dimensions.get('window');
@@ -366,6 +366,9 @@ export default function ProfileCompletion() {
     const [yearPickerOpen, setYearPickerOpen] = useState(false);
     const [calendarMonth, setCalendarMonth] = useState(moment().subtract(18, 'years').format('YYYY-MM-DD'));
 
+    // License Expiry Modal
+    const [licenseExpiryModal, setLicenseExpiryModal] = useState(false);
+
     // Fade animation for content transition
     const contentOpacity = useSharedValue(1);
     const contentTranslateX = useSharedValue(0);
@@ -534,11 +537,11 @@ export default function ProfileCompletion() {
         contentOpacity.value = withTiming(1, { duration: 400 });
         contentTranslateX.value = withSpring(0, { damping: 12 });
 
-        // Play voice for Hindi language only if not muted
-        if (i18n.language === 'hi' && !isVoiceMuted) {
+        // Play voice if not muted (regardless of language)
+        if (!isVoiceMuted) {
             playStepVoice();
         }
-    }, [currentStep, i18n.language, isVoiceMuted]);
+    }, [currentStep, isVoiceMuted]);
 
     const animatedContentStyle = useAnimatedStyle(() => ({
         opacity: contentOpacity.value,
