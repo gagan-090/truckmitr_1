@@ -492,6 +492,7 @@ export default function ProfileCompletion() {
         { label: t('others') || 'Others', value: 'others' },
     ];
 
+
     // Load initial data 
     useEffect(() => {
         const init = async () => {
@@ -835,11 +836,19 @@ export default function ProfileCompletion() {
                 formData.append('average_km', userEdit?.avg_km_run || '');
                 formData.append('registered_id', userEdit?.registered_id || '');
 
-                // Operational Segment - API expects array
-                const opSegments = userEdit?.operational_segment?.split(',').filter(Boolean) || [];
+                // Operational Segment - UI "Industry Segment" values go here
+                const opSegments = userEdit?.industry_segment?.split(',').filter(Boolean) || [];
                 if (opSegments.length > 0) {
                     opSegments.forEach((seg: string) => {
                         formData.append('operational_segment[]', seg.trim());
+                    });
+                }
+
+                // Routes - UI "Operational Segment" values go here
+                const routeSegments = userEdit?.operational_segment?.split(',').filter(Boolean) || [];
+                if (routeSegments.length > 0) {
+                    routeSegments.forEach((seg: string) => {
+                        formData.append('routes[]', seg.trim());
                     });
                 }
 
@@ -876,8 +885,14 @@ export default function ProfileCompletion() {
                 console.log('=== Profile GET response ===', profileResponse?.data);
 
                 if (profileResponse?.data?.status) {
-                    const isStillMissing = profileResponse.data.profile_required_fields_status === false;
-                    const missing = profileResponse.data.missing_required_fields || [];
+                    const isTransporter = userRole === 'transporter';
+                    const isStillMissing = isTransporter
+                        ? profileResponse.data.transporter_required_fields_status === false
+                        : profileResponse.data.profile_required_fields_status === false;
+
+                    const missing = isTransporter
+                        ? profileResponse.data.transporter_missing_fields || []
+                        : profileResponse.data.missing_required_fields || [];
 
                     dispatch(userAction({
                         ...profileResponse.data,
@@ -1486,7 +1501,7 @@ export default function ProfileCompletion() {
             case 'industry_segment':
                 return (
                     <View style={styles.stepContainer}>
-                        <Text style={styles.classicLabel}>{t('industrySegment') || 'Operational Segment'}</Text>
+                        <Text style={styles.classicLabel}>{t('industrySegment') || 'Industry Segment'}</Text>
                         <Text style={[styles.helperText, { marginBottom: 12 }]}>{t('selectMultipleIfApplicable') || 'Select all that apply'}</Text>
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                             {translatedIndustrySegments.map((segment) => {
@@ -1527,6 +1542,7 @@ export default function ProfileCompletion() {
                         </View>
                     </View>
                 );
+
             case 'avg_km_run':
                 return (
                     <View style={styles.stepContainer}>

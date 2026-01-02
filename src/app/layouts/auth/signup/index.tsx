@@ -341,7 +341,7 @@ export default function Signup() {
                         {/* Mobile Input */}
                         <View style={{ marginBottom: responsiveHeight(1.2) }}>
                             <PaperTextInput
-                                left={<PaperTextInput.Affix text="+91" textStyle={{ color: colors.black }} />}
+                                left={<PaperTextInput.Affix text="+91" textStyle={{ color: colors.black ,}} />}
                                 mode="outlined"
                                 label={<Text>{t(`mobile`)} <Text style={{ color: colors.error }}>*</Text></Text>}
                                 value={mobile}
@@ -353,7 +353,7 @@ export default function Signup() {
                                 keyboardType="phone-pad"
                                 theme={{ colors: { primary: colors.royalBlue, background: colors.white, onSurface: colors.black } }}
                                 style={{ backgroundColor: colors.white, height: 48 }}
-                                contentStyle={{ paddingBottom: 11 }}
+                                contentStyle={{ paddingVertical: 11 }}
                                 outlineStyle={{ borderRadius: 10, borderColor: errors.mobile ? colors.error : colors.blackOpacity(0.2) }}
                             />
                             {errors.mobile && (

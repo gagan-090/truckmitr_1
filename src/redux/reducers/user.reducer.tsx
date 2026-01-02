@@ -52,8 +52,12 @@ const userReducer = (state = initialState, action: any) => {
                 isDriver: payload?.user?.role === 'driver',
                 isTransporter: payload?.user?.role === 'transporter',
                 profileCompletion: payload?.profile_completion,
-                profileRequiredFieldsStatus: payload?.profile_required_fields_status ?? true,
-                missingFields: payload?.missing_required_fields || [],
+                profileRequiredFieldsStatus: (payload?.user?.role === 'transporter')
+                    ? (payload?.transporter_required_fields_status ?? true)
+                    : (payload?.profile_required_fields_status ?? true),
+                missingFields: (payload?.user?.role === 'transporter')
+                    ? (payload?.transporter_missing_fields || [])
+                    : (payload?.missing_required_fields || []),
                 dashboard: payload?.dashboard_status,
                 rank: payload?.rank,
                 star_rating: payload?.star_rating,
