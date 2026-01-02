@@ -167,7 +167,11 @@ const AppliedJobCard = ({
                             color: statusColor,
                             textTransform: 'capitalize',
                         }}>
-                            {item?.accept_reject_status || 'Pending'}
+                            {item?.accept_reject_status?.toLowerCase() === 'accepted'
+                                ? t('acceptedByDriver')
+                                : (item?.accept_reject_status?.toLowerCase() === 'pending' || !item?.accept_reject_status)
+                                    ? t('pendingFromTransporter')
+                                    : item?.accept_reject_status}
                         </Text>
                     </View>
                     <Text style={{
@@ -493,7 +497,7 @@ export default function AppliedJob() {
                     marginRight: responsiveFontSize(4.5), // Balance the back button
                     letterSpacing: -0.3,
                 }}>
-                    {t(`appliedJobs`)}
+                    {t('appliedJobs', 'Applied Jobs')} ({appliedJobsList?.length || 0})
                 </Text>
             </Animated.View>
 

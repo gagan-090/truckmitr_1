@@ -14,6 +14,9 @@ const initialState = {
     dashboard: null,
     subscriptionDetails: null,
     subscriptionModal: false,
+    subscriptionModalOptions: {
+        upgradeOnly: false,
+    },
     paymentVerificationModal: false,
     referral: null,
     whatsapp_link: null
@@ -63,6 +66,17 @@ const userReducer = (state = initialState, action: any) => {
                 userEdit: payload
             }
         case TYPES['SUBSCRIPTION_DETAILS']:
+            // If payload is empty or not an array, clear subscription data
+            if (!payload || !Array.isArray(payload) || payload.length === 0) {
+                return {
+                    ...state,
+                    subscriptionDetails: {
+                        showSubscriptionModel: true, // No subscription at all
+                        hasActiveSubscription: false
+                    }
+                };
+            }
+
             // Valid subscription payment types - includes all plan names
             const validPaymentTypes = [
                 'subscription',
@@ -83,26 +97,51 @@ const userReducer = (state = initialState, action: any) => {
 
             // Find the first active subscription
             const currentTimeInSeconds = Math.floor(Date.now() / 1000);
-            let activeSubscription = subscriptionRecords.find((item: any) => {
+
+            // Helper function to check if a subscription is a legacy driver (Rs 49 payment)
+            const isLegacyDriverSubscription = (item: any): boolean => {
+                const amount = parseFloat(item.amount) || 0;
+                const isLegacyAmount = amount === 49 || amount === 49.00;
+                const isPaymentCaptured = item.payment_status === 'captured';
+                const isNotExpired = currentTimeInSeconds < item.end_at;
+                return isLegacyAmount && isPaymentCaptured && isNotExpired;
+            };
+
+            // Helper function to check if a subscription is active
+            const isActiveSubscription = (item: any): boolean => {
+                // First check for legacy driver (Rs 49 payment)
+                if (isLegacyDriverSubscription(item)) {
+                    console.log('[userReducer] Legacy driver detected (Rs 49 subscription)');
+                    return true;
+                }
+                // Standard subscription check
                 const hasSubscriptionId = !!item.subscription_id;
                 const isPaymentCaptured = item.payment_status === 'captured';
                 const isNotExpired = currentTimeInSeconds < item.end_at;
                 return hasSubscriptionId && isPaymentCaptured && isNotExpired;
-            });
+            };
+
+            let activeSubscription = subscriptionRecords.find((item: any) => isActiveSubscription(item));
 
             // If no active subscription found in filtered records, check ALL payload items
             // This handles cases where payment_type might be something unexpected
             if (!activeSubscription && payload.length > 0) {
-                activeSubscription = payload.find((item: any) => {
-                    const hasSubscriptionId = !!item.subscription_id;
-                    const isPaymentCaptured = item.payment_status === 'captured';
-                    const isNotExpired = currentTimeInSeconds < item.end_at;
-                    return hasSubscriptionId && isPaymentCaptured && isNotExpired;
-                });
+                activeSubscription = payload.find((item: any) => isActiveSubscription(item));
             }
 
             // If no active subscription found, use the first subscription record for details
             let payloadSubscriptionDetails = activeSubscription || subscriptionRecords[0] || payload[0];
+
+            // If still no valid subscription details, return empty state
+            if (!payloadSubscriptionDetails || !payloadSubscriptionDetails.id) {
+                return {
+                    ...state,
+                    subscriptionDetails: {
+                        showSubscriptionModel: true,
+                        hasActiveSubscription: false
+                    }
+                };
+            }
 
             if (payloadSubscriptionDetails && typeof payloadSubscriptionDetails?.payment_details === 'string') {
                 try {
@@ -126,22 +165,32 @@ const userReducer = (state = initialState, action: any) => {
 
             return {
                 ...state,
-                subscriptionDetails: payloadSubscriptionDetails?.id
-                    ? {
-                        ...payloadSubscriptionDetails,
-                        subscriptionExpiry,
-                        showSubscriptionModel: shouldShowSubscriptionModal,
-                        hasActiveSubscription: hasActiveSubscription
-                    }
-                    : {
-                        showSubscriptionModel: true, // No subscription at all
-                        hasActiveSubscription: false
-                    }
+                subscriptionDetails: {
+                    ...payloadSubscriptionDetails,
+                    subscriptionExpiry,
+                    showSubscriptionModel: shouldShowSubscriptionModal,
+                    hasActiveSubscription: hasActiveSubscription
+                }
             }
         case TYPES['SUBSCRIPTION_MODAL']:
+            // Handle both boolean and object payloads
+            // Object payload: { visible: true, upgradeOnly: true } - shows only ₹199 and ₹499 plans
+            // Boolean payload: true/false - shows all plans
+            if (typeof payload === 'object' && payload !== null) {
+                return {
+                    ...state,
+                    subscriptionModal: payload.visible || false,
+                    subscriptionModalOptions: {
+                        upgradeOnly: payload.upgradeOnly || false,
+                    }
+                }
+            }
             return {
                 ...state,
-                subscriptionModal: payload
+                subscriptionModal: payload,
+                subscriptionModalOptions: {
+                    upgradeOnly: false,
+                }
             }
         case TYPES['PAYMENTVERIFICATION_MODAL']:
             return {

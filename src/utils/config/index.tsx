@@ -62,6 +62,7 @@ export const END_POINTS = {
     TRANSPORTER_DRIVERS: (payload: any) => `api/transporter/drivers?search=${payload}`,
     TRANSPORTER_UPDATE_DRIVERS_PROFILE: (payload: any) => `api/transporter/driver/update/${payload}`,
     TRANSPORTER_DELETE_DRIVERS: (payload: any) => `api/transporter/driver/delete/${payload}`,
+    MOBILE_BANNERS: `api/mobile-banners`,
 
     PAYMENT_SUBSCRIPTION_CAPTURE: `api/payment/subscription/capture`,
     PAYMENT_SUBSCRIPTION_DETAILS: `api/payment/subscription/details`,
@@ -78,6 +79,8 @@ export const END_POINTS = {
     DRIVERVERIFICATIONSTART: `api/driver-verification/start`,
     DRIVERVERIFICATIONUPLOADDOCUMENTS: `api/driver-verification/upload-documents`,
     DRIVERVERIFICATIONPAYMENTCAPTURE: `api/driver-verification/payment/capture`,
+    DRIVERVERIFICATIONDLVERIFICATION: (user_id: any, dl_number: any) => `api/kyc/dl-verification?user_id=${user_id}&dl_number=${dl_number}`,
+    DRIVERVERIFICATIONPANVERIFICATION: (user_id: any, pan_number: any) => `api/kyc/pan-verification?user_id=${user_id}&pan=${pan_number}`,
 
     // Transporter Verification Endpoints
     TRANSPORTER_BULK_VERIFICATION: `api/driver-verification/transporter-bulk-verification`,
@@ -117,5 +120,16 @@ export const END_POINTS = {
     GET_DRIVERS_PROFILE: (driver_id: any) => `api/profile?driver_id=${driver_id}`,
     DRIVER_UPLOAD_DOCUMENTS_BY_TRANSPORTER: (driver_id: any) => `api/driver-verification/upload-documents?driver_id=${driver_id}`,
     VERIFICATION_VIDEO: `api/driver-verification/verification-video`,
-    LOG_USER_EVENT: `api/user-logs`
+    LOG_USER_EVENT: `api/user-logs`,
+
+    // Driving License Verification
+    DL_VERIFY: `api/kyc/dl`,
+    PAN_VERIFY: `api/kyc/pan`,
+    AADHAAR_VERIFY: `api/kyc/aadhaar`,
+    VOTER_VERIFY: `api/kyc/voter`,
+    CHALLAN_VERIFY: `api/kyc/challan`,
+    CHALLAN_HISTORY: `api/kyc/challans`,
+    // GET 
+    CHALLAN_VERIFY_VEHICLE_NUMBER: (vehicle_number: any) => `api/kyc/challan/${vehicle_number}`,
+
 }

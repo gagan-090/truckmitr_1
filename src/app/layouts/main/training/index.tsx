@@ -280,8 +280,8 @@ export default function Training() {
         console.log('Selected:', moduleQuizToggle);
         // console.log('Available quizzes:', quizList.map(q => q.module));
 
-        console.log('quiz:',quiz);
-        
+        console.log('quiz:', quiz);
+
         navigation.navigate(STACKS.QUIZ, { item: quiz });
     };
 

@@ -1,5 +1,5 @@
 import { Image, Modal, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View, ScrollView, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useColor, useResponsiveScale, useShadow } from '@truckmitr/src/app/hooks';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -53,6 +53,7 @@ const DRIVER_STEPS = [
     { id: 'preferences', title: 'preferencesStep', subtitle: 'preferencesStepDesc' },
     { id: 'aadhar_details', title: 'aadharStep', subtitle: 'aadharStepDesc' },
     { id: 'license_details', title: 'licenseStep', subtitle: 'licenseStepDesc' },
+    { id: 'pan_details', title: 'panStep', subtitle: 'panStepDesc' },
 ];
 
 // Transporter Steps - Profile photo first
@@ -84,6 +85,7 @@ const DRIVER_VOICE_FILES: { [key: string]: any } = {
     'preferences': require('@truckmitr/src/assets/voice/step_preferences.mp3'),
     'aadhar_details': require('@truckmitr/src/assets/voice/step_aadhar.mp3'),
     'license_details': require('@truckmitr/src/assets/voice/step_license.mp3'),
+    'pan_details': require('@truckmitr/src/assets/voice/step_pan_gst.mp3'),
 };
 
 const TRANSPORTER_VOICE_FILES: { [key: string]: any } = {
@@ -113,7 +115,8 @@ export default function ProfileEdit() {
     const STEPS = userRole === 'transporter' ? TRANSPORTER_STEPS : DRIVER_STEPS;
 
     const [currentStep, setCurrentStep] = useState(0);
-    const [profileModalOpen, setProfileModalOpen] = useState(false);
+    const [imagePickerOpen, setImagePickerOpen] = useState(false);
+    const [activeField, setActiveField] = useState<string>('');
     const [locations, setLocations] = useState<any[]>([]);
     const [vehicleTypes, setVehicleTypes] = useState<any[]>([]);
     const [yearPickerOpen, setYearPickerOpen] = useState(false);
@@ -191,7 +194,35 @@ export default function ProfileEdit() {
             }
         };
         fetchData();
+        fetchData();
     }, []);
+
+    // Sync ref for async access
+    const userEditRef = useRef(userEdit);
+    useEffect(() => { userEditRef.current = userEdit; }, [userEdit]);
+
+    // Debounced Pincode API Call
+    useEffect(() => {
+        const pincode = userEdit?.pincode;
+        if (pincode?.length === 6) {
+            const timer = setTimeout(async () => {
+                setLoadingPincode(true);
+                try {
+                    const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+                    const data = await response.json();
+                    if (data?.[0]?.Status === 'Success' && data?.[0]?.PostOffice?.[0]?.District) {
+                        const city = data[0].PostOffice[0].District;
+                        dispatch(userEditAction({ ...(userEditRef.current || {}), city: city }));
+                    }
+                } catch (error) {
+                    console.log('Error fetching city from pincode:', error);
+                } finally {
+                    setLoadingPincode(false);
+                }
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [userEdit?.pincode]);
 
     // Normalize transporter fields from API response (handle casing mismatches)
     useEffect(() => {
@@ -559,6 +590,10 @@ export default function ProfileEdit() {
                 }
                 break;
 
+            case 'pan_details':
+                // Optional step
+                break;
+
             // Transporter steps
             case 'transport_details':
                 if (!userEdit?.transport_name?.trim()) {
@@ -866,10 +901,25 @@ export default function ProfileEdit() {
         try {
             const hasPermission = await requestPhotoLibraryPermission();
             if (!hasPermission) { showToast(t('photoPermissionRequired')); return; }
-            const image = await ImagePicker.openPicker({ width: 512, height: 512, mediaType: 'photo', compressImageQuality: 0.8 });
+            const image = await ImagePicker.openPicker({ mediaType: 'photo', compressImageQuality: 0.8 });
             if (image?.path) {
-                dispatch(userEditAction({ ...userEdit, [field]: image }));
-                if (field === 'profilePath') setProfileModalOpen(false);
+                const updates: any = { [field]: image };
+
+                // Clear existing image key to ensure new image is displayed and uploaded
+                const fieldMap: { [key: string]: string } = {
+                    'profilePath': 'images',
+                    'aadharImagePath': 'Aadhar_Photo',
+                    'drivingLicensePath': 'Driving_License',
+                    'panImagePath': 'PAN_Image',
+                    'gstCertificatePath': 'GST_Certificate'
+                };
+
+                if (fieldMap[field]) {
+                    updates[fieldMap[field]] = null;
+                }
+
+                dispatch(userEditAction({ ...userEdit, ...updates }));
+                setImagePickerOpen(false);
             }
         } catch (error: any) {
             if (error.code !== 'E_PICKER_CANCELLED') showToast(t('failedToSelectImage'));
@@ -880,10 +930,25 @@ export default function ProfileEdit() {
         try {
             const hasPermission = await requestCameraPermission();
             if (!hasPermission) { showToast(t('cameraPermissionRequired')); return; }
-            const image = await ImagePicker.openCamera({ width: 512, height: 512, mediaType: 'photo', compressImageQuality: 0.8 });
+            const image = await ImagePicker.openCamera({ mediaType: 'photo', compressImageQuality: 0.8 });
             if (image?.path) {
-                dispatch(userEditAction({ ...userEdit, [field]: image }));
-                if (field === 'profilePath') setProfileModalOpen(false);
+                const updates: any = { [field]: image };
+
+                // Clear existing image key to ensure new image is displayed and uploaded
+                const fieldMap: { [key: string]: string } = {
+                    'profilePath': 'images',
+                    'aadharImagePath': 'Aadhar_Photo',
+                    'drivingLicensePath': 'Driving_License',
+                    'panImagePath': 'PAN_Image',
+                    'gstCertificatePath': 'GST_Certificate'
+                };
+
+                if (fieldMap[field]) {
+                    updates[fieldMap[field]] = null;
+                }
+
+                dispatch(userEditAction({ ...userEdit, ...updates }));
+                setImagePickerOpen(false);
             }
         } catch (error: any) {
             if (error.code !== 'E_PICKER_CANCELLED') showToast(t('failedToOpenCamera'));
@@ -910,7 +975,7 @@ export default function ProfileEdit() {
     );
 
     // Document Upload Component
-    const DocumentUpload = ({ label, imagePath, existingImage, fieldName, baseUrl }: any) => {
+    const DocumentUpload = ({ label, imagePath, existingImage, fieldName, existingImageKey }: any) => {
         const imageUri = imagePath?.path || (existingImage ? `${BASE_URL}public/${existingImage}` : null);
         return (
             <View style={styles.documentBox}>
@@ -918,12 +983,16 @@ export default function ProfileEdit() {
                 {imageUri ? (
                     <View style={styles.documentPreview}>
                         <Image source={{ uri: imageUri }} style={styles.documentImage} />
-                        <TouchableOpacity style={styles.documentDelete} onPress={() => dispatch(userEditAction({ ...userEdit, [fieldName]: null, [existingImage ? fieldName.replace('Path', '') : '']: null }))}>
+                        <TouchableOpacity style={styles.documentDelete} onPress={() => {
+                            const updates: any = { [fieldName]: null };
+                            if (existingImageKey) updates[existingImageKey] = null;
+                            dispatch(userEditAction({ ...userEdit, ...updates }));
+                        }}>
                             <Ionicons name="close-circle" size={28} color="#dc3545" />
                         </TouchableOpacity>
                     </View>
                 ) : (
-                    <TouchableOpacity style={styles.uploadBox} onPress={() => pickImage(fieldName)}>
+                    <TouchableOpacity style={styles.uploadBox} onPress={() => { setActiveField(fieldName); setImagePickerOpen(true); }}>
                         <MaterialCommunityIcons name="file-upload-outline" size={40} color={colors.royalBlue} />
                         <Text style={styles.uploadText}>{t('tapToUpload') || 'Tap to upload'}</Text>
                         <Text style={styles.uploadHint}>.jpg, .jpeg, .png</Text>
@@ -933,30 +1002,7 @@ export default function ProfileEdit() {
         );
     };
 
-    const fetchCityFromPincode = async (pincode: string) => {
-        if (pincode.length === 6) {
-            setLoadingPincode(true);
-            try {
-                const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
-                const data = await response.json();
-                if (data && Array.isArray(data) && data.length > 0 && data[0].Status === 'Success' && data[0].PostOffice && Array.isArray(data[0].PostOffice) && data[0].PostOffice.length > 0) {
-                    const city = data[0].PostOffice[0].District;
-                    dispatch(userEditAction({ ...(userEdit || {}), city: city, pincode: pincode }));
-                } else {
-                    dispatch(userEditAction({ ...(userEdit || {}), pincode: pincode }));
-                }
-            } catch (error) {
-                console.log('Error fetching city from pincode:', error);
-                dispatch(userEditAction({ ...(userEdit || {}), pincode: pincode }));
-            } finally {
-                setLoadingPincode(false);
-            }
-        } else {
-            dispatch(userEditAction({ ...(userEdit || {}), pincode: pincode }));
-            // Only toggle loading if it was somehow true
-            if (loadingPincode) setLoadingPincode(false);
-        }
-    };
+
 
     const renderStepContent = () => {
         const step = STEPS[currentStep];
@@ -1060,7 +1106,7 @@ export default function ProfileEdit() {
                                 keyboardType="number-pad"
                                 maxLength={6}
                                 value={userEdit?.pincode || ''}
-                                onChangeText={fetchCityFromPincode}
+                                onChangeText={(text) => dispatch(userEditAction({ ...(userEdit || {}), pincode: text }))}
                             />
                             {loadingPincode && (
                                 <ActivityIndicator
@@ -1156,10 +1202,10 @@ export default function ProfileEdit() {
             case 'salary':
                 return (
                     <View style={styles.stepContent}>
-                        <Text style={styles.inputLabel}>{t('currentMonthlyIncome')} *</Text>
+                        <Text style={styles.inputLabel}>{t('currentMonthlyIncome')} <Text style={styles.requiredAsterisk}>*</Text></Text>
                         <View style={styles.chipContainer}>{salaryRanges.map(s => (<Chip key={s} label={`₹${s}`} selected={userEdit?.Current_Monthly_Income === s} onPress={() => dispatch(userEditAction({ ...userEdit, Current_Monthly_Income: s }))} />))}</View>
                         <Space height={20} />
-                        <Text style={styles.inputLabel}>{t('expectedMonthlyIncome')} *</Text>
+                        <Text style={styles.inputLabel}>{t('expectedMonthlyIncome')} <Text style={styles.requiredAsterisk}>*</Text></Text>
                         <View style={styles.chipContainer}>{salaryRanges.map(s => (<Chip key={s} label={`₹${s}`} selected={userEdit?.Expected_Monthly_Income === s} onPress={() => dispatch(userEditAction({ ...userEdit, Expected_Monthly_Income: s }))} />))}</View>
                     </View>
                 );
@@ -1178,7 +1224,7 @@ export default function ProfileEdit() {
             case 'avatar':
                 return (
                     <View style={[styles.stepContent, { alignItems: 'center' }]}>
-                        <TouchableOpacity onPress={() => setProfileModalOpen(true)} style={styles.avatarBox}>
+                        <TouchableOpacity onPress={() => { setActiveField('profilePath'); setImagePickerOpen(true); }} style={styles.avatarBox}>
                             {userEdit?.profilePath?.path || userEdit?.images ? <Image source={{ uri: profileImageUri }} style={styles.avatarImage} /> : <Ionicons name="camera-outline" size={50} color="#ccc" />}
                             <View style={styles.avatarBadge}><Ionicons name="pencil" size={14} color="white" /></View>
                         </TouchableOpacity>
@@ -1192,7 +1238,7 @@ export default function ProfileEdit() {
                         <Text style={styles.inputLabel}>{t('aadharNumber')} <Text style={styles.requiredAsterisk}>*</Text></Text>
                         <TextInput style={styles.textInput} placeholder="0000 0000 0000" placeholderTextColor="#999" keyboardType="number-pad" maxLength={12} value={userEdit?.Aadhar_Number || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, Aadhar_Number: text }))} />
                         <Space height={20} />
-                        <DocumentUpload label={`${t('uploadAadharPhoto')} *`} imagePath={userEdit?.aadharImagePath} existingImage={userEdit?.Aadhar_Photo} fieldName="aadharImagePath" />
+                        <DocumentUpload label={<Text>{t('uploadAadharPhoto')} <Text style={styles.requiredAsterisk}>*</Text></Text>} imagePath={userEdit?.aadharImagePath} existingImage={userEdit?.Aadhar_Photo} fieldName="aadharImagePath" existingImageKey="Aadhar_Photo" />
                     </View>
                 );
 
@@ -1205,8 +1251,18 @@ export default function ProfileEdit() {
                         <Text style={styles.inputLabel}>{t('expiryDateOfLicense')}</Text>
                         <TouchableOpacity style={styles.dateDisplay} onPress={() => setLicenseExpiryModal(true)}><Text style={styles.dateText}>{userEdit?.Expiry_date_of_License ? moment(licenseExpiry).format('DD-MM-YYYY') : 'DD-MM-YYYY'}</Text><Ionicons name="calendar" size={20} color={colors.royalBlue} /></TouchableOpacity>
                         <Space height={20} />
-                        <DocumentUpload label={t('uploadDrivingLicense')} imagePath={userEdit?.drivingLicensePath} existingImage={userEdit?.Driving_License} fieldName="drivingLicensePath" />
+                        <DocumentUpload label={<Text>{t('uploadDrivingLicense')} <Text style={styles.requiredAsterisk}>*</Text></Text>} imagePath={userEdit?.drivingLicensePath} existingImage={userEdit?.Driving_License} fieldName="drivingLicensePath" existingImageKey="Driving_License" />
                         <Modal visible={licenseExpiryModal} transparent animationType="fade"><View style={styles.modalOverlay}><View style={styles.datePickerBox}><Text style={styles.datePickerTitle}>{t('expiryDateOfLicense')}</Text><DatePicker mode="date" theme="light" date={licenseExpiry} minimumDate={new Date()} maximumDate={moment().add(30, 'years').toDate()} onDateChange={(date) => dispatch(userEditAction({ ...userEdit, Expiry_date_of_License: date }))} /><View style={styles.datePickerButtons}><TouchableOpacity style={styles.cancelBtn} onPress={() => setLicenseExpiryModal(false)}><Text style={styles.cancelBtnText}>{t('cancel')}</Text></TouchableOpacity><TouchableOpacity style={[styles.confirmBtn, { backgroundColor: colors.royalBlue }]} onPress={() => setLicenseExpiryModal(false)}><Text style={styles.confirmBtnText}>{t('confirm')}</Text></TouchableOpacity></View></View></View></Modal>
+                    </View>
+                );
+
+            case 'pan_details':
+                return (
+                    <View style={styles.stepContent}>
+                        <Text style={styles.inputLabel}>{t('panNumber') || 'PAN Number'}</Text>
+                        <TextInput style={styles.textInput} placeholder="ABCDE1234F" placeholderTextColor="#999" autoCapitalize="characters" maxLength={10} value={userEdit?.pan || userEdit?.PAN_Number || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, pan: text.toUpperCase(), PAN_Number: text.toUpperCase() }))} />
+                        <Space height={16} />
+                        <DocumentUpload label={t('uploadPanDocument') || 'Upload PAN Document'} imagePath={userEdit?.panImagePath} existingImage={userEdit?.PAN_Image} fieldName="panImagePath" existingImageKey="PAN_Image" />
                     </View>
                 );
 
@@ -1259,12 +1315,12 @@ export default function ProfileEdit() {
                         <Text style={styles.inputLabel}>{t('panNumber') || 'PAN Number'} <Text style={styles.requiredAsterisk}>*</Text></Text>
                         <TextInput style={styles.textInput} placeholder="ABCDE1234F" placeholderTextColor="#999" autoCapitalize="characters" maxLength={10} value={userEdit?.pan || userEdit?.PAN_Number || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, pan: text.toUpperCase(), PAN_Number: text.toUpperCase() }))} />
                         <Space height={16} />
-                        <DocumentUpload label={`${t('uploadPanDocument')} *`} imagePath={userEdit?.panImagePath} existingImage={userEdit?.PAN_Image} fieldName="panImagePath" />
+                        <DocumentUpload label={<Text>{t('uploadPanDocument')} <Text style={styles.requiredAsterisk}>*</Text></Text>} imagePath={userEdit?.panImagePath} existingImage={userEdit?.PAN_Image} fieldName="panImagePath" existingImageKey="PAN_Image" />
                         <Space height={20} />
                         <Text style={styles.inputLabel}>{t('gstNumber') || 'GST Number'}</Text>
                         <TextInput style={styles.textInput} placeholder="22AAAAA0000A1Z5" placeholderTextColor="#999" autoCapitalize="characters" maxLength={15} value={userEdit?.gst || userEdit?.GST_Number || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, gst: text.toUpperCase(), GST_Number: text.toUpperCase() }))} />
                         <Space height={16} />
-                        <DocumentUpload label={t('uploadGstCertificate')} imagePath={userEdit?.gstCertificatePath} existingImage={userEdit?.GST_Certificate} fieldName="gstCertificatePath" />
+                        <DocumentUpload label={t('uploadGstCertificate')} imagePath={userEdit?.gstCertificatePath} existingImage={userEdit?.GST_Certificate} fieldName="gstCertificatePath" existingImageKey="GST_Certificate" />
                     </View>
                 );
 
@@ -1344,7 +1400,7 @@ export default function ProfileEdit() {
                 </View>
             </KeyboardAvoidingView>
 
-            <Modal visible={profileModalOpen} transparent animationType="slide"><TouchableWithoutFeedback onPress={() => setProfileModalOpen(false)}><View style={styles.bottomModalOverlay}><View style={styles.bottomModalContent}><Text style={styles.modalTitle}>{t('chooseAction')}</Text><TouchableOpacity style={styles.modalOption} onPress={() => openCamera('profilePath')}><Ionicons name="camera-outline" size={24} color="#333" /><Text style={styles.modalOptionText}>{t('camera')}</Text></TouchableOpacity><View style={styles.modalDivider} /><TouchableOpacity style={styles.modalOption} onPress={() => pickImage('profilePath')}><Ionicons name="image-outline" size={24} color="#333" /><Text style={styles.modalOptionText}>{t('gallery')}</Text></TouchableOpacity><Space height={safeAreaInsets.bottom} /></View></View></TouchableWithoutFeedback></Modal>
+            <Modal visible={imagePickerOpen} transparent animationType="slide"><TouchableWithoutFeedback onPress={() => setImagePickerOpen(false)}><View style={styles.bottomModalOverlay}><View style={styles.bottomModalContent}><Text style={styles.modalTitle}>{t('chooseAction')}</Text><TouchableOpacity style={styles.modalOption} onPress={() => openCamera(activeField)}><Ionicons name="camera-outline" size={24} color="#333" /><Text style={styles.modalOptionText}>{t('camera')}</Text></TouchableOpacity><View style={styles.modalDivider} /><TouchableOpacity style={styles.modalOption} onPress={() => pickImage(activeField)}><Ionicons name="image-outline" size={24} color="#333" /><Text style={styles.modalOptionText}>{t('gallery')}</Text></TouchableOpacity><Space height={safeAreaInsets.bottom} /></View></View></TouchableWithoutFeedback></Modal>
         </View>
     );
 }
@@ -1428,5 +1484,5 @@ const styles = StyleSheet.create({
     cancelBtnText: { fontSize: 15, fontWeight: '500', color: '#666' },
     confirmBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 8 },
     confirmBtnText: { fontSize: 15, fontWeight: '600', color: 'white' },
-    requiredAsterisk: { color: '#dc3545', fontSize: 13, fontWeight: '600' },
+    requiredAsterisk: { color: 'red', fontSize: 13, fontWeight: '600' },
 });

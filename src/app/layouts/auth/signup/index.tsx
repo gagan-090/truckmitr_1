@@ -432,7 +432,7 @@ export default function Signup() {
 
                         {/* Checkbox */}
                         <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                            <TouchableOpacity activeOpacity={0.7} onPress={_onpressCheckBox} style={{ marginTop: 2 }}>
+                            <TouchableOpacity activeOpacity={0.7} onPress={_onpressCheckBox} style={{ marginTop: -2.4 }}>
                                 <MaterialCommunityIcons
                                     name={checkBoxSelect ? 'checkbox-marked' : 'checkbox-blank-outline'}
                                     size={24}
@@ -441,8 +441,8 @@ export default function Signup() {
                             </TouchableOpacity>
                             <Text style={{ color: colors.blackOpacity(0.7), marginStart: responsiveFontSize(1.5), fontSize: responsiveFontSize(1.7), lineHeight: 22, flex: 1 }}>
                                 {t(`iAgreeToTruckMitr`)}
-                                <Text onPress={() => navigation.navigate(STACKS?.TERMS)} style={{ color: colors.royalBlue, fontWeight: '600' }}> {t(`termsOfUse`)}</Text> {t('and')}{'\n'}
-                                <Text onPress={() => navigation.navigate(STACKS?.PRIVACY)} style={{ color: colors.royalBlue, fontWeight: '600' }}>{t(`privacyPolicy`)}</Text>.
+                                <Text onPress={() => navigation.navigate(STACKS?.TERMS)} style={{ color: colors.royalBlue, fontWeight: '600' }}> {t(`termsOfUse`)}</Text> {'\n'}
+                                <Text onPress={() => navigation.navigate(STACKS?.PRIVACY)} style={{ color: colors.royalBlue, fontWeight: '600' }}></Text>.
                             </Text>
                         </View>
                         {errors.checkBox && (

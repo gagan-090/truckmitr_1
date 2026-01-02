@@ -66,12 +66,12 @@ const COLORS = {
   success: '#089720ff', // Emerald
   warning: '#F59E0B', // Amber
   danger: '#EF4444', // Red
-  base: '#6B7280',
-  verified: '#3B82F6',
-  trusted: '#F59E0B',
-  verifiedBg: '#EFF6FF',
-  trustedBg: '#FFFBEB',
-  baseBg: '#F9FAFB',
+  base: '#f2a50bff', // Orange
+  verified: '#348f02ff', // Green
+  trusted: '#2563EB', // Royal Blue
+  verifiedBg: '#ECFDF5',
+  trustedBg: '#EFF6FF',
+  baseBg: '#FFF7ED',
   overlay: 'rgba(0, 0, 0, 0.5)',
 };
 
@@ -80,69 +80,87 @@ const getPlanData = (t: (key: string) => string) => [
   {
     id: 99,
     tier: 'base',
-    name: t('subJobReadyName'),
-    subtitle: t('subDriverSubtitle'),
-    tagline: t('subStartYourJourney'),
+    name: t('subJobReadyDriver'),
+    subtitle: t('subJobReadySubtitle'),
+    tagline: t('subJobReadyTagline'),
     badge: '🚛',
     price: 99,
     duration: t('subYear'),
     intro: t('subJobReadyIntro'),
     benefits: [
-      t('subBenefitCreateProfile'),
-      t('subBenefitBrowseJobs'),
-      t('subBenefitContactTransporters'),
+      t('subBenefitCreateProfileDrive'),
+      t('subBrowse5Jobs'),
+      t('subBenefitContactInApp'),
       t('subBenefitBasicTraining'),
       t('subBenefitStayJobReady'),
     ],
-    ctaText: t('subGetStarted'),
+    footerNotes: [
+      t('subFooterNoVerification'),
+      t('subFooterChooseJobs')
+    ],
+    ctaText: t('subGetJobReady'),
     color: COLORS.base,
     bgColor: COLORS.baseBg,
-    gradient: ['#6B7280', '#9CA3AF'],
+    gradient: ['#ccc207ff', '#f5fb3cff'],
   },
   {
     id: 199,
     tier: 'verified',
-    name: t('subVerifiedName'),
-    subtitle: t('subDriverSubtitle'),
-    tagline: t('subStandOutWithTrust'),
+    name: t('subVerifiedDriverName'),
+    subtitle: t('subVerifiedSubtitle'),
+    tagline: t('subVerifiedTagline'),
     badge: '✅',
     price: 199,
     duration: t('subYear'),
     intro: t('subVerifiedIntro'),
     benefits: [
-      t('subBenefitEverythingJobReady'),
+      t('subBenefitCreateProfileDrive'),
+      t('subBrowse20Jobs'),
       t('subBenefitOneTimeVerification'),
       t('subBenefitVerifiedBadge'),
       t('subBenefitHigherTrust'),
       t('subBenefitBetterShortlisting'),
+      t('subBenefitSupportTruckMitr'),
     ],
-    ctaText: t('subGetVerified'),
-    color: COLORS.primary,
+    footerNotes: [
+      t('subFooterVerifyAfterUpload'),
+      t('subFooterOtpVerify'),
+      t('subFooterNoJobGuarantee')
+    ],
+    ctaText: t('subBecomeVerified'),
+    color: COLORS.verified,
     bgColor: COLORS.verifiedBg,
-    gradient: ['#4F46E5', '#6366F1'],
+    gradient: ['#348f02ff', '#34D399'],
   },
   {
     id: 499,
     tier: 'trusted',
     name: t('subTrustedName'),
-    subtitle: t('subDriverSubtitle'),
-    tagline: t('subMaximumOpportunities'),
+    subtitle: t('subTrustedSubtitle'),
+    tagline: t('subTrustedTagline'),
     badge: '🛡️',
     price: 499,
     duration: t('subYear'),
     intro: t('subTrustedIntro'),
     benefits: [
-      t('subBenefitEverythingVerified'),
-      t('subBenefitCourtCheck'),
-      t('subBenefitAddressVerify'),
-      t('subBenefitHomePhotoVerify'),
+      t('subBenefitCreateProfileDrive'),
+      t('subBrowseUnlimitedJobs'),
+      t('subBenefitDigitalCourtCheck'),
+      t('subBenefitDigitalAddressVerify'),
+      t('subBenefitHomePhotoGeo'),
       t('subBenefitTrustedBadge'),
+      t('subBenefitHighestCredibility'),
       t('subBenefitPriorityPremium'),
     ],
-    ctaText: t('subGetTrusted'),
+    footerNotes: [
+      t('subFooterDigitalProcess'),
+      t('subFooterFollowInstructions'),
+      t('subFooterImproveConfidence')
+    ],
+    ctaText: t('subBecomeTrusted'),
     color: COLORS.trusted,
     bgColor: COLORS.trustedBg,
-    gradient: ['#F59E0B', '#FBBF24'],
+    gradient: ['#2563EB', '#60A5FA'],
   },
 ];
 
@@ -362,15 +380,15 @@ const FeatureTable = React.memo(({ responsiveFontSize, t }: { responsiveFontSize
 
   return (
     <View style={styles.tableContainer}>
-      <Text style={[styles.tableTitle, { fontSize: responsiveFontSize(1.8) }]}>
+      <Text style={[styles.tableTitle, { fontSize: responsiveFontSize(2.2) }]}>
         {t('subComparePlans')}
       </Text>
 
       {/* Header Row */}
       <View style={styles.tableHeaderRow}>
         <Text style={[styles.tableHeaderCell, { flex: 1.2, textAlign: 'left' }]}>{comparisonData.columns[0]}</Text>
-        <Text style={styles.tableHeaderCell}>{comparisonData.columns[1]}</Text>
-        <Text style={styles.tableHeaderCell}>{comparisonData.columns[2]}</Text>
+        <Text style={[styles.tableHeaderCell, { color: COLORS.base }]}>{comparisonData.columns[1]}</Text>
+        <Text style={[styles.tableHeaderCell, { color: COLORS.verified }]}>{comparisonData.columns[2]}</Text>
         <Text style={[styles.tableHeaderCell, { color: COLORS.trusted }]}>{comparisonData.columns[3]}</Text>
       </View>
 
@@ -379,7 +397,7 @@ const FeatureTable = React.memo(({ responsiveFontSize, t }: { responsiveFontSize
         <View key={idx} style={[styles.tableRow, idx === comparisonData.rows.length - 1 && styles.tableRowLast]}>
           <Text style={[
             styles.tableCellLabel,
-            { fontSize: responsiveFontSize(1.3) },
+            { fontSize: responsiveFontSize(1.5) },
           ]}>
             {row.label}
           </Text>
@@ -392,7 +410,7 @@ const FeatureTable = React.memo(({ responsiveFontSize, t }: { responsiveFontSize
               ) : (
                 <Text style={[
                   styles.tableCellValue,
-                  { fontSize: responsiveFontSize(1.3) },
+                  { fontSize: responsiveFontSize(1.5) },
                 ]}>
                   {val}
                 </Text>
@@ -429,6 +447,7 @@ interface PlanDataType {
   bgColor: string;
   gradient: string[];
   is_recurring?: number | boolean;
+  footerNotes?: string[];
 }
 
 const PlanCard = React.memo(({
@@ -466,7 +485,9 @@ const PlanCard = React.memo(({
   return (
     <Animated.View style={[
       styles.cardContainer,
+      { borderColor: plan.tier === 'base' ? plan.color : styles.cardContainer.borderColor },
       isExpanded && styles.cardContainerExpanded,
+      isExpanded && { borderColor: plan.color },
       isPopular && styles.cardPopular
     ]}>
       {isPopular && (
@@ -488,7 +509,7 @@ const PlanCard = React.memo(({
                 <Text style={styles.cardBadgeEmoji}>{plan.badge}</Text>
               </View>
               <View style={{ marginLeft: 12 }}>
-                <Text style={[styles.cardTitle, { fontSize: responsiveFontSize(2) }]}>{plan.name}</Text>
+                <Text style={[styles.cardTitle, { fontSize: responsiveFontSize(2), textTransform: 'uppercase' }]}>{plan.name}</Text>
                 <Text style={[styles.cardSubtitle, { fontSize: responsiveFontSize(1.2) }]}>{plan.subtitle}</Text>
               </View>
             </View>
@@ -546,6 +567,18 @@ const PlanCard = React.memo(({
             ))}
           </View>
 
+          {/* Footer Notes */}
+          {plan.footerNotes && plan.footerNotes.length > 0 && (
+            <View style={styles.planFooterNotesContainer}>
+              {plan.footerNotes.map((note, idx) => (
+                <View key={idx} style={styles.planFooterNoteRow}>
+                  <Ionicons name="information-circle-outline" size={16} color={COLORS.textMuted} style={{ marginTop: 2 }} />
+                  <Text style={[styles.planFooterNoteText, { fontSize: responsiveFontSize(1.2) }]}>{note}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
           {/* Consent Checkbox */}
           <View style={styles.consentRow}>
             <TouchableOpacity
@@ -602,7 +635,10 @@ export default function Subscription({ }: any) {
   const safeAreaInsets = useSafeAreaInsets();
   const { responsiveFontSize } = useResponsiveScale();
   const navigation = useNavigation<NavigatorProp>();
-  const { user, subscriptionModal } = useSelector((state: any) => state?.user);
+  const { user, subscriptionModal, subscriptionModalOptions } = useSelector((state: any) => state?.user);
+
+  // Check if we should only show upgrade plans (₹199 and ₹499)
+  const upgradeOnly = subscriptionModalOptions?.upgradeOnly || false;
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -636,7 +672,7 @@ export default function Subscription({ }: any) {
           let tier = 'base';
           let color = COLORS.base;
           let bgColor = COLORS.baseBg;
-          let gradient = ['#6B7280', '#9CA3AF'];
+          let gradient = ['#F97316', '#FB923C'];
           let badge = '🚛';
 
           const planName = (apiPlan.name || '').toLowerCase();
@@ -646,19 +682,41 @@ export default function Subscription({ }: any) {
             tier = 'trusted';
             color = COLORS.trusted;
             bgColor = COLORS.trustedBg;
-            gradient = ['#F59E0B', '#FBBF24'];
+            gradient = ['#2563EB', '#60A5FA'];
             badge = '🛡️';
           } else if (planName.includes('verified') || planName.includes('standard') || amount >= 150) {
             tier = 'verified';
-            color = COLORS.primary;
+            color = COLORS.verified;
             bgColor = COLORS.verifiedBg;
-            gradient = ['#4F46E5', '#6366F1'];
+            gradient = ['#10B981', '#34D399'];
             badge = '✅';
           }
 
-          // Extract benefits from API or use defaults based on tier
+          // Special override for 99 Plan to be "JOB READY"
+          if (amount === 99 || (amount >= 90 && amount <= 100)) {
+            tier = 'base';
+            color = COLORS.base;
+            bgColor = COLORS.baseBg;
+            gradient = ['#f9c416ff', '#eaca15ff'];
+            badge = '🚛';
+          }
+
+          // Extract benefits from API or use defaults based on tier  
           let benefits: string[] = [];
-          if (apiPlan.features && Array.isArray(apiPlan.features)) {
+
+          // Helper for Job Ready Benefits
+          const jobReadyBenefits = [
+            t('subBenefitCreateProfileDrive'),
+            t('subBrowse5Jobs'),
+            t('subBenefitContactInApp'),
+            t('subBenefitBasicTraining'),
+            t('subBenefitStayJobReady'),
+          ];
+
+          if (tier === 'base') {
+            // Force benefits for Job Ready
+            benefits = jobReadyBenefits;
+          } else if (apiPlan.features && Array.isArray(apiPlan.features)) {
             benefits = apiPlan.features.map((f: any) => typeof f === 'string' ? f : f.name || f.feature || '');
           } else if (apiPlan.benefits && Array.isArray(apiPlan.benefits)) {
             benefits = apiPlan.benefits.map((b: any) => typeof b === 'string' ? b : b.name || b.benefit || '');
@@ -667,27 +725,65 @@ export default function Subscription({ }: any) {
           } else {
             // Default benefits based on tier
             if (tier === 'trusted') {
-              benefits = [t('subBenefitEverythingVerified'), t('subBenefitCourtCheck'), t('subBenefitAddressVerify'), t('subBenefitTrustedBadge')];
+              benefits = [
+                t('subBenefitCreateProfileDrive'),
+                t('subBrowseUnlimitedJobs'),
+                t('subBenefitDigitalCourtCheck'),
+                t('subBenefitDigitalAddressVerify'),
+                t('subBenefitHomePhotoGeo'),
+                t('subBenefitTrustedBadge'),
+                t('subBenefitHighestCredibility'),
+                t('subBenefitPriorityPremium'),
+              ];
             } else if (tier === 'verified') {
-              benefits = [t('subBenefitEverythingJobReady'), t('subBenefitOneTimeVerification'), t('subBenefitVerifiedBadge'), t('subBenefitHigherTrust')];
+              benefits = [
+                t('subBenefitCreateProfileDrive'),
+                t('subBrowse20Jobs'),
+                t('subBenefitOneTimeVerification'),
+                t('subBenefitVerifiedBadge'),
+                t('subBenefitHigherTrust'),
+                t('subBenefitBetterShortlisting'),
+                t('subBenefitSupportTruckMitr'),
+              ];
             } else {
-              benefits = [t('subBenefitCreateProfile'), t('subBenefitBrowseJobs'), t('subBenefitContactTransporters')];
+              benefits = jobReadyBenefits;
             }
+          }
+
+          let footerNotes: string[] | undefined = undefined;
+          if (tier === 'base') {
+            footerNotes = [
+              t('subFooterNoVerification'),
+              t('subFooterChooseJobs')
+            ];
+          } else if (tier === 'verified') {
+            footerNotes = [
+              t('subFooterVerifyAfterUpload'),
+              t('subFooterOtpVerify'),
+              t('subFooterNoJobGuarantee')
+            ];
+          } else if (tier === 'trusted') {
+            footerNotes = [
+              t('subFooterDigitalProcess'),
+              t('subFooterFollowInstructions'),
+              t('subFooterImproveConfidence')
+            ];
           }
 
           return {
             id: apiPlan.id,
             tier,
-            name: apiPlan.name || `Plan ${index + 1}`,
-            subtitle: role === 'transporter' ? t('subTransporterSubtitle') || 'For Transporters' : t('subDriverSubtitle'),
-            tagline: apiPlan.tagline || (tier === 'trusted' ? t('subMaximumOpportunities') : tier === 'verified' ? t('subStandOutWithTrust') : t('subStartYourJourney')),
+            name: tier === 'base' ? t('subJobReadyDriver') : (apiPlan.name || `Plan ${index + 1}`),
+            subtitle: tier === 'base' ? t('subJobReadySubtitle') : (role === 'transporter' ? t('subTransporterSubtitle') || 'For Transporters' : (tier === 'verified' ? t('subVerifiedSubtitle') : t('subTrustedSubtitle'))),
+            tagline: tier === 'base' ? t('subJobReadyTagline') : (apiPlan.tagline || (tier === 'trusted' ? t('subTrustedTagline') : tier === 'verified' ? t('subVerifiedTagline') : t('subStartYourJourney'))),
             badge,
             price: amount,
             duration: apiPlan.duration || t('subYear'),
-            intro: apiPlan.description || apiPlan.intro || '',
+            intro: tier === 'base' ? t('subJobReadyIntro') : (apiPlan.description || apiPlan.intro || ''),
             benefits,
+            footerNotes,
             is_recurring: apiPlan.is_recurring,
-            ctaText: tier === 'trusted' ? t('subGetTrusted') : tier === 'verified' ? t('subGetVerified') : t('subGetStarted'),
+            ctaText: tier === 'trusted' ? t('subBecomeTrusted') : (tier === 'verified' ? t('subBecomeVerified') : t('subGetJobReady')),
             color,
             bgColor,
             gradient,
@@ -841,8 +937,12 @@ export default function Subscription({ }: any) {
   };
 
   const _onPressPayNow = async (id: string, isSubscription: boolean, amount: string, plan: PlanDataType, serverPlanId: number, subscriptionDates?: any) => {
-    // Format mobile number with country code
-    const mobileNumber = user?.mobile ? `+91${String(user.mobile).replace(/^\+91/, '')}` : '';
+    // Format mobile number - ensure it's just 10 digits for prefill
+    const rawMobile = String(user?.mobile || '').replace(/\D/g, '');
+    const mobileNumber = rawMobile.length >= 10 ? rawMobile.slice(-10) : rawMobile;
+
+    // Get email - use a default if not available
+    const userEmail = user?.email || `user${user?.id}@truckmitr.com`;
 
     const options = {
       description: plan.name || 'TruckMitr Subscription',
@@ -858,13 +958,18 @@ export default function Subscription({ }: any) {
         plan_id: Number(serverPlanId)
       },
       prefill: {
-        email: user?.email || '',
+        email: userEmail,
         contact: mobileNumber,
         name: user?.name || ''
       },
       readonly: {
         email: true,
-        contact: true
+        contact: true,
+        name: true
+      },
+      hidden: {
+        email: true, // Hide email field completely
+        contact: false // Show contact but make it readonly
       },
       send_sms_hash: true,
       retry: {
@@ -1003,20 +1108,23 @@ export default function Subscription({ }: any) {
                 <Text style={styles.plansLoadingText}>{t('loading') || 'Loading plans...'}</Text>
               </View>
             ) : dynamicPlans.length > 0 ? (
-              dynamicPlans.map((plan: PlanDataType, index: number) => (
-                <PlanCard
-                  key={plan.id}
-                  plan={plan}
-                  isExpanded={expandedId === plan.id}
-                  onToggle={() => handleToggle(plan.id)}
-                  onSelect={() => handleSelectPlan(plan)}
-                  responsiveFontSize={responsiveFontSize}
-                  isPopular={dynamicPlans.length > 1 && index === Math.floor(dynamicPlans.length / 2)} // Middle plan is popular
-                  consentChecked={consentChecked}
-                  onConsentToggle={() => setConsentChecked(!consentChecked)}
-                  onOpenConsent={() => setConsentModalVisible(true)}
-                />
-              ))
+              // Filter plans based on upgradeOnly option (exclude ₹99 plan when upgrading)
+              dynamicPlans
+                .filter((plan: PlanDataType) => !upgradeOnly || plan.price >= 199)
+                .map((plan: PlanDataType, index: number, filteredPlans: PlanDataType[]) => (
+                  <PlanCard
+                    key={plan.id}
+                    plan={plan}
+                    isExpanded={expandedId === plan.id}
+                    onToggle={() => handleToggle(plan.id)}
+                    onSelect={() => handleSelectPlan(plan)}
+                    responsiveFontSize={responsiveFontSize}
+                    isPopular={filteredPlans.length > 1 && index === Math.floor(filteredPlans.length / 2)} // Middle plan is popular
+                    consentChecked={consentChecked}
+                    onConsentToggle={() => setConsentChecked(!consentChecked)}
+                    onOpenConsent={() => setConsentModalVisible(true)}
+                  />
+                ))
             ) : (
               <View style={styles.plansLoadingContainer}>
                 <Text style={styles.plansLoadingText}>{t('subNoPlansAvailable') || 'No plans available'}</Text>
@@ -1476,7 +1584,7 @@ const styles = StyleSheet.create({
   },
   tableHeaderCell: {
     flex: 1,
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '800',
     color: COLORS.textMuted,
     textAlign: 'center',
@@ -1593,5 +1701,23 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 16,
     fontWeight: '700',
+  },
+  planFooterNotesContainer: {
+    marginBottom: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  planFooterNoteRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 6,
+    gap: 6,
+  },
+  planFooterNoteText: {
+    flex: 1,
+    color: COLORS.textMuted,
+    lineHeight: 18,
+    fontStyle: 'italic',
   },
 });

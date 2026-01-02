@@ -566,7 +566,7 @@ const Otp = () => {
 
                     {/* Subtitle */}
                     <Text style={[styles.subtitle, { color: colors.blackOpacity(0.5) }]}>
-                        {t(`weHaveSentVerificationCode`)}
+                        {t(`weHaveSentVerificationCode`)} {formData?.mobile}
                     </Text>
 
                     <Space height={responsiveHeight(5)} />

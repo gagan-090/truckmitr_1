@@ -613,11 +613,11 @@ export default function AvailableJob() {
 
                     <Text style={{
                         fontSize: responsiveFontSize(2.4),
-                        color: colors.royalBlue,
+                        color: colors.black,
                         fontWeight: '700',
                         letterSpacing: -0.3
                     }}>
-                        {t(`availableJobs`)}
+                        {t('availableJobs', 'Available Jobs')} ({item?.data?.length || 0})
                     </Text>
                 </View>
             </Animated.View>

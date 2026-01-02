@@ -59,19 +59,62 @@ export default function Welcome() {
         navigation.navigate(STACKS.SIGNUP)
     }
     return (
-        <View style={{ flex: 1, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ flex: 1, backgroundColor: colors.white }}>
             <Space height={safeAreaInsets.top} />
-            <Image style={{ height: responsiveHeight(25), width: responsiveWidth(60), resizeMode: 'contain' }} source={images.TRUCKMITR_HORIZONTAL} />
-            <TouchableOpacity onPress={_navigateLogin} activeOpacity={.7} style={{ height: responsiveHeight(6), width: responsiveWidth(90), borderRadius: 100, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                <LinearGradient start={{ x: 1, y: 0 }} end={{ x: 0, y: 0 }} style={{ height: '100%', width: '100%', position: 'absolute' }} colors={imageColorGradient} />
-                <Text style={{ color: colors.white, fontSize: responsiveFontSize(2), fontWeight: '500' }}>{t(`login`)}</Text>
-            </TouchableOpacity>
-            <Space height={responsiveHeight(1.5)} />
-            <TouchableOpacity onPress={_navigateSignup} activeOpacity={.7} style={{ height: responsiveHeight(6), width: responsiveWidth(90), borderRadius: 100, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                <LinearGradient start={{ x: 1, y: 0 }} end={{ x: 0, y: 0 }} style={{ height: '100%', width: '100%', position: 'absolute' }} colors={imageColorGradient} />
-                <Text style={{ color: colors.white, fontSize: responsiveFontSize(2), fontWeight: '500' }}>{t(`registerNow`)}</Text>
-            </TouchableOpacity>
-            <Space height={responsiveHeight(20)} />
+
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: responsiveWidth(8) }}>
+                <Image
+                    style={{ height: responsiveHeight(15), width: responsiveWidth(70), resizeMode: 'contain', marginBottom: responsiveHeight(3) }}
+                    source={images.TRUCKMITR_HORIZONTAL}
+                />
+                <Text style={{ fontSize: responsiveFontSize(3.5), fontWeight: '700', color: colors.royalBlue, textAlign: 'center', marginBottom: responsiveHeight(1) }}>
+                    {t('welcomeToTruckMitr')}
+                </Text>
+                <Text style={{ fontSize: responsiveFontSize(1.8), fontWeight: '400', color: colors.blackOpacity(0.6), textAlign: 'center', lineHeight: responsiveFontSize(2.6) }}>
+                    {t('indiasOnlydigitaltruckingEcosystem')}
+                </Text>
+            </View>
+
+            <View style={{ width: '100%', paddingHorizontal: responsiveWidth(6), paddingBottom: safeAreaInsets.bottom + responsiveHeight(4) }}>
+                <TouchableOpacity
+                    onPress={_navigateLogin}
+                    activeOpacity={0.8}
+                    style={{
+                        height: responsiveHeight(6.5),
+                        width: '100%',
+                        borderRadius: 100,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: colors.royalBlue,
+                        elevation: 5,
+                        shadowColor: colors.royalBlue,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 5
+                    }}
+                >
+                    <Text style={{ color: colors.white, fontSize: responsiveFontSize(2.2), fontWeight: '600' }}>{t(`login`)}</Text>
+                </TouchableOpacity>
+
+                <Space height={responsiveHeight(2)} />
+
+                <TouchableOpacity
+                    onPress={_navigateSignup}
+                    activeOpacity={0.8}
+                    style={{
+                        height: responsiveHeight(6.5),
+                        width: '100%',
+                        borderRadius: 100,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: colors.white,
+                        borderWidth: 1.5,
+                        borderColor: colors.royalBlue
+                    }}
+                >
+                    <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(2.2), fontWeight: '600' }}>{t(`registerNow`)}</Text>
+                </TouchableOpacity>
+            </View>
         </View>
     )
 }

@@ -1,3 +1,5 @@
+
+
 import {
   Alert,
   Image,
@@ -42,9 +44,9 @@ import LinearGradient from 'react-native-linear-gradient';
 import { ImageBackground } from 'react-native';
 import { openOverlayPermission } from '@truckmitr/src/utils/permissions/appearOnTopPermission';
 import { ZegoSendCallInvitationButton } from '@zegocloud/zego-uikit-prebuilt-call-rn';
-import { onUserLogout, startVideoCall } from '@truckmitr/src/utils/zegoService';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import { startVideoCall } from '@truckmitr/src/utils/zegoService';
+import ViewShot from 'react-native-view-shot';
+import RNShare from 'react-native-share';
 // Membership Card Asset Images
 const LOGO_IMAGE = require('@truckmitr/src/assets/membership-card/logotrick.png');
 const PROFILE_PLACEHOLDER = require('@truckmitr/src/assets/membership-card/man.png');
@@ -53,7 +55,7 @@ const BACKGROUND_TRUSTED = require('@truckmitr/src/assets/membership-card/member
 const BACKGROUND_JOB_READY = require('@truckmitr/src/assets/membership-card/membershipcard3.png');
 
 // Card tier configurations
-type TierType = 'JOB READY' | 'VERIFIED' | 'TRUSTED' | 'Standard';
+type TierType = 'JOB READY' | 'VERIFIED' | 'TRUSTED' | 'Standard' | 'LEGACY';
 
 interface TierConfig {
   background: any;
@@ -62,7 +64,7 @@ interface TierConfig {
   categoryText: string;
 }
 
-const TIER_CONFIGS: Record<TierType, TierConfig> = {
+const getTierConfigs = (t: any): Record<TierType, TierConfig> => ({
   'JOB READY': {
     background: BACKGROUND_JOB_READY,
     borderColors: ['#000b29', '#002661', '#4A90E2', '#002661', '#000b29'],
@@ -73,7 +75,7 @@ const TIER_CONFIGS: Record<TierType, TierConfig> = {
       { offset: '0.75', color: '#BFC5CC' },
       { offset: '1', color: '#E0E3E7' },
     ],
-    categoryText: 'JOB READY DRIVER',
+    categoryText: t('cardJobReadyDriver'),
   },
   'VERIFIED': {
     background: BACKGROUND_VERIFIED,
@@ -85,7 +87,7 @@ const TIER_CONFIGS: Record<TierType, TierConfig> = {
       { offset: '0.75', color: '#BFC5CC' },
       { offset: '1', color: '#E0E3E7' },
     ],
-    categoryText: 'VERIFIED DRIVER',
+    categoryText: t('cardVerifiedDriver'),
   },
   'TRUSTED': {
     background: BACKGROUND_TRUSTED,
@@ -97,7 +99,7 @@ const TIER_CONFIGS: Record<TierType, TierConfig> = {
       { offset: '0.75', color: '#C9A23F' },
       { offset: '1', color: '#FFF6C8' },
     ],
-    categoryText: 'TRUSTED DRIVER',
+    categoryText: t('cardTrustedDriver'),
   },
   'Standard': {
     background: BACKGROUND_JOB_READY,
@@ -109,17 +111,36 @@ const TIER_CONFIGS: Record<TierType, TierConfig> = {
       { offset: '0.75', color: '#BFC5CC' },
       { offset: '1', color: '#E0E3E7' },
     ],
-    categoryText: 'STANDARD MEMBER',
+    categoryText: t('cardJobReady'),
   },
-};
+  'LEGACY': {
+    background: BACKGROUND_VERIFIED,
+    borderColors: ['#8B4513', '#CD853F', '#DEB887', '#CD853F', '#8B4513'],
+    chromeGradient: [
+      { offset: '0', color: '#DEB887' },
+      { offset: '0.25', color: '#CD853F' },
+      { offset: '0.5', color: '#8B4513' },
+      { offset: '0.75', color: '#CD853F' },
+      { offset: '1', color: '#DEB887' },
+    ],
+    categoryText: t('cardLegacyDriver'),
+  },
+});
 
 // Helper function to get tier from payment_type
-const getTierFromPaymentType = (paymentType: string): TierType => {
+// Now also accepts amount to detect legacy drivers (Rs 49 payment)
+const getTierFromPaymentType = (paymentType: string, amount?: number): TierType => {
+  // Legacy driver detection: Rs 49 payment = Legacy Driver
+  if (amount === 49 || amount === 49.00) {
+    return 'LEGACY';
+  }
+
   const normalizedType = paymentType?.toUpperCase().replace(/\s+/g, ' ').trim();
   if (normalizedType === 'TRUSTED') return 'TRUSTED';
   if (normalizedType === 'VERIFIED') return 'VERIFIED';
   if (normalizedType === 'JOB READY' || normalizedType === 'JOBREADY') return 'JOB READY';
   if (normalizedType === 'STANDARD') return 'Standard';
+  if (normalizedType === 'LEGACY') return 'LEGACY';
   return 'JOB READY';
 };
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
@@ -444,13 +465,13 @@ export default function Profile() {
   const circumference = 2 * Math.PI * radius;
   const progressOffset = circumference - (progress / 100) * circumference;
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+  const [sharingCard, setSharingCard] = useState(false);
+  const membershipCardRef = useRef<ViewShot>(null);
 
   // Dialog States
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showVideoInterviewModal, setShowVideoInterviewModal] = useState(false);
-  const [selectedDriver, setSelectedDriver] = useState<any>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -459,9 +480,27 @@ export default function Profile() {
         const profile: any = await axiosInstance.get(END_POINTS?.GET_PROFILE);
         if (profile?.data?.status) {
           dispatch(userAction(profile?.data))
-          const subscriptionDetails: any = await axiosInstance.get(END_POINTS?.PAYMENT_SUBSCRIPTION_DETAILS);
-          if (subscriptionDetails?.data?.status) {
-            dispatch(subscriptionDetailsAction(subscriptionDetails?.data?.data))
+
+          // Always fetch subscription details
+          try {
+            const subscriptionResponse: any = await axiosInstance.get(END_POINTS?.PAYMENT_SUBSCRIPTION_DETAILS);
+            console.log('Subscription API Response:', JSON.stringify(subscriptionResponse?.data, null, 2));
+
+            // Always dispatch - even if data is empty array
+            // The reducer will handle empty arrays correctly
+            if (subscriptionResponse?.data?.status) {
+              const subscriptionData = subscriptionResponse?.data?.data || [];
+              console.log('Dispatching subscription data, length:', subscriptionData.length);
+              dispatch(subscriptionDetailsAction(subscriptionData));
+            } else {
+              // API returned status: false, clear subscription data
+              console.log('Subscription API returned status: false, clearing data');
+              dispatch(subscriptionDetailsAction([]));
+            }
+          } catch (error) {
+            console.error('Error fetching subscription details:', error);
+            // On error, clear subscription data to be safe
+            dispatch(subscriptionDetailsAction([]));
           }
         }
       }
@@ -520,39 +559,6 @@ export default function Profile() {
     return savings.toFixed(0);
   };
 
-
-  const logAllAsyncStorage = async () => {
-    try {
-      const keys = await AsyncStorage.getAllKeys();
-
-      if (!keys || keys.length === 0) {
-        console.log('📭 AsyncStorage is EMPTY');
-        return;
-      }
-
-      const entries = await AsyncStorage.multiGet(keys);
-
-      console.log('📦 ===== AsyncStorage DUMP START =====');
-
-      entries.forEach(([key, value]) => {
-        let parsedValue = value;
-
-        try {
-          parsedValue = value ? JSON.parse(value) : value;
-        } catch {
-          // value is plain string, not JSON
-        }
-
-        console.log('🔑 Key:', key);
-        console.log('📄 Value:', parsedValue);
-        console.log('------------------------------');
-      });
-
-      console.log('📦 ===== AsyncStorage DUMP END =====');
-    } catch (error) {
-      console.error('❌ Error reading AsyncStorage:', error);
-    }
-  };
   const _navigateProfileEdit = () => {
     isDriver && navigation.navigate(STACKS.PROFILE_EDIT)
     isTransporter && navigation.navigate(STACKS.PROFILE_EDIT_TRANSPORTER)
@@ -561,6 +567,7 @@ export default function Profile() {
   const _navigateContactUs = () => navigation.navigate(STACKS.CONTACT_US)
   const _navigatePrivacy = () => navigation.navigate(STACKS.PRIVACY)
   const _navigateSetting = () => navigation.navigate(STACKS.SETTINGS)
+  const _navigateDLVerification = () => navigation.navigate(STACKS.DL_VERIFICATION)
 
   const deleteAccount = async () => {
     setIsDeleting(true);
@@ -604,7 +611,7 @@ export default function Profile() {
   const _onPressShareApp = async () => {
     try {
       const result = await Share.share({
-        message: `🚛 At TruckMitr.com, we're more than just a platform – we're the driving force behind a revolution in the Indian trucking industry. \n👷‍♂️For Drivers: Apply for verified jobs, watch training videos, and take quizzes to upskill. \n🏢 For Transporters: Post jobs and connect instantly with skilled, trusted drivers.  the movement transforming Indian logistics – download the TruckMitr app now!   \n\n👉 https://play.google.com/store/apps/details?id=com.truckmitr`
+        message: t('shareAppMessage'),
       });
     } catch (error) {
       console.error('Error sharing the app:', error);
@@ -650,7 +657,6 @@ export default function Profile() {
     dispatch(userAuthenticatedAction(false));
     deleteUserData();
     setShowLogoutDialog(false);
-    onUserLogout()
   };
 
   const downloadInvoice = async () => {
@@ -661,7 +667,7 @@ export default function Profile() {
       const paymentId = subscriptionDetails?.payment_id || subscriptionDetails?.id;
 
       if (!paymentId) {
-        showToast('Unable to download invoice. Payment ID not found.');
+        showToast(t('unableToDownloadInvoicePaymentIdNotFound'));
         return;
       }
 
@@ -677,8 +683,8 @@ export default function Profile() {
             useDownloadManager: true,
             notification: true,
             path: filePath,
-            description: 'Downloading invoice',
-            title: 'TruckMitr Invoice',
+            description: t('downloadingInvoiceStatus'),
+            title: t('truckMitrInvoice'),
             mime: 'application/pdf',
             mediaScannable: true,
           },
@@ -686,19 +692,70 @@ export default function Profile() {
           .fetch('GET', getPDFLink?.data?.invoice_url)
           .then((res) => {
             android.actionViewIntent(res.path(), 'application/pdf');
-            showToast('Invoice downloaded successfully!');
+            showToast(t('invoiceDownloadedSuccessfully'));
           })
           .catch((e) => {
             Alert.alert('Error', e.message);
           });
       } else {
-        showToast(getPDFLink?.data?.message || 'Unable to download invoice.');
+        showToast(getPDFLink?.data?.message || t('unableToDownloadInvoice'));
       }
     } catch (error: any) {
       console.error('Download invoice error:', error);
-      showToast(error?.message || 'Failed to download invoice. Please try again.');
+      showToast(error?.message || t('failedToDownloadInvoice'));
     } finally {
       setDownloadingInvoice(false);
+    }
+  };
+
+  const shareMembershipCard = async (action: 'share' | 'download' = 'share') => {
+    try {
+      setSharingCard(true);
+
+      if (!membershipCardRef.current?.capture) {
+        showToast(t('unableToCaptureMembershipCard'));
+        return;
+      }
+
+      // Capture the membership card as an image
+      const uri = await membershipCardRef.current.capture();
+
+      if (!uri) {
+        showToast(t('failedToCaptureMembershipCard'));
+        return;
+      }
+
+      if (action === 'share') {
+        // Share the membership card
+        const shareOptions = {
+          title: t('truckMitrMembershipCard'),
+          message: t('checkOutMyMembershipCard'),
+          url: Platform.OS === 'android' ? `file://${uri}` : uri,
+          type: 'image/png',
+        };
+
+        await RNShare.open(shareOptions);
+        showToast(t('membershipCardSharedSuccessfully'));
+      } else {
+        // Download/save the membership card
+        const { fs } = RNFetchBlob;
+        const timestamp = new Date().getTime();
+        const destPath = `${fs.dirs.DownloadDir}/TruckMitr_Membership_Card_${timestamp}.png`;
+
+        // Copy the file to Downloads folder
+        await fs.cp(uri, destPath);
+
+        showToast(t('membershipCardSavedToDownloads'));
+      }
+    } catch (error: any) {
+      // User cancelled the share dialog
+      if (error?.message?.includes('User did not share')) {
+        return;
+      }
+      console.error('Share membership card error:', error);
+      showToast(error?.message || t('failedToShareMembershipCard'));
+    } finally {
+      setSharingCard(false);
     }
   };
 
@@ -850,7 +907,22 @@ export default function Profile() {
                   fontSize: responsiveFontSize(1.4),
                 }
               ]}>
-                {capitalizeFirst(user?.role)}
+                {(() => {
+                  const hasSub = subscriptionDetails && (subscriptionDetails?.id || subscriptionDetails?.payment_id);
+                  if (hasSub) {
+                    const tier = getTierFromPaymentType(subscriptionDetails?.payment_type, getPaidAmount());
+                    let tierName = '';
+                    if (tier === 'JOB READY') tierName = 'Job Ready';
+                    else if (tier === 'VERIFIED') tierName = 'Verified';
+                    else if (tier === 'TRUSTED') tierName = 'Trusted';
+                    else if (tier === 'Standard') tierName = 'Standard';
+                    else if (tier === 'LEGACY') tierName = 'Legacy';
+                    else tierName = capitalizeFirst((tier as string)?.toLowerCase() || '');
+
+                    return `${tierName} ${capitalizeFirst(user?.role)}`;
+                  }
+                  return capitalizeFirst(user?.role);
+                })()}
               </Text>
             </View>
 
@@ -975,15 +1047,16 @@ export default function Profile() {
 
         {/* Dynamic Membership Card - Show when user has an active subscription */}
         {(subscriptionDetails?.hasActiveSubscription || !subscriptionDetails?.showSubscriptionModel) && subscriptionDetails?.id && (() => {
-          // Get tier configuration based on payment_type
+          // Get tier configuration based on payment_type and amount (for legacy driver detection)
           const paymentType = subscriptionDetails?.payment_type || 'JOB READY';
-          const tier = getTierFromPaymentType(paymentType);
-          const tierConfig = TIER_CONFIGS[tier];
+          const amount = parseFloat(subscriptionDetails?.amount) || 0;
+          const tier = getTierFromPaymentType(paymentType, amount);
+          const tierConfig = getTierConfigs(t)[tier];
 
           // User data
-          const userName = user?.name?.toUpperCase() || 'MEMBER NAME';
+          const userName = user?.name?.toUpperCase() || t('memberNameDefault').toUpperCase();
           const uniqueId = user?.unique_id || 'TM0000000000000';
-          const userLocation = user?.city?.toUpperCase() || user?.state?.toUpperCase() || 'INDIA';
+          const userLocation = user?.city?.toUpperCase() || user?.state?.toUpperCase() || t('userLocationDefault').toUpperCase();
           const licenseType = user?.Type_of_License || 'HMV';
           const profileImage = user?.images ? { uri: `${BASE_URL}public/${user?.images}` } : PROFILE_PLACEHOLDER;
 
@@ -1002,265 +1075,298 @@ export default function Profile() {
             <>
               <SectionHeader title={t('membership')} />
 
-              {/* Membership ID Card */}
-              <TouchableOpacity
-                activeOpacity={0.9}
-                onPress={() => navigation.navigate(STACKS.MEMBERSHIP_CARD)}
+              {/* Membership ID Card - Wrapped with ViewShot for capture */}
+              <ViewShot
+                ref={membershipCardRef}
+                options={{ format: 'png', quality: 1.0 }}
                 style={{ marginHorizontal: responsiveFontSize(1) }}
               >
-                {/* Card with metallic border */}
-                <LinearGradient
-                  colors={tierConfig.borderColors}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{
-                    borderRadius: 16,
-                    padding: 3,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 10,
-                    elevation: 8,
-                  }}
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => navigation.navigate(STACKS.MEMBERSHIP_CARD)}
                 >
-                  {/* Inner white border */}
-                  <View style={{
-                    borderRadius: 14,
-                    borderWidth: 2,
-                    borderColor: 'rgba(255,255,255,0.8)',
-                    overflow: 'hidden',
-                  }}>
-                    {/* Background Image */}
-                    <ImageBackground
-                      source={tierConfig.background}
-                      style={{ flex: 1, height: cardHeight }}
-                      resizeMode="cover"
-                    >
-                      {/* Dark overlay */}
-                      <View style={{
-                        ...StyleSheet.absoluteFillObject,
-                        backgroundColor: 'rgba(0,0,0,0.15)'
-                      }} />
-
-                      {/* Card Content */}
-                      <View style={{ flex: 1, padding: 12 }}>
-
-                        {/* Top Row: Logo and Profile Photo */}
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          {/* Logo */}
-                          <Image
-                            source={LOGO_IMAGE}
-                            style={{ width: 120, height: 40 }}
-                            resizeMode="contain"
-                          />
-
-                          {/* Profile Photo with border */}
-                          <LinearGradient
-                            colors={tierConfig.borderColors}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={{
-                              padding: 2,
-                              borderRadius: 30,
-                            }}
-                          >
-                            <View style={{
-                              backgroundColor: '#fff',
-                              padding: 2,
-                              borderRadius: 28
-                            }}>
-                              <Image
-                                source={profileImage}
-                                style={{ width: 52, height: 52, borderRadius: 26 }}
-                                resizeMode="cover"
-                              />
-                            </View>
-                          </LinearGradient>
-                        </View>
-
-                        {/* Middle Section: Category & ID */}
-                        <View style={{ marginTop: 4 }}>
-                          {/* Category Label with SVG Gradient */}
-                          <View style={{ height: 22, width: 200 }}>
-                            <Svg height="100%" width="100%" viewBox="0 0 200 22">
-                              <Defs>
-                                <SvgLinearGradient id="chromeGradientCat" x1="0" y1="0" x2="0" y2="1">
-                                  {tierConfig.chromeGradient.map((stop, index) => (
-                                    <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
-                                  ))}
-                                </SvgLinearGradient>
-                              </Defs>
-                              {/* Shadow layer */}
-                              <SvgText fill="#000000" fillOpacity="0.7" fontSize="15" fontWeight="900" fontStyle="italic" letterSpacing="1" x="1.5" y="17">
-                                {tierConfig.categoryText}
-                              </SvgText>
-                              {/* Main gradient text */}
-                              <SvgText fill="url(#chromeGradientCat)" stroke="#000" strokeWidth="0.5" fontSize="15" fontWeight="900" fontStyle="italic" letterSpacing="1" x="0" y="15.5">
-                                {tierConfig.categoryText}
-                              </SvgText>
-                            </Svg>
-                          </View>
-
-                          {/* TM ID with SVG Gradient */}
-                          <View style={{ height: 38, width: '100%', marginTop: 2 }}>
-                            <Svg height="100%" width="100%" viewBox="0 0 340 38">
-                              <Defs>
-                                <SvgLinearGradient id="chromeGradientId" x1="0" y1="0" x2="0" y2="1">
-                                  {tierConfig.chromeGradient.map((stop, index) => (
-                                    <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
-                                  ))}
-                                </SvgLinearGradient>
-                              </Defs>
-                              {/* Shadow layer */}
-                              <SvgText fill="#000000" fillOpacity="0.8" fontSize="28" fontWeight="900" letterSpacing="2" x="2" y="30">
-                                {uniqueId}
-                              </SvgText>
-                              {/* Main gradient text */}
-                              <SvgText fill="url(#chromeGradientId)" stroke="#000" strokeWidth="0.8" fontSize="28" fontWeight="900" letterSpacing="2" x="0" y="28">
-                                {uniqueId}
-                              </SvgText>
-                            </Svg>
-                          </View>
-                        </View>
-
-                        {/* Bottom Section: Name, Location, Validity */}
+                  {/* Card with metallic border */}
+                  <LinearGradient
+                    colors={tierConfig.borderColors}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{
+                      borderRadius: 16,
+                      padding: 3,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 6 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 10,
+                      elevation: 8,
+                    }}
+                  >
+                    {/* Inner white border */}
+                    <View style={{
+                      borderRadius: 14,
+                      borderWidth: 2,
+                      borderColor: 'rgba(255,255,255,0.8)',
+                      overflow: 'hidden',
+                    }}>
+                      {/* Background Image */}
+                      <ImageBackground
+                        source={tierConfig.background}
+                        style={{ flex: 1, height: cardHeight }}
+                        resizeMode="cover"
+                      >
+                        {/* Dark overlay */}
                         <View style={{
-                          marginTop: 'auto',
-                          flexDirection: 'row',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-end',
-                        }}>
-                          {/* Left: Name, Location, License */}
-                          <View style={{ flex: 1 }}>
-                            {/* Name with SVG Gradient */}
-                            <View style={{ height: 20, width: 200 }}>
-                              <Svg height="100%" width="100%" viewBox="0 0 200 20">
+                          ...StyleSheet.absoluteFillObject,
+                          backgroundColor: 'rgba(0,0,0,0.15)'
+                        }} />
+
+                        {/* Card Content */}
+                        <View style={{ flex: 1, padding: 12 }}>
+
+                          {/* Top Row: Logo and Profile Photo */}
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            {/* Logo */}
+                            <Image
+                              source={LOGO_IMAGE}
+                              style={{ width: 120, height: 40 }}
+                              resizeMode="contain"
+                            />
+
+                            {/* Profile Photo with border */}
+                            <LinearGradient
+                              colors={tierConfig.borderColors}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 1 }}
+                              style={{
+                                padding: 2,
+                                borderRadius: 30,
+                              }}
+                            >
+                              <View style={{
+                                backgroundColor: '#fff',
+                                padding: 2,
+                                borderRadius: 28
+                              }}>
+                                <Image
+                                  source={profileImage}
+                                  style={{ width: 52, height: 52, borderRadius: 26 }}
+                                  resizeMode="cover"
+                                />
+                              </View>
+                            </LinearGradient>
+                          </View>
+
+                          {/* Middle Section: Category & ID */}
+                          <View style={{ marginTop: 4 }}>
+                            {/* Category Label with SVG Gradient */}
+                            <View style={{ height: 22, width: 200 }}>
+                              <Svg height="100%" width="100%" viewBox="0 0 200 22">
                                 <Defs>
-                                  <SvgLinearGradient id="chromeGradientName" x1="0" y1="0" x2="0" y2="1">
+                                  <SvgLinearGradient id="chromeGradientCat" x1="0" y1="0" x2="0" y2="1">
                                     {tierConfig.chromeGradient.map((stop, index) => (
                                       <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
                                     ))}
                                   </SvgLinearGradient>
                                 </Defs>
-                                <SvgText fill="#000000" fillOpacity="0.7" fontSize="14" fontWeight="900" letterSpacing="1" x="1" y="16">
-                                  {userName}
+                                {/* Shadow layer */}
+                                <SvgText fill="#000000" fillOpacity="0.7" fontSize="15" fontWeight="900" fontStyle="italic" letterSpacing="1" x="1.5" y="17">
+                                  {tierConfig.categoryText}
                                 </SvgText>
-                                <SvgText fill="url(#chromeGradientName)" stroke="#000" strokeWidth="0.4" fontSize="14" fontWeight="900" letterSpacing="1" x="0" y="15">
-                                  {userName}
+                                {/* Main gradient text */}
+                                <SvgText fill="url(#chromeGradientCat)" stroke="#000" strokeWidth="0.5" fontSize="15" fontWeight="900" fontStyle="italic" letterSpacing="1" x="0" y="15.5">
+                                  {tierConfig.categoryText}
                                 </SvgText>
                               </Svg>
                             </View>
-                            <Text style={{
-                              color: '#fff',
-                              fontSize: responsiveFontSize(1.3),
-                              fontWeight: '700',
-                              marginTop: 1,
-                              textShadowColor: 'rgba(0,0,0,0.8)',
-                              textShadowOffset: { width: 1, height: 1 },
-                              textShadowRadius: 2,
-                            }}>
-                              {userLocation}
-                            </Text>
-                            <Text style={{
-                              color: 'rgba(255, 255, 255, 1)',
-                              fontSize: responsiveFontSize(1.1),
-                              fontWeight: '900',
-                              marginTop: 3,
-                              textShadowColor: 'rgba(0,0,0,0.6)',
-                              textShadowOffset: { width: 1, height: 1 },
-                              textShadowRadius: 1,
-                            }}>
-                              LICENSE TYPE: <Text style={{ fontWeight: '800' }}>{licenseType}</Text>
-                            </Text>
+
+                            {/* TM ID with SVG Gradient */}
+                            <View style={{ height: 38, width: '100%', marginTop: 2 }}>
+                              <Svg height="100%" width="100%" viewBox="0 0 340 38">
+                                <Defs>
+                                  <SvgLinearGradient id="chromeGradientId" x1="0" y1="0" x2="0" y2="1">
+                                    {tierConfig.chromeGradient.map((stop, index) => (
+                                      <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
+                                    ))}
+                                  </SvgLinearGradient>
+                                </Defs>
+                                {/* Shadow layer */}
+                                <SvgText fill="#000000" fillOpacity="0.8" fontSize="28" fontWeight="900" letterSpacing="2" x="2" y="30">
+                                  {uniqueId}
+                                </SvgText>
+                                {/* Main gradient text */}
+                                <SvgText fill="url(#chromeGradientId)" stroke="#000" strokeWidth="0.8" fontSize="28" fontWeight="900" letterSpacing="2" x="0" y="28">
+                                  {uniqueId}
+                                </SvgText>
+                              </Svg>
+                            </View>
                           </View>
 
-                          {/* Right: Validity Dates with SVG Gradient */}
-                          <View style={{ alignItems: 'flex-end' }}>
-                            <View style={{ flexDirection: 'row', gap: 10 }}>
-                              <View style={{ alignItems: 'center' }}>
-                                <Text style={{
-                                  color: 'rgba(255,255,255,0.7)',
-                                  fontSize: responsiveFontSize(1.2),
-                                  fontWeight: '800',
-                                  letterSpacing: 0.5,
-                                }}>
-                                  VALID FROM
-                                </Text>
-                                <View style={{ height: 16, width: 70, marginTop: 1 }}>
-                                  <Svg height="100%" width="100%" viewBox="0 0 70 16">
-                                    <Defs>
-                                      <SvgLinearGradient id="chromeGradientDate1" x1="0" y1="0" x2="0" y2="1">
-                                        {tierConfig.chromeGradient.map((stop, index) => (
-                                          <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
-                                        ))}
-                                      </SvgLinearGradient>
-                                    </Defs>
-                                    <SvgText fill="url(#chromeGradientDate1)" stroke="#000" strokeWidth="0.3" fontSize="12" fontWeight="900" x="35" y="13" textAnchor="middle">
-                                      {startDate}
-                                    </SvgText>
-                                  </Svg>
-                                </View>
+                          {/* Bottom Section: Name, Location, Validity */}
+                          <View style={{
+                            marginTop: 'auto',
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-end',
+                          }}>
+                            {/* Left: Name, Location, License */}
+                            <View style={{ flex: 1 }}>
+                              {/* Name with SVG Gradient */}
+                              <View style={{ height: 20, width: 200 }}>
+                                <Svg height="100%" width="100%" viewBox="0 0 200 20">
+                                  <Defs>
+                                    <SvgLinearGradient id="chromeGradientName" x1="0" y1="0" x2="0" y2="1">
+                                      {tierConfig.chromeGradient.map((stop, index) => (
+                                        <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
+                                      ))}
+                                    </SvgLinearGradient>
+                                  </Defs>
+                                  <SvgText fill="#000000" fillOpacity="0.7" fontSize="14" fontWeight="900" letterSpacing="1" x="1" y="16">
+                                    {userName}
+                                  </SvgText>
+                                  <SvgText fill="url(#chromeGradientName)" stroke="#000" strokeWidth="0.4" fontSize="14" fontWeight="900" letterSpacing="1" x="0" y="15">
+                                    {userName}
+                                  </SvgText>
+                                </Svg>
                               </View>
-                              <View style={{ alignItems: 'center' }}>
-                                <Text style={{
-                                  color: 'rgba(255,255,255,0.7)',
-                                  fontSize: responsiveFontSize(0.9),
-                                  fontWeight: '600',
-                                  letterSpacing: 0.5,
-                                }}>
-                                  VALID THRU
-                                </Text>
-                                <View style={{ height: 16, width: 70, marginTop: 1 }}>
-                                  <Svg height="100%" width="100%" viewBox="0 0 70 16">
-                                    <Defs>
-                                      <SvgLinearGradient id="chromeGradientDate2" x1="0" y1="0" x2="0" y2="1">
-                                        {tierConfig.chromeGradient.map((stop, index) => (
-                                          <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
-                                        ))}
-                                      </SvgLinearGradient>
-                                    </Defs>
-                                    <SvgText fill="url(#chromeGradientDate2)" stroke="#000" strokeWidth="0.3" fontSize="12" fontWeight="900" x="35" y="13" textAnchor="middle">
-                                      {endDate}
-                                    </SvgText>
-                                  </Svg>
+                              <Text style={{
+                                color: '#fff',
+                                fontSize: responsiveFontSize(1.3),
+                                fontWeight: '700',
+                                marginTop: 1,
+                                textShadowColor: 'rgba(0,0,0,0.8)',
+                                textShadowOffset: { width: 1, height: 1 },
+                                textShadowRadius: 2,
+                              }}>
+                                {userLocation}
+                              </Text>
+                              <Text style={{
+                                color: 'rgba(255, 255, 255, 1)',
+                                fontSize: responsiveFontSize(1.1),
+                                fontWeight: '900',
+                                marginTop: 3,
+                                textShadowColor: 'rgba(0,0,0,0.6)',
+                                textShadowOffset: { width: 1, height: 1 },
+                                textShadowRadius: 1,
+                              }}>
+                                {t('licenseType')}: <Text style={{ fontWeight: '800' }}>{licenseType}</Text>
+                              </Text>
+                            </View>
+
+                            {/* Right: Validity Dates with SVG Gradient */}
+                            <View style={{ alignItems: 'flex-end' }}>
+                              <View style={{ flexDirection: 'row', gap: 10 }}>
+                                <View style={{ alignItems: 'center' }}>
+                                  <Text style={{
+                                    color: 'rgba(255,255,255,0.7)',
+                                    fontSize: responsiveFontSize(1.2),
+                                    fontWeight: '800',
+                                    letterSpacing: 0.5,
+                                  }}>
+                                    {t('validFrom')?.toUpperCase()}
+                                  </Text>
+                                  <View style={{ height: 16, width: 70, marginTop: 1 }}>
+                                    <Svg height="100%" width="100%" viewBox="0 0 70 16">
+                                      <Defs>
+                                        <SvgLinearGradient id="chromeGradientDate1" x1="0" y1="0" x2="0" y2="1">
+                                          {tierConfig.chromeGradient.map((stop, index) => (
+                                            <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
+                                          ))}
+                                        </SvgLinearGradient>
+                                      </Defs>
+                                      <SvgText fill="url(#chromeGradientDate1)" stroke="#000" strokeWidth="0.3" fontSize="12" fontWeight="900" x="35" y="13" textAnchor="middle">
+                                        {startDate}
+                                      </SvgText>
+                                    </Svg>
+                                  </View>
+                                </View>
+                                <View style={{ alignItems: 'center' }}>
+                                  <Text style={{
+                                    color: 'rgba(255,255,255,0.7)',
+                                    fontSize: responsiveFontSize(1.2),
+                                    fontWeight: '800',
+                                    letterSpacing: 0.5,
+                                  }}>
+                                    {t('validUntil')?.toUpperCase()}
+                                  </Text>
+                                  <View style={{ height: 16, width: 70, marginTop: 1 }}>
+                                    <Svg height="100%" width="100%" viewBox="0 0 70 16">
+                                      <Defs>
+                                        <SvgLinearGradient id="chromeGradientDate2" x1="0" y1="0" x2="0" y2="1">
+                                          {tierConfig.chromeGradient.map((stop, index) => (
+                                            <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
+                                          ))}
+                                        </SvgLinearGradient>
+                                      </Defs>
+                                      <SvgText fill="url(#chromeGradientDate2)" stroke="#000" strokeWidth="0.3" fontSize="12" fontWeight="900" x="35" y="13" textAnchor="middle">
+                                        {endDate}
+                                      </SvgText>
+                                    </Svg>
+                                  </View>
                                 </View>
                               </View>
                             </View>
                           </View>
                         </View>
-                      </View>
-                    </ImageBackground>
-                  </View>
-                </LinearGradient>
-              </TouchableOpacity>
+                      </ImageBackground>
+                    </View>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </ViewShot>
 
-              {/* Download Verified ID Button */}
-              <View style={{ paddingHorizontal: responsiveFontSize(1), marginTop: responsiveFontSize(1.5) }}>
+              {/* Action Buttons - Invoice and Membership Card (Horizontal) */}
+              <View style={{ paddingHorizontal: responsiveFontSize(1), marginTop: responsiveFontSize(1.5), flexDirection: 'row', gap: responsiveFontSize(1) }}>
+                {/* Download Invoice Button */}
                 <TouchableOpacity
                   onPress={downloadInvoice}
                   activeOpacity={0.85}
                   disabled={downloadingInvoice}
                   style={[
                     styles.premiumInvoiceButton,
-                    { opacity: downloadingInvoice ? 0.7 : 1 }
+                    {
+                      opacity: downloadingInvoice ? 0.7 : 1,
+                      flex: 1,
+                      backgroundColor: colors.royalBlue,
+                    }
                   ]}
                 >
-                  <LinearGradient
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={StyleSheet.absoluteFillObject}
-                    colors={['#084489', '#0c78f0', '#4A90D9', '#0c78f0', '#084489']}
-                  />
                   {downloadingInvoice ? (
                     <ActivityIndicator color="#FFFFFF" size="small" />
                   ) : (
                     <>
-                      <MaterialIcons name="file-download" size={20} color="#FFFFFF" />
+                      <MaterialIcons name="receipt" size={18} color="#FFFFFF" />
                       <Text style={[
                         styles.premiumInvoiceButtonText,
-                        { fontSize: responsiveFontSize(1.7), marginLeft: 8, color: '#FFFFFF' }
+                        { fontSize: responsiveFontSize(1.5), marginLeft: 6, color: '#FFFFFF' }
                       ]}>
-                        {`Download ${tier} ID`}
+                        {t('downloadInvoice')}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                {/* Share Membership Card Button */}
+                <TouchableOpacity
+                  onPress={() => shareMembershipCard('share')}
+                  activeOpacity={0.85}
+                  disabled={sharingCard}
+                  style={[
+                    styles.premiumInvoiceButton,
+                    {
+                      opacity: sharingCard ? 0.7 : 1,
+                      flex: 1,
+                      backgroundColor: colors.royalBlue,
+                    }
+                  ]}
+                >
+                  {sharingCard ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <>
+                      <Ionicons name="share-social" size={18} color="#FFFFFF" />
+                      <Text style={[
+                        styles.premiumInvoiceButtonText,
+                        { fontSize: responsiveFontSize(1.5), marginLeft: 6, color: '#FFFFFF' }
+                      ]}>
+                        {t('shareCard')}
                       </Text>
                     </>
                   )}
@@ -1276,11 +1382,34 @@ export default function Profile() {
           <MenuItem
             icon={<Feather name="user" size={20} color={colors.royalBlue} />}
             title={t('profile')}
-            // onPress={_navigateProfileEdit}
-            onPress={logAllAsyncStorage}
-
+            onPress={_navigateProfileEdit}
           />
+          {isDriver && (
+            <>
+              <View style={[styles.divider, { backgroundColor: colors.blackOpacity(0.06) }]} />
+              <MenuItem
+                icon={<MaterialCommunityIcons name="card-account-details-outline" size={20} color="#059669" />}
+                title={t('dlVerification')}
+                onPress={_navigateDLVerification}
+              />
+            </>
+          )}
         </CardContainer>
+        {/* <TouchableOpacity
+onPress={()=>{
+  openOverlayPermission()
+  console.log('pressed');
+ 
+}}
+>
+  <Text>Enable Appear on Top</Text>
+</TouchableOpacity> */}
+
+        {/* <ZegoSendCallInvitationButton
+          invitees={[{ userID: 'TM2512UPDR23435', userName: '"Abhishek"' }]}
+          isVideoCall={true}
+          resourceID={"TruckMitr"} // Please fill in the resource ID name that has been configured in the ZEGOCLOUD's console here.
+        /> */}
 
         {/* General Section */}
         <SectionHeader title={t('general')} />
@@ -1338,7 +1467,7 @@ export default function Profile() {
         </CardContainer>
 
         <Space height={responsiveHeight(8)} />
-      </ScrollView>
+      </ScrollView >
     </View>
   )
 }
