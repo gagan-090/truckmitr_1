@@ -682,6 +682,8 @@ const Home = React.forwardRef((props, ref) => {
         } else {
             navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
         }
+
+        // navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
     }
     const _navigateDriverList = () => {
         navigation.navigate(STACKS.DRIVER_LIST)
