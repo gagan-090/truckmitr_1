@@ -106,12 +106,10 @@ const RcCheckInfo = () => {
             try {
                 setLoading(true);
 
-                // Create form data for API
-                const FormData = require('form-data');
-                let data = new FormData();
-                data.append('registration_number', rcNumber.toUpperCase().trim());
-
-                const response: any = await axiosInstance.post(END_POINTS.RC_VERIFY, data);
+                // Send JSON body with vehicle_no
+                const response: any = await axiosInstance.post(END_POINTS.RC_VERIFY, {
+                    vehicle_no: rcNumber.toUpperCase().trim()
+                });
 
                 if (response?.data?.status === 1) {
                     setRcInputModalVisible(false);

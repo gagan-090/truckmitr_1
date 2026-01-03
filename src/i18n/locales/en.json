@@ -1800,5 +1800,6 @@
   "done": "Done",
   "checkAnotherVehicleRc": "Check Another Vehicle RC",
   "yes": "Yes",
-  "no": "No"
+  "no": "No",
+  "vehicleAlreadyVerified": "Vehicle already verified in our records"
 }
