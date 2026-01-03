@@ -1,27 +1,94 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, Platform, Modal, TextInput, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Image, Platform, Modal, TextInput, ActivityIndicator, KeyboardAvoidingView, FlatList } from 'react-native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useColor, useResponsiveScale, useShadow } from '@truckmitr/src/app/hooks';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { STACKS } from '@truckmitr/src/stacks/stacks';
+import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
+import { END_POINTS } from '@truckmitr/src/utils/config';
+import { showToast } from '@truckmitr/src/app/hooks/toast';
+import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
+
+interface RcHistoryItem {
+    id: number;
+    registration_number: string;
+    user_name: string;
+    vehicle_make_model: string;
+    status: string;
+    created_at: string;
+    result: any;
+}
 
 const RcCheckInfo = () => {
+    const { t } = useTranslation();
     const navigation = useNavigation<any>();
     const colors = useColor();
     const { responsiveWidth, responsiveFontSize, responsiveHeight } = useResponsiveScale();
     const { shadow } = useShadow();
 
-    // Mock Subscription Status (Set to true to test happy path, false to test gating)
-    const [isSubscriptionActive, setIsSubscriptionActive] = useState(true);
+    // Get subscription details from Redux
+    const { subscriptionDetails } = useSelector((state: any) => state?.user) || {};
+
+    // Check if subscription is active (₹199 or ₹499 plan)
+    const checkSubscriptionActive = () => {
+        if (!subscriptionDetails) return false;
+
+        const isActive = (item: any) => {
+            if (!item || !item.end_at) return false;
+            const endDate = new Date(item.end_at * 1000);
+            const now = new Date();
+            return endDate > now;
+        };
+
+        let activeSub = null;
+        if (Array.isArray(subscriptionDetails)) {
+            activeSub = subscriptionDetails.find((item: any) => isActive(item));
+        } else if (isActive(subscriptionDetails)) {
+            activeSub = subscriptionDetails;
+        }
+
+        if (activeSub) {
+            const amt = activeSub.amount ? parseFloat(activeSub.amount) : 0;
+            // RC Check is available for ₹199 and ₹499 plans
+            return amt >= 199;
+        }
+        return false;
+    };
+
+    const isSubscriptionActive = checkSubscriptionActive();
 
     // State
     const [rcInputModalVisible, setRcInputModalVisible] = useState(false);
     const [subscriptionModalVisible, setSubscriptionModalVisible] = useState(false);
     const [rcNumber, setRcNumber] = useState('');
     const [loading, setLoading] = useState(false);
+    const [rcHistory, setRcHistory] = useState<RcHistoryItem[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
 
     const _goBack = () => navigation.goBack();
+
+    // Fetch RC History
+    const fetchRcHistory = async () => {
+        try {
+            setHistoryLoading(true);
+            const response: any = await axiosInstance.get(END_POINTS.RC_HISTORY);
+            if (response?.data?.status && response?.data?.data) {
+                setRcHistory(response.data.data);
+            }
+        } catch (error) {
+            console.log('Error fetching RC history:', error);
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchRcHistory();
+        }, [])
+    );
 
     // 1. Open Input Modal
     const _handleCheckRc = () => {
@@ -29,37 +96,118 @@ const RcCheckInfo = () => {
     };
 
     // 2. Verify Logic
-    const _handleVerify = () => {
+    const _handleVerify = async () => {
         if (!rcNumber.trim()) {
-            return; // Add validation toast here if needed
+            showToast(t('pleaseEnterVehicleNumber') || 'Please enter vehicle number');
+            return;
         }
 
         if (isSubscriptionActive) {
-            // Start Loading
-            setLoading(true);
+            try {
+                setLoading(true);
 
-            // Simulate API Call
-            setTimeout(() => {
+                // Create form data for API
+                const FormData = require('form-data');
+                let data = new FormData();
+                data.append('registration_number', rcNumber.toUpperCase().trim());
+
+                const response: any = await axiosInstance.post(END_POINTS.RC_VERIFY, data);
+
+                if (response?.data?.status === 1) {
+                    setRcInputModalVisible(false);
+                    setRcNumber('');
+                    // Navigate to result screen with the API response
+                    navigation.navigate(STACKS.RC_CHECK_RESULT, {
+                        rcNumber: rcNumber.toUpperCase(),
+                        rcData: response.data
+                    });
+                } else {
+                    showToast(response?.data?.message || t('rcVerificationFailed') || 'RC verification failed');
+                }
+            } catch (error: any) {
+                console.error('RC Verification Error:', error);
+                showToast(error?.response?.data?.message || t('somethingWentWrong') || 'Something went wrong');
+            } finally {
                 setLoading(false);
-                setRcInputModalVisible(false);
-                setRcNumber(''); // Clear input
-                navigation.navigate(STACKS.RC_CHECK_RESULT, { rcNumber: rcNumber.toUpperCase() });
-            }, 2000);
+            }
         } else {
             // Show Subscription Required Modal
             setRcInputModalVisible(false);
             setTimeout(() => {
                 setSubscriptionModalVisible(true);
-            }, 300); // Small delay for smooth transition
+            }, 300);
         }
     };
 
     const _handleViewPlans = () => {
         setSubscriptionModalVisible(false);
-        // Navigate to Subscription Plans
-        // navigation.navigate(STACKS.SUBSCRIPTION_CONSENT); 
-        console.log("Navigating to Plans...");
+        navigation.navigate(STACKS.SUBSCRIPTION_CONSENT);
     };
+
+    const _viewHistoryItem = (item: RcHistoryItem) => {
+        navigation.navigate(STACKS.RC_CHECK_RESULT, {
+            rcNumber: item.registration_number,
+            rcData: {
+                status: 1,
+                message: 'Vehicle verified',
+                rc_id: item.id,
+                result: item.result
+            }
+        });
+    };
+
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+    };
+
+    const renderHistoryItem = ({ item }: { item: RcHistoryItem }) => (
+        <TouchableOpacity
+            onPress={() => _viewHistoryItem(item)}
+            activeOpacity={0.7}
+            style={{
+                backgroundColor: colors.white,
+                borderRadius: 12,
+                padding: responsiveWidth(4),
+                marginBottom: responsiveHeight(1.5),
+                ...shadow,
+                shadowColor: 'rgba(0,0,0,0.06)'
+            }}
+        >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#EAF3FF', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                        <Ionicons name="car-outline" size={18} color="#2563EB" />
+                    </View>
+                    <View>
+                        <Text style={{ fontSize: responsiveFontSize(1.6), fontWeight: '700', color: '#001F3F' }}>
+                            {item.registration_number}
+                        </Text>
+                        <Text style={{ fontSize: responsiveFontSize(1.3), color: '#64748B' }}>
+                            {item.vehicle_make_model || 'Vehicle'}
+                        </Text>
+                    </View>
+                </View>
+                <View style={{ backgroundColor: item.status === 'ACTIVE' ? '#DCFCE7' : '#FEE2E2', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+                    <Text style={{ color: item.status === 'ACTIVE' ? '#166534' : '#DC2626', fontWeight: '600', fontSize: responsiveFontSize(1.2) }}>
+                        {item.status || 'VERIFIED'}
+                    </Text>
+                </View>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ fontSize: responsiveFontSize(1.3), color: '#64748B' }}>
+                    {item.user_name}
+                </Text>
+                <Text style={{ fontSize: responsiveFontSize(1.2), color: '#94A3B8' }}>
+                    {formatDate(item.created_at)}
+                </Text>
+            </View>
+        </TouchableOpacity>
+    );
 
     return (
         <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
@@ -69,7 +217,7 @@ const RcCheckInfo = () => {
                     <Ionicons name="chevron-back" size={24} color={colors.royalBlue} />
                 </TouchableOpacity>
                 <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: 'bold', color: colors.royalBlue }}>
-                    RC Check
+                    {t('rcCheck') || 'RC Check'}
                 </Text>
             </View>
 
@@ -81,73 +229,91 @@ const RcCheckInfo = () => {
                         <Ionicons name="car-outline" size={30} color={colors.white} />
                     </View>
                     <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: '700', color: '#001F3F', textAlign: 'center', marginBottom: 6 }}>
-                        Vehicle RC Check
+                        {t('vehicleRcCheck') || 'Vehicle RC Check'}
                     </Text>
-                    <Text style={{ fontSize: responsiveFontSize(1.5), color: '#475569', textAlign: 'center', lineHeight: responsiveFontSize(2.2) }}>
-                        Verify your vehicle RC details instantly by entering your vehicle number
+                    <Text style={{ fontSize: responsiveFontSize(1.5), color: '#475569', textAlign: 'center' }}>
+                        {t('verifyVehicleRcInstantly') || 'Verify your vehicle RC details instantly by entering your vehicle number'}
                     </Text>
                 </View>
 
                 {/* ❓ 2️⃣ What is RC Check */}
                 <View style={{ backgroundColor: colors.white, borderRadius: 12, padding: responsiveWidth(4), marginBottom: responsiveHeight(2), ...shadow, shadowColor: 'rgba(0,0,0,0.06)' }}>
-                    <Text style={{ fontSize: responsiveFontSize(1.6), fontWeight: '700', color: '#334155', marginBottom: 8 }}>What is RC Check?</Text>
-                    <Text style={{ fontSize: responsiveFontSize(1.4), color: '#475569', lineHeight: responsiveFontSize(2.0), marginBottom: 8 }}>
-                        Check your vehicle RC details instantly by entering your vehicle number.
+                    <Text style={{ fontSize: responsiveFontSize(1.6), fontWeight: '700', color: '#334155', marginBottom: 8 }}>{t('whatIsRcCheck') || 'What is RC Check?'}</Text>
+                    <Text style={{ fontSize: responsiveFontSize(1.4), color: '#475569', marginBottom: 8 }}>
+                        {t('rcCheckDescription') || 'Check your vehicle RC details instantly by entering your vehicle number.'}
                     </Text>
                     <Text style={{ fontSize: responsiveFontSize(1.3), color: '#64748B', fontStyle: 'italic' }}>
-                        This feature is available for drivers with an active TruckMitr subscription.
+                        {t('rcCheckAvailability') || 'This feature is available for drivers with an active TruckMitr subscription.'}
                     </Text>
                 </View>
 
                 {/* 🔄 3️⃣ How It Works */}
                 <View style={{ backgroundColor: colors.white, borderRadius: 12, padding: responsiveWidth(4), marginBottom: responsiveHeight(2), ...shadow, shadowColor: 'rgba(0,0,0,0.06)' }}>
-                    <Text style={{ fontSize: responsiveFontSize(1.6), fontWeight: '700', color: '#334155', marginBottom: 16 }}>How it works</Text>
+                    <Text style={{ fontSize: responsiveFontSize(1.6), fontWeight: '700', color: '#334155', marginBottom: 16 }}>{t('howItWorks') || 'How it works'}</Text>
                     {[
-                        "Enter your vehicle number",
-                        "Start RC verification",
-                        "View RC check status and details"
+                        t('enterVehicleNumber') || "Enter your vehicle number",
+                        t('startRcVerification') || "Start RC verification",
+                        t('viewRcDetails') || "View RC check status and details"
                     ].map((step, index) => (
                         <View key={index} style={{ flexDirection: 'row', marginBottom: 16, alignItems: 'flex-start' }}>
                             <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
                                 <Text style={{ color: '#2563EB', fontWeight: 'bold', fontSize: responsiveFontSize(1.4) }}>{index + 1}</Text>
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: responsiveFontSize(1.4), color: '#334155', lineHeight: responsiveFontSize(2) }}>{step}</Text>
+                                <Text style={{ fontSize: responsiveFontSize(1.4), color: '#334155' }}>{step}</Text>
                             </View>
                         </View>
                     ))}
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                         <Ionicons name="time-outline" size={16} color="#059669" style={{ marginRight: 6 }} />
-                        <Text style={{ fontSize: responsiveFontSize(1.3), color: '#059669', fontWeight: '600' }}>Results are shared quickly after submission</Text>
+                        <Text style={{ fontSize: responsiveFontSize(1.3), color: '#059669', fontWeight: '600' }}>{t('resultsSentQuickly') || 'Results are shared quickly after submission'}</Text>
                     </View>
                 </View>
 
                 {/* 💳 4️⃣ Subscription Requirement */}
                 <View style={{ backgroundColor: colors.white, borderRadius: 12, padding: responsiveWidth(4), marginBottom: responsiveHeight(2), ...shadow, shadowColor: 'rgba(0,0,0,0.06)' }}>
-                    <Text style={{ fontSize: responsiveFontSize(1.6), fontWeight: '700', color: '#334155', marginBottom: 12 }}>Subscription Requirement</Text>
-                    <Text style={{ fontSize: responsiveFontSize(1.4), color: '#475569', marginBottom: 8 }}>RC Check is included with:</Text>
+                    <Text style={{ fontSize: responsiveFontSize(1.6), fontWeight: '700', color: '#334155', marginBottom: 12 }}>{t('subscriptionRequirement') || 'Subscription Requirement'}</Text>
+                    <Text style={{ fontSize: responsiveFontSize(1.4), color: '#475569', marginBottom: 8 }}>{t('rcCheckIncludedWith') || 'RC Check is included with:'}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
                         <Ionicons name="checkmark-circle" size={18} color="#16A34A" style={{ marginRight: 8 }} />
-                        <Text style={{ fontSize: responsiveFontSize(1.5), color: '#334155', fontWeight: '600' }}>₹199 Plan</Text>
+                        <Text style={{ fontSize: responsiveFontSize(1.5), color: '#334155', fontWeight: '600' }}>₹199 {t('plan') || 'Plan'}</Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
                         <Ionicons name="checkmark-circle" size={18} color="#16A34A" style={{ marginRight: 8 }} />
-                        <Text style={{ fontSize: responsiveFontSize(1.5), color: '#334155', fontWeight: '600' }}>₹499 Plan</Text>
+                        <Text style={{ fontSize: responsiveFontSize(1.5), color: '#334155', fontWeight: '600' }}>₹499 {t('plan') || 'Plan'}</Text>
                     </View>
                     <View style={{ backgroundColor: '#FFF7ED', padding: 12, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: '#F97316' }}>
-                        <Text style={{ fontSize: responsiveFontSize(1.3), color: '#9A3412', lineHeight: responsiveFontSize(1.8) }}>
-                            ⚠️ Please ensure your subscription is active to use this feature.
+                        <Text style={{ fontSize: responsiveFontSize(1.3), color: '#9A3412' }}>
+                            ⚠️ {t('ensureSubscriptionActive') || 'Please ensure your subscription is active to use this feature.'}
                         </Text>
                     </View>
                 </View>
 
-                {/* 🔐 5️⃣ Data Security */}
+                {/* 📜 5️⃣ RC Check History */}
+                {rcHistory.length > 0 && (
+                    <View style={{ marginBottom: responsiveHeight(2) }}>
+                        <Text style={{ fontSize: responsiveFontSize(1.6), fontWeight: '700', color: '#334155', marginBottom: 12 }}>
+                            {t('rcCheckHistory') || 'RC Check History'}
+                        </Text>
+                        {historyLoading ? (
+                            <ActivityIndicator size="small" color={colors.royalBlue} />
+                        ) : (
+                            rcHistory.slice(0, 5).map((item, index) => (
+                                <View key={item.id || index}>
+                                    {renderHistoryItem({ item })}
+                                </View>
+                            ))
+                        )}
+                    </View>
+                )}
+
+                {/* 🔐 6️⃣ Data Security */}
                 <View style={{ backgroundColor: '#F8FAFC', borderRadius: 12, padding: responsiveWidth(4), marginBottom: responsiveHeight(2), borderWidth: 1, borderColor: '#E2E8F0', flexDirection: 'row', alignItems: 'center' }}>
                     <MaterialCommunityIcons name="shield-lock-outline" size={24} color="#64748B" style={{ marginRight: 12 }} />
                     <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: responsiveFontSize(1.4), fontWeight: '700', color: '#334155', marginBottom: 2 }}>Data Security</Text>
-                        <Text style={{ fontSize: responsiveFontSize(1.2), color: '#64748B', lineHeight: responsiveFontSize(1.6) }}>
-                            Your data is secure and used only for RC verification purposes.
+                        <Text style={{ fontSize: responsiveFontSize(1.4), fontWeight: '700', color: '#334155', marginBottom: 2 }}>{t('dataSecurity') || 'Data Security'}</Text>
+                        <Text style={{ fontSize: responsiveFontSize(1.2), color: '#64748B' }}>
+                            {t('dataSecurityDescription') || 'Your data is secure and used only for RC verification purposes.'}
                         </Text>
                     </View>
                 </View>
@@ -161,7 +327,7 @@ const RcCheckInfo = () => {
                     style={{ backgroundColor: colors.royalBlue, paddingVertical: responsiveHeight(1.8), borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
                 >
                     <Text style={{ color: colors.white, fontSize: responsiveFontSize(1.8), fontWeight: 'bold' }}>
-                        Check Vehicle RC
+                        {t('checkVehicleRc') || 'Check Vehicle RC'}
                     </Text>
                 </TouchableOpacity>
             </View>
@@ -180,7 +346,7 @@ const RcCheckInfo = () => {
                         <View style={{ backgroundColor: 'white', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: responsiveWidth(5), paddingBottom: responsiveHeight(5) }}>
                             {/* Header */}
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                                <Text style={{ fontSize: responsiveFontSize(2), fontWeight: 'bold', color: '#001F3F' }}>Vehicle RC Verification</Text>
+                                <Text style={{ fontSize: responsiveFontSize(2), fontWeight: 'bold', color: '#001F3F' }}>{t('vehicleRcVerification') || 'Vehicle RC Verification'}</Text>
                                 {!loading && (
                                     <TouchableOpacity onPress={() => setRcInputModalVisible(false)}>
                                         <Ionicons name="close" size={24} color="#64748B" />
@@ -192,12 +358,12 @@ const RcCheckInfo = () => {
                             {loading ? (
                                 <View style={{ alignItems: 'center', paddingVertical: 30 }}>
                                     <ActivityIndicator size="large" color={colors.royalBlue} style={{ marginBottom: 16 }} />
-                                    <Text style={{ fontSize: responsiveFontSize(1.8), fontWeight: '600', color: '#001F3F', marginBottom: 8 }}>Verifying RC details...</Text>
-                                    <Text style={{ fontSize: responsiveFontSize(1.4), color: '#64748B' }}>Please wait, this may take a moment</Text>
+                                    <Text style={{ fontSize: responsiveFontSize(1.8), fontWeight: '600', color: '#001F3F', marginBottom: 8 }}>{t('verifyingRcDetails') || 'Verifying RC details...'}</Text>
+                                    <Text style={{ fontSize: responsiveFontSize(1.4), color: '#64748B' }}>{t('pleaseWait') || 'Please wait, this may take a moment'}</Text>
                                 </View>
                             ) : (
                                 <>
-                                    <Text style={{ fontSize: responsiveFontSize(1.4), color: '#334155', marginBottom: 8 }}>Enter Vehicle Number</Text>
+                                    <Text style={{ fontSize: responsiveFontSize(1.4), color: '#334155', marginBottom: 8 }}>{t('enterVehicleNumber') || 'Enter Vehicle Number'}</Text>
                                     <TextInput
                                         value={rcNumber}
                                         onChangeText={setRcNumber}
@@ -218,7 +384,7 @@ const RcCheckInfo = () => {
                                     />
                                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
                                         <Ionicons name="information-circle-outline" size={16} color="#64748B" style={{ marginRight: 4 }} />
-                                        <Text style={{ fontSize: responsiveFontSize(1.2), color: '#64748B' }}>Please enter the vehicle number correctly</Text>
+                                        <Text style={{ fontSize: responsiveFontSize(1.2), color: '#64748B' }}>{t('enterVehicleNumberCorrectly') || 'Please enter the vehicle number correctly'}</Text>
                                     </View>
 
                                     <TouchableOpacity
@@ -232,7 +398,7 @@ const RcCheckInfo = () => {
                                         }}
                                         disabled={!rcNumber.trim()}
                                     >
-                                        <Text style={{ color: 'white', fontSize: responsiveFontSize(1.8), fontWeight: 'bold' }}>Verify RC</Text>
+                                        <Text style={{ color: 'white', fontSize: responsiveFontSize(1.8), fontWeight: 'bold' }}>{t('verifyRc') || 'Verify RC'}</Text>
                                     </TouchableOpacity>
                                 </>
                             )}
@@ -253,23 +419,23 @@ const RcCheckInfo = () => {
                         <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: '#FFF7ED', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
                             <MaterialCommunityIcons name="crown-outline" size={32} color="#F97316" />
                         </View>
-                        <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: 'bold', color: '#001F3F', marginBottom: 8, textAlign: 'center' }}>Subscription Required</Text>
-                        <Text style={{ fontSize: responsiveFontSize(1.5), color: '#64748B', textAlign: 'center', marginBottom: 24, lineHeight: responsiveFontSize(2.2) }}>
-                            RC Check is available only for{'\n'}₹199 and ₹499 plans.
+                        <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: 'bold', color: '#001F3F', marginBottom: 8, textAlign: 'center' }}>{t('subscriptionRequired') || 'Subscription Required'}</Text>
+                        <Text style={{ fontSize: responsiveFontSize(1.5), color: '#64748B', textAlign: 'center', marginBottom: 24 }}>
+                            {t('rcCheckAvailableForPlans') || 'RC Check is available only for ₹199 and ₹499 plans.'}
                         </Text>
 
                         <TouchableOpacity
                             onPress={_handleViewPlans}
                             style={{ backgroundColor: colors.royalBlue, width: '100%', paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginBottom: 12 }}
                         >
-                            <Text style={{ color: 'white', fontSize: responsiveFontSize(1.6), fontWeight: 'bold' }}>View Plans</Text>
+                            <Text style={{ color: 'white', fontSize: responsiveFontSize(1.6), fontWeight: 'bold' }}>{t('viewPlans') || 'View Plans'}</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
                             onPress={() => setSubscriptionModalVisible(false)}
                             style={{ paddingVertical: 10 }}
                         >
-                            <Text style={{ color: '#64748B', fontSize: responsiveFontSize(1.6), fontWeight: '600' }}>Cancel</Text>
+                            <Text style={{ color: '#64748B', fontSize: responsiveFontSize(1.6), fontWeight: '600' }}>{t('cancel') || 'Cancel'}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

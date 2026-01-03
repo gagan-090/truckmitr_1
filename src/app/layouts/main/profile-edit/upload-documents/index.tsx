@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Image, Text, TextInput, TouchableOpacity, View, Alert, Modal, ActivityIndicator } from 'react-native';
 import { useColor, useResponsiveScale, useShadow } from '@truckmitr/src/app/hooks';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,6 +34,10 @@ export default function UploadDocuments() {
     const route = useRoute<UploadDocumentsRouteProp>();
     const { shadow } = useShadow();
     const { userEdit } = useSelector((state: any) => { return state?.user })
+
+    // Ref to track latest userEdit (avoids stale closure issues)
+    const userEditRef = useRef(userEdit);
+    useEffect(() => { userEditRef.current = userEdit; }, [userEdit]);
 
     const licenseExpiry = userEdit?.Expiry_date_of_License ? new Date(userEdit?.Expiry_date_of_License) : moment().subtract().toDate()
 
@@ -82,7 +86,7 @@ export default function UploadDocuments() {
         })
             .then(image => {
                 console.log('Aadhar image:', image);
-                dispatch(userEditAction({ ...userEdit, aadharImagePath: image }));
+                dispatch(userEditAction({ ...(userEditRef.current || {}), aadharImagePath: image, Aadhar_Photo: null }));
                 setErrors((prevData) => ({
                     ...prevData,
                     aadharPhoto: undefined,
@@ -111,7 +115,7 @@ export default function UploadDocuments() {
         })
             .then(image => {
                 console.log('Driving License image:', image);
-                dispatch(userEditAction({ ...userEdit, drivingLicensePath: image }));
+                dispatch(userEditAction({ ...(userEditRef.current || {}), drivingLicensePath: image, Driving_License: null }));
             })
             .catch(error => {
                 console.log('Driving License picker error:', error);
@@ -150,7 +154,7 @@ export default function UploadDocuments() {
             });
         }
         data.append('father_name', combinedData?.fatherName);
-        data.append('dob',  combinedData?.dateOfBirth);
+        data.append('dob', combinedData?.dateOfBirth);
         data.append('sex', combinedData?.gender);
         data.append('marital_status', combinedData?.maritalStatus);
         data.append('highest_education', combinedData?.education);
@@ -185,6 +189,47 @@ export default function UploadDocuments() {
         data.append('job_placement', combinedData?.interestedInAbroad);
         data.append('previous_employer', combinedData?.referenceCheck);
         try {
+            // Debug: Log detailed payload
+            console.log('=== UPLOAD DOCUMENTS PAYLOAD ===');
+            console.log('Combined Data:', JSON.stringify(combinedData, null, 2));
+            console.log('--- File Uploads ---');
+            console.log('Aadhar Photo:', {
+                uploading: !userEdit?.Aadhar_Photo,
+                path: combinedData.aadharPhoto?.path,
+                mime: combinedData.aadharPhoto?.mime,
+                filename: combinedData.aadharPhoto?.filename
+            });
+            console.log('Driving License:', {
+                uploading: !!(combinedData?.drivingLicensePhoto?.path && combinedData?.drivingLicensePhoto?.mime && combinedData?.drivingLicensePhoto?.filename),
+                path: combinedData.drivingLicensePhoto?.path,
+                mime: combinedData.drivingLicensePhoto?.mime,
+                filename: combinedData.drivingLicensePhoto?.filename
+            });
+            console.log('--- userEdit state ---');
+            console.log('Aadhar_Photo (existing):', userEdit?.Aadhar_Photo);
+            console.log('aadharImagePath:', userEdit?.aadharImagePath);
+            console.log('Driving_License (existing):', userEdit?.Driving_License);
+            console.log('drivingLicensePath:', userEdit?.drivingLicensePath);
+            console.log('================================');
+
+            // Print FormData contents (FormData doesn't serialize nicely)
+            console.log('=== FORM DATA PAYLOAD ===');
+            const formDataAny = data as any;
+            if (formDataAny._parts) {
+                formDataAny._parts.forEach((part: any, index: number) => {
+                    const key = part[0];
+                    const value = part[1];
+                    if (typeof value === 'object' && value?.uri) {
+                        // It's a file
+                        console.log(`[${index}] ${key}: FILE -> { uri: "${value.uri}", type: "${value.type}", name: "${value.name}" }`);
+                    } else {
+                        console.log(`[${index}] ${key}: "${value}"`);
+                    }
+                });
+            } else {
+                console.log('FormData _parts not accessible');
+            }
+            console.log('=========================');
             const response = await axiosInstance.post(END_POINTS.EDIT_PROFILE, data);
             if (response?.data?.status) {
                 const updateProfileMSG = response?.data?.message
@@ -321,7 +366,7 @@ export default function UploadDocuments() {
                             <Image style={{ height: responsiveHeight(20), width: '100%', borderRadius: 10 }} source={{ uri: `${BASE_URL}public/${userEdit?.Aadhar_Photo}` }} />
                             <TouchableOpacity
                                 onPress={() => {
-                                    dispatch(userEditAction({ ...userEdit, Aadhar_Photo: null }));
+                                    dispatch(userEditAction({ ...(userEditRef.current || {}), Aadhar_Photo: null }));
                                 }}
                                 activeOpacity={0.7}
                                 style={{
@@ -356,7 +401,7 @@ export default function UploadDocuments() {
                                     </View>
                                     <Space width={responsiveFontSize(2)} />
                                     <TouchableOpacity onPress={() => {
-                                        dispatch(userEditAction({ ...userEdit, aadharImagePath: {} }));
+                                        dispatch(userEditAction({ ...(userEditRef.current || {}), aadharImagePath: null }));
                                     }}>
                                         <MaterialCommunityIcons name={'delete'} size={20} color={colors.blackOpacity(1)} />
                                     </TouchableOpacity>
@@ -455,7 +500,7 @@ export default function UploadDocuments() {
                             <Image style={{ height: responsiveHeight(20), width: '100%', borderRadius: 10 }} source={{ uri: `${BASE_URL}public/${userEdit?.Driving_License}` }} />
                             <TouchableOpacity
                                 onPress={() => {
-                                    dispatch(userEditAction({ ...userEdit, Driving_License: null }));
+                                    dispatch(userEditAction({ ...(userEditRef.current || {}), Driving_License: null }));
                                 }}
                                 activeOpacity={0.7}
                                 style={{
@@ -490,7 +535,7 @@ export default function UploadDocuments() {
                                     </View>
                                     <Space width={responsiveFontSize(2)} />
                                     <TouchableOpacity onPress={() => {
-                                        dispatch(userEditAction({ ...userEdit, drivingLicensePath: {} }));
+                                        dispatch(userEditAction({ ...(userEditRef.current || {}), drivingLicensePath: null }));
                                     }}>
                                         <MaterialCommunityIcons name={'delete'} size={20} color={colors.blackOpacity(1)} />
                                     </TouchableOpacity>

@@ -39,6 +39,7 @@ import Animated, {
     FadeIn,
     FadeInDown,
     FadeInUp,
+    ZoomIn,
 } from 'react-native-reanimated';
 import { hitSlop } from '@truckmitr/src/app/functions';
 
@@ -203,7 +204,7 @@ interface FaceMatchResponse {
     verified?: boolean;
 }
 
-type TabType = 'DL' | 'PAN' | 'AADHAAR' | 'VOTER' | 'ID' | 'FACE';
+type TabType = 'DL' | 'PAN' | 'AADHAAR' | 'VOTER' | 'FACE';
 
 export default function DocumentVerification() {
     const route: any = useRoute();
@@ -331,12 +332,14 @@ export default function DocumentVerification() {
                     if (voter) setVoterIdNumber(voter.trim().toUpperCase());
 
                     // Preload License Image for Face Verification
-                    // The field is 'Driving_License' and needs BASE_URL + 'public/' prefix
-                    const drivingLicense = profileData?.Driving_License || profileData?.driving_license || '';
+                    // Check both API response and Redux user state for the license image
+                    const drivingLicense = profileData?.Driving_License || profileData?.driving_license ||
+                        user?.Driving_License || user?.driving_license || '';
 
-                    if (drivingLicense) {
+                    if (drivingLicense && !faceImage2) {
                         // Construct full URL
                         const licenseImgUrl = `${BASE_URL}public/${drivingLicense}`;
+                        console.log('Preloading driving license image from:', licenseImgUrl);
 
                         try {
                             // Fetch and convert to base64 for API usage
@@ -350,20 +353,63 @@ export default function DocumentVerification() {
                                 path: licenseImgUrl, // Use full URL for display
                                 mime: 'image/jpeg'
                             });
+                            console.log('Driving license image preloaded successfully');
                         } catch (e) {
                             console.warn('Error downloading license image for face verification', e);
+                        }
+                    }
+                } else {
+                    // API call failed or returned no data - try to use existing Redux user state
+                    const drivingLicense = user?.Driving_License || user?.driving_license || '';
+                    if (drivingLicense && !faceImage2) {
+                        const licenseImgUrl = `${BASE_URL}public/${drivingLicense}`;
+                        console.log('Preloading driving license from Redux user state:', licenseImgUrl);
+
+                        try {
+                            const res = await RNFetchBlob.config({ fileCache: true }).fetch('GET', licenseImgUrl);
+                            const base64 = await res.base64();
+                            res.flush();
+
+                            setFaceImage2({
+                                data: base64,
+                                path: licenseImgUrl,
+                                mime: 'image/jpeg'
+                            });
+                            console.log('Driving license image preloaded from Redux state');
+                        } catch (e) {
+                            console.warn('Error downloading license image from Redux state', e);
                         }
                     }
                 }
             } catch (error) {
                 console.error('Profile fetch error', error);
+                // On API error, try to use existing Redux user state as fallback
+                const drivingLicense = user?.Driving_License || user?.driving_license || '';
+                if (drivingLicense && !faceImage2) {
+                    const licenseImgUrl = `${BASE_URL}public/${drivingLicense}`;
+                    console.log('Fallback: Preloading driving license from Redux user state:', licenseImgUrl);
+
+                    try {
+                        const res = await RNFetchBlob.config({ fileCache: true }).fetch('GET', licenseImgUrl);
+                        const base64 = await res.base64();
+                        res.flush();
+
+                        setFaceImage2({
+                            data: base64,
+                            path: licenseImgUrl,
+                            mime: 'image/jpeg'
+                        });
+                    } catch (e) {
+                        console.warn('Fallback: Error downloading license image', e);
+                    }
+                }
             } finally {
                 setIsFetchingProfile(false);
             }
         };
 
         fetchProfileData();
-    }, []);
+    }, [user?.Driving_License]);
 
     // Check if DL is already verified on screen load
     useEffect(() => {
@@ -620,7 +666,7 @@ export default function DocumentVerification() {
             const image = await ImagePicker.openCamera({
                 width: 400,
                 height: 400,
-                cropping: true,
+                cropping: false,
                 useFrontCamera: true,
                 mediaType: 'photo',
                 includeBase64: true,
@@ -636,7 +682,7 @@ export default function DocumentVerification() {
             const image = await ImagePicker.openCamera({
                 width: 400,
                 height: 400,
-                cropping: true,
+                cropping: false,
                 useFrontCamera: true,
                 mediaType: 'photo',
                 includeBase64: true,
@@ -652,7 +698,7 @@ export default function DocumentVerification() {
             const image = await ImagePicker.openPicker({
                 width: 400,
                 height: 400,
-                cropping: true,
+                cropping: false,
                 mediaType: 'photo',
                 includeBase64: true,
             });
@@ -667,7 +713,7 @@ export default function DocumentVerification() {
             const image = await ImagePicker.openPicker({
                 width: 400,
                 height: 400,
-                cropping: true,
+                cropping: false,
                 mediaType: 'photo',
                 includeBase64: true,
             });
@@ -1024,11 +1070,10 @@ export default function DocumentVerification() {
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
                 <TabButton type='DL' label='DL' icon='car-outline' />
                 <TabButton type='AADHAAR' label='Aadhar' icon='finger-print' />
-                <TabButton type='PAN' label='Pan' icon='card-outline' />
+                <TabButton type='PAN' label='PAN' icon='card-outline' />
             </View>
             <View style={{ flexDirection: 'row', gap: 8 }}>
                 <TabButton type='VOTER' label='Voter' icon='person-outline' />
-                <TabButton type='ID' label='ID' icon='id-card-outline' />
                 <TabButton type='FACE' label={t('face') || 'Face'} icon='scan-outline' />
             </View>
         </View>
@@ -1149,94 +1194,6 @@ export default function DocumentVerification() {
                                 </View>
                             )}
 
-                            {activeTab === 'ID' && (
-                                canAccessIdVerification ? (
-                                    <View>
-                                        <View style={styles.inputGroup}>
-                                            <Text style={styles.inputLabel}><Ionicons name="card" size={14} color={COLORS.textMuted} />  {t('govtIdNumber') || 'Government ID Number'}</Text>
-                                            <View style={styles.inputContainer}>
-                                                <TextInput
-                                                    style={styles.input}
-                                                    placeholder={t('enterAadhaarVoterPan') || "Enter Aadhaar / Voter / PAN"}
-                                                    placeholderTextColor={COLORS.textLight}
-                                                    value={govtIdNumber}
-                                                    onChangeText={setGovtIdNumber}
-                                                    autoCapitalize="characters"
-                                                />
-                                            </View>
-                                        </View>
-                                        <View style={styles.inputGroup}>
-                                            <Text style={styles.inputLabel}><Ionicons name="car" size={14} color={COLORS.textMuted} />  {t('drivingLicenseNumber') || 'Driving License Number'}</Text>
-                                            <View style={styles.inputContainer}>
-                                                <TextInput
-                                                    style={styles.input}
-                                                    placeholder={t('enterDrivingLicenseNumber') || "Enter Driving License Number"}
-                                                    placeholderTextColor={COLORS.textLight}
-                                                    value={dlNumber}
-                                                    onChangeText={setDlNumber}
-                                                    autoCapitalize="characters"
-                                                    maxLength={20}
-                                                />
-                                            </View>
-                                        </View>
-                                        <View style={[styles.inputGroup, { marginTop: 8 }]}>
-                                            <Text style={styles.inputLabel}><Ionicons name="camera" size={14} color={COLORS.textMuted} />  {t('liveSelfie') || 'Live Selfie'}</Text>
-                                            <View
-                                                style={[styles.inputContainer, { paddingVertical: 12, justifyContent: 'center', alignItems: 'center', borderStyle: 'dashed', borderWidth: 1 }]}
-                                            >
-                                                {idSelfie ? (
-                                                    <View>
-                                                        <Image source={{ uri: idSelfie.path }} style={{ width: 100, height: 100, borderRadius: 8 }} />
-                                                        <TouchableOpacity
-                                                            onPress={() => setIdSelfie(null)}
-                                                            style={{ position: 'absolute', top: -8, right: -8, backgroundColor: COLORS.error, borderRadius: 12, width: 24, height: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: COLORS.white }}
-                                                            activeOpacity={0.8}
-                                                        >
-                                                            <Ionicons name="close" size={14} color={COLORS.white} />
-                                                        </TouchableOpacity>
-                                                    </View>
-                                                ) : (
-                                                    <TouchableOpacity onPress={handleTakeSelfie} style={{ alignItems: 'center', width: '100%' }}>
-                                                        <Ionicons name="camera-outline" size={24} color={COLORS.primary} />
-                                                        <Text style={{ color: COLORS.primary, marginTop: 4 }}>{t('clickToTakeSelfie') || 'Click to take selfie'}</Text>
-                                                    </TouchableOpacity>
-                                                )}
-                                            </View>
-                                        </View>
-                                    </View>
-                                ) : (
-                                    // Upgrade Prompt for users without 499 subscription
-                                    <Animated.View entering={FadeInDown.duration(400).springify()} style={{ alignItems: 'center', paddingVertical: 32, paddingHorizontal: 16 }}>
-                                        <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#FEF3C7', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-                                            <MaterialCommunityIcons name="crown" size={40} color="#D97706" />
-                                        </View>
-                                        <Text style={{ fontSize: 20, fontWeight: '700', color: COLORS.text, textAlign: 'center', marginBottom: 8 }}>
-                                            {t('upgradeRequired') || 'Upgrade Required'}
-                                        </Text>
-                                        <Text style={{ fontSize: 14, color: COLORS.textMuted, textAlign: 'center', lineHeight: 22, marginBottom: 24 }}>
-                                            {t('idCheckUpgradeMessage') || 'You need to upgrade to the Trusted Driver plan (₹499/year) to access advanced ID verification features.'}
-                                        </Text>
-                                        <TouchableOpacity
-                                            onPress={() => dispatch(subscriptionModalAction({ visible: true, minPrice: 499 }))}
-                                            activeOpacity={0.9}
-                                            style={{ width: '100%', borderRadius: 14, overflow: 'hidden', shadowColor: '#2563EB', shadowOpacity: 0.3, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 4 }}
-                                        >
-                                            <LinearGradient
-                                                colors={['#1E3A8A', '#3B82F6']}
-                                                start={{ x: 0, y: 0 }}
-                                                end={{ x: 1, y: 0 }}
-                                                style={{ paddingVertical: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
-                                            >
-                                                <MaterialCommunityIcons name="arrow-up-circle" size={20} color={COLORS.white} />
-                                                <Text style={{ color: COLORS.white, fontSize: 16, fontWeight: '700' }}>
-                                                    {t('upgradeToTrusted') || 'Upgrade to Trusted Driver @ ₹499'}
-                                                </Text>
-                                            </LinearGradient>
-                                        </TouchableOpacity>
-                                    </Animated.View>
-                                )
-                            )}
-
                             {activeTab === 'PAN' && (
                                 <View style={styles.inputGroup}>
                                     <Text style={styles.inputLabel}><Ionicons name="card" size={14} color={COLORS.textMuted} />  {t('panNumber') || 'PAN Number'}</Text>
@@ -1295,82 +1252,125 @@ export default function DocumentVerification() {
                             )}
 
                             {activeTab === 'FACE' && (
-                                <View>
-                                    {/* Face Verification Header */}
-                                    <View style={styles.faceVerifyHeader}>
-                                        <MaterialCommunityIcons name="face-recognition" size={28} color={COLORS.primary} />
-                                        <View style={{ marginLeft: 12, flex: 1 }}>
-                                            <Text style={styles.faceVerifyTitle}>{t('faceVerification') || 'Face Verification'}</Text>
-                                            <Text style={styles.faceVerifySubtitle}>{t('faceVerifyDesc') || 'Compare two face images to verify identity match'}</Text>
+                                canAccessIdVerification ? (
+                                    <View>
+                                        {/* Face Verification Header */}
+                                        <View style={styles.faceVerifyHeader}>
+                                            <MaterialCommunityIcons name="face-recognition" size={28} color={COLORS.primary} />
+                                            <View style={{ marginLeft: 12, flex: 1 }}>
+                                                <Text style={styles.faceVerifyTitle}>{t('faceVerification') || 'Face Verification'}</Text>
+                                                <Text style={styles.faceVerifySubtitle}>{t('faceVerifyDesc') || 'Compare two face images to verify identity match'}</Text>
+                                            </View>
                                         </View>
-                                    </View>
 
-                                    {/* Source Face Image - Live Selfie Only */}
-                                    <View style={styles.inputGroup}>
-                                        <Text style={styles.inputLabel}>
-                                            <Ionicons name="camera" size={14} color={COLORS.textMuted} />  {t('liveSelfie') || 'Live Selfie'}
-                                        </Text>
-                                        <View style={styles.faceImageContainer}>
-                                            {faceImage1 ? (
-                                                <View style={styles.faceImagePreviewWrapper}>
-                                                    <Image source={{ uri: faceImage1.path }} style={styles.faceImagePreview} />
-                                                    <TouchableOpacity
-                                                        onPress={() => setFaceImage1(null)}
-                                                        style={styles.faceImageRemoveBtn}
-                                                        activeOpacity={0.8}
-                                                    >
-                                                        <Ionicons name="close" size={14} color={COLORS.white} />
-                                                    </TouchableOpacity>
-                                                </View>
-                                            ) : (
-                                                <View style={styles.faceImageActions}>
-                                                    <TouchableOpacity onPress={handleCaptureFaceImage1} style={[styles.faceImageActionBtn, { flex: 1, borderRightWidth: 0 }]}>
-                                                        <View style={styles.faceImageActionIconBg}>
-                                                            <Ionicons name="camera" size={24} color={COLORS.primary} />
-                                                        </View>
-                                                        <Text style={styles.faceImageActionText}>{t('takeSelfie') || 'Take Selfie'}</Text>
-                                                    </TouchableOpacity>
-                                                </View>
-                                            )}
-                                        </View>
-                                    </View>
-
-                                    {/* Target Face Image - Preloaded License Image */}
-                                    <View style={styles.inputGroup}>
-                                        <Text style={styles.inputLabel}>
-                                            <Ionicons name="card" size={14} color={COLORS.textMuted} />  {t('licenseImage') || 'License Image (Preloaded)'}
-                                        </Text>
-                                        <View style={styles.faceImageContainer}>
-                                            {faceImage2 ? (
-                                                <View style={styles.faceImagePreviewWrapper}>
-                                                    <Image source={{ uri: faceImage2.path }} style={styles.faceImagePreview} />
-                                                    {/* No remove button for preloaded image */}
-                                                </View>
-                                            ) : (
-                                                <View style={[styles.faceImageActions, { opacity: 0.6 }]}>
-                                                    <View style={styles.faceImageActionBtn}>
-                                                        {isFetchingProfile ? (
-                                                            <ActivityIndicator size="small" color={COLORS.primary} />
-                                                        ) : (
-                                                            <Ionicons name="image-outline" size={24} color={COLORS.textLight} />
-                                                        )}
-                                                        <Text style={[styles.faceImageActionText, { color: COLORS.textLight, marginTop: 4 }]}>
-                                                            {isFetchingProfile ? (t('loading') || 'Loading...') : (t('noLicenseImage') || 'No License Image Found')}
-                                                        </Text>
+                                        {/* Source Face Image - Live Selfie Only */}
+                                        <View style={styles.inputGroup}>
+                                            <Text style={styles.inputLabel}>
+                                                <Ionicons name="camera" size={14} color={COLORS.textMuted} />  {t('liveSelfie') || 'Live Selfie'}
+                                            </Text>
+                                            <View style={styles.faceImageContainer}>
+                                                {faceImage1 ? (
+                                                    <View style={styles.faceImagePreviewWrapper}>
+                                                        <Image source={{ uri: faceImage1.path }} style={styles.faceImagePreview} />
+                                                        <TouchableOpacity
+                                                            onPress={() => setFaceImage1(null)}
+                                                            style={styles.faceImageRemoveBtn}
+                                                            activeOpacity={0.8}
+                                                        >
+                                                            <Ionicons name="close" size={14} color={COLORS.white} />
+                                                        </TouchableOpacity>
                                                     </View>
-                                                </View>
-                                            )}
+                                                ) : (
+                                                    <View style={styles.faceImageActions}>
+                                                        <TouchableOpacity onPress={handleCaptureFaceImage1} style={[styles.faceImageActionBtn, { flex: 1, borderRightWidth: 0 }]}>
+                                                            <View style={styles.faceImageActionIconBg}>
+                                                                <Ionicons name="camera" size={24} color={COLORS.primary} />
+                                                            </View>
+                                                            <Text style={styles.faceImageActionText}>{t('takeSelfie') || 'Take Selfie'}</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        </View>
+
+                                        {/* Target Face Image - Preloaded License Image */}
+                                        <View style={styles.inputGroup}>
+                                            <Text style={styles.inputLabel}>
+                                                <Ionicons name="card" size={14} color={COLORS.textMuted} />  {t('licenseImage') || 'License Image (Preloaded)'}
+                                            </Text>
+                                            <View style={styles.faceImageContainer}>
+                                                {faceImage2 ? (
+                                                    <View style={styles.faceImagePreviewWrapper}>
+                                                        <Image source={{ uri: faceImage2.path }} style={styles.faceImagePreview} />
+                                                        {/* No remove button for preloaded image */}
+                                                    </View>
+                                                ) : (
+                                                    <View style={[styles.faceImageActions, { opacity: 0.6 }]}>
+                                                        <View style={styles.faceImageActionBtn}>
+                                                            {isFetchingProfile ? (
+                                                                <ActivityIndicator size="small" color={COLORS.primary} />
+                                                            ) : (
+                                                                <Ionicons name="image-outline" size={24} color={COLORS.textLight} />
+                                                            )}
+                                                            <Text style={[styles.faceImageActionText, { color: COLORS.textLight, marginTop: 4 }]}>
+                                                                {isFetchingProfile ? (t('loading') || 'Loading...') : (t('noLicenseImage') || 'No License Image Found')}
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        </View>
+
+                                        {/* Info Card */}
+                                        <View style={styles.faceInfoCard}>
+                                            <Ionicons name="information-circle" size={20} color={COLORS.primary} />
+                                            <Text style={styles.faceInfoText}>
+                                                {t('faceVerifyInfo') || 'Upload or capture two face images to compare. The system will analyze facial features and return a similarity score.'}
+                                            </Text>
                                         </View>
                                     </View>
-
-                                    {/* Info Card */}
-                                    <View style={styles.faceInfoCard}>
-                                        <Ionicons name="information-circle" size={20} color={COLORS.primary} />
-                                        <Text style={styles.faceInfoText}>
-                                            {t('faceVerifyInfo') || 'Upload or capture two face images to compare. The system will analyze facial features and return a similarity score.'}
-                                        </Text>
-                                    </View>
-                                </View>
+                                ) : (
+                                    // Upgrade Prompt for users without 499 subscription
+                                    <Animated.View entering={FadeInDown.duration(500).springify()} style={{ alignItems: 'center', paddingVertical: 40, paddingHorizontal: 20 }}>
+                                        <Animated.View
+                                            entering={ZoomIn.delay(200).duration(400).springify()}
+                                            style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: '#FEF3C7', alignItems: 'center', justifyContent: 'center', marginBottom: 24, shadowColor: '#D97706', shadowOpacity: 0.3, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 8 }}
+                                        >
+                                            <MaterialCommunityIcons name="face-recognition" size={50} color="#D97706" />
+                                        </Animated.View>
+                                        <Animated.Text entering={FadeInDown.delay(300).duration(400)} style={{ fontSize: 22, fontWeight: '700', color: COLORS.text, textAlign: 'center', marginBottom: 12 }}>
+                                            {t('faceVerificationLocked') || 'Face Verification Locked'}
+                                        </Animated.Text>
+                                        <Animated.Text entering={FadeInDown.delay(400).duration(400)} style={{ fontSize: 15, color: COLORS.textMuted, textAlign: 'center', lineHeight: 24, marginBottom: 32, paddingHorizontal: 10 }}>
+                                            {t('faceVerificationUpgradeMessage') || 'Upgrade to the Trusted Driver plan (₹499/year) to unlock Face Verification and compare your selfie with your driving license photo.'}
+                                        </Animated.Text>
+                                        <Animated.View entering={FadeInUp.delay(500).duration(400).springify()} style={{ width: '100%' }}>
+                                            <TouchableOpacity
+                                                onPress={() => dispatch(subscriptionModalAction({ visible: true, minPrice: 499 }))}
+                                                activeOpacity={0.9}
+                                                style={{ width: '100%', borderRadius: 16, overflow: 'hidden', shadowColor: '#2563EB', shadowOpacity: 0.4, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 6 }}
+                                            >
+                                                <LinearGradient
+                                                    colors={['#1E3A8A', '#3B82F6', '#60A5FA']}
+                                                    start={{ x: 0, y: 0 }}
+                                                    end={{ x: 1, y: 0 }}
+                                                    style={{ paddingVertical: 18, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10 }}
+                                                >
+                                                    <MaterialCommunityIcons name="crown" size={22} color={COLORS.white} />
+                                                    <Text style={{ color: COLORS.white, fontSize: 17, fontWeight: '700' }}>
+                                                        {t('upgradeToTrusted') || 'Upgrade to Trusted Driver @ ₹499'}
+                                                    </Text>
+                                                </LinearGradient>
+                                            </TouchableOpacity>
+                                        </Animated.View>
+                                        <Animated.View entering={FadeIn.delay(600).duration(400)} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 20, backgroundColor: '#EFF6FF', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 }}>
+                                            <Ionicons name="shield-checkmark" size={18} color={COLORS.primary} />
+                                            <Text style={{ marginLeft: 8, fontSize: 13, color: COLORS.primary, fontWeight: '500' }}>
+                                                {t('trustedBenefits') || 'Includes Face Match, ID Check & Court Records'}
+                                            </Text>
+                                        </Animated.View>
+                                    </Animated.View>
+                                )
                             )}
 
                             {inputError && <Text style={styles.errorText}>{inputError}</Text>}

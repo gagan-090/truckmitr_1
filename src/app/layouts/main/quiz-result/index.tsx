@@ -37,7 +37,72 @@ export default function QuizResult() {
     const { responsiveWidth, responsiveFontSize, responsiveHeight } = useResponsiveScale();
     const navigation = useNavigation<NavigatorProp>();
 
-    const { user, profileCompletion, rank, star_rating, isDriver, isTransporter } = useSelector((state: any) => { return state?.user }) || {};
+    const { user, profileCompletion, rank, star_rating, isDriver, isTransporter, subscriptionDetails } = useSelector((state: any) => { return state?.user }) || {};
+
+    // Check if a subscription is active
+    const isSubscriptionActive = (item: any) => {
+        if (!item) return false;
+        if (!item.end_at) return false;
+
+        // Convert epoch seconds → milliseconds
+        const endDate = new Date(item.end_at * 1000);
+        const now = new Date();
+
+        return endDate > now;
+    };
+
+    // Get active plan name with subscription tier
+    const getActivePlanName = () => {
+        let activeSub = null;
+        if (Array.isArray(subscriptionDetails)) {
+            activeSub = subscriptionDetails.find((item: any) => isSubscriptionActive(item));
+        } else if (subscriptionDetails && isSubscriptionActive(subscriptionDetails)) {
+            activeSub = subscriptionDetails;
+        }
+
+        const role = capitalizeFirst(user?.role || 'Driver');
+
+        if (activeSub) {
+            let tier = '';
+            // Try to deduce tier from payment_type or plan_name
+            const type = (activeSub.payment_type || activeSub.plan_name || '').toUpperCase();
+
+            // Prioritize explicit name matching first
+            if (type.includes('TRUSTED')) tier = 'Trusted';
+            else if (type.includes('VERIFIED')) tier = 'Verified';
+            else if (type.includes('JOB READY') || type.includes('JOBREADY')) tier = 'Job Ready';
+            else if (type.includes('STANDARD')) tier = 'Standard';
+            else if (type.includes('LEGACY')) tier = 'Legacy';
+
+            // Fallback to amount-based detection if name didn't match
+            if (!tier && activeSub.amount) {
+                const amt = parseFloat(activeSub.amount);
+                if (amt >= 499) tier = 'Trusted';
+                else if (amt >= 199) tier = 'Verified';
+                else if (amt >= 99) tier = 'Job Ready';
+            }
+
+            // Fallback to raw name
+            if (!tier && type && type !== 'SUBSCRIPTION') {
+                tier = capitalizeFirst(activeSub.payment_type || activeSub.plan_name);
+            }
+
+            if (tier) {
+                // Ensure we don't duplicate "Driver" e.g. "Trusted Driver Driver"
+                if (tier.toLowerCase().endsWith(' driver')) {
+                    tier = tier.substring(0, tier.length - 7);
+                }
+                return `${tier} ${role}`;
+            }
+        }
+
+        return role;
+    };
+
+    // Get subscription tier color - always dark blue
+    const getSubscriptionBadgeColor = () => {
+        return { bg: 'rgba(8, 68, 137, 0.1)', text: '#084489' }; // Dark blue for all
+    };
 
     const progress = profileCompletion || 0; // Profile completion percentage
     const size = responsiveFontSize(11); // Size of the circle
@@ -335,7 +400,7 @@ export default function QuizResult() {
                 <View style={{ marginStart: responsiveFontSize(2.5) }}>
                     <Text style={{ color: colors.black, fontSize: responsiveFontSize(2.6), fontWeight: '500' }}>{`${user?.name || ''}`}</Text>
                     <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.6), fontWeight: '400' }}>{`ID - ${user?.unique_id || ''}`}</Text>
-                    <Text style={{ backgroundColor: colors?.blackOpacity(.05), alignSelf: 'flex-start', color: colors.black, fontSize: responsiveFontSize(1.7), fontWeight: '500', paddingVertical: responsiveFontSize(.1), paddingHorizontal: responsiveFontSize(2), borderRadius: 100 }}>{`${capitalizeFirst(user?.role)}`}</Text>
+                    <Text style={{ backgroundColor: getSubscriptionBadgeColor().bg, alignSelf: 'flex-start', color: getSubscriptionBadgeColor().text, fontSize: responsiveFontSize(1.7), fontWeight: '600', paddingVertical: responsiveFontSize(.2), paddingHorizontal: responsiveFontSize(2), borderRadius: 100 }}>{getActivePlanName()}</Text>
                     <View style={{ flexDirection: 'row', backgroundColor: colors.bronzeOpacity(.08), alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: responsiveFontSize(2), paddingVertical: responsiveFontSize(.2), marginTop: responsiveFontSize(1), borderRadius: 100 }}>
                         <Text style={{ color: colors.bronze, fontSize: responsiveFontSize(1.6), fontWeight: '500' }}>{rank}</Text>
                         <Image style={{ height: responsiveFontSize(2.6), width: responsiveFontSize(2.6) }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/11881/11881945.png' }} />
