@@ -358,7 +358,7 @@
   "reject": "अस्वीकार करें",
   "accept": "स्वीकार करें",
   "pendingFromTransporter": "ट्रांसपोर्टर से लंबित",
-  "acceptedByDriver": "ड्राइवर द्वारा स्वीकृत",
+  "acceptedByDriver": "ट्रांसपोर्टर द्वारा स्वीकृत",
   "searchDrivers": "ड्राइवर खोजें",
   "deleteDriver": "ड्राइवर हटाएं",
   "areYouSureYouWantToDeleteDriver": "क्या आप वाकई इस ड्राइवर को हटाना चाहते हैं?",
@@ -1609,5 +1609,9 @@
   "completeFormUsingLink": "मोबाइल पर भेजे गए लिंक का उपयोग करके फॉर्म भरें",
   "dontShareVerificationLink": "सत्यापन लिंक किसी के साथ साझा न करें",
   "dataSecurityDescAddress": "आपका डेटा एन्क्रिप्टेड है और केवल पता सत्यापन के लिए उपयोग किया जाता है।",
-  "startDigitalAddressCheck": "डिजिटल एड्रेस चेक शुरू करें"
+  "startDigitalAddressCheck": "डिजिटल एड्रेस चेक शुरू करें",
+  "idCard": "आईडी",
+  "faceMatching": "फेस मैचिंग",
+  "verificationProcess": "सत्यापन प्रक्रिया",
+  "drivingLicenseNumber": "ड्राइविंग लाइसेंस नंबर"
 }

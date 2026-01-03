@@ -17,11 +17,30 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'
 import { hitSlop, isIOS } from '@truckmitr/src/app/functions';
 import { useDispatch, useSelector } from 'react-redux';
-import { BASE_URL } from '@truckmitr/src/utils/config';
+import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
+import { BASE_URL, END_POINTS } from '@truckmitr/src/utils/config';
 import { useTranslation } from 'react-i18next';
 import { subscriptionModalAction } from '@truckmitr/src/redux/actions/user.action';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
+
+type TierType = 'TRUSTED' | 'VERIFIED' | 'JOB READY' | 'Standard' | 'LEGACY';
+
+// Helper function to get tier from payment_type
+const getTierFromPaymentType = (paymentType: string, amount?: number): TierType => {
+    // Legacy driver detection: Rs 49 payment = Legacy Driver
+    if (amount === 49 || amount === 49.00) {
+        return 'LEGACY';
+    }
+
+    const normalizedType = paymentType?.toUpperCase().replace(/\s+/g, ' ').trim();
+    if (normalizedType === 'TRUSTED') return 'TRUSTED';
+    if (normalizedType === 'VERIFIED') return 'VERIFIED';
+    if (normalizedType === 'JOB READY' || normalizedType === 'JOBREADY') return 'JOB READY';
+    if (normalizedType === 'STANDARD') return 'Standard';
+    if (normalizedType === 'LEGACY') return 'LEGACY';
+    return 'JOB READY';
+};
 
 const capitalizeFirst = (str: string): string => {
     if (!str) return '';
@@ -105,6 +124,7 @@ export default function Dashboard() {
     const { shadow } = useShadow()
     const { responsiveWidth, responsiveFontSize, responsiveHeight } = useResponsiveScale();
     const navigation = useNavigation<NavigatorProp>();
+    const [suitsJobCount, setSuitsJobCount] = React.useState<number | null>(null);
 
     const { user, isDriver, isTransporter, profileCompletion, dashboard, rank, star_rating, subscriptionDetails, subscriptionModal, } = useSelector((state: any) => { return state?.user }) || {};
 
@@ -143,6 +163,45 @@ export default function Dashboard() {
         }
     }
 
+    // Fetch jobs that suits you count
+    useEffect(() => {
+        if (isDriver) {
+            getSuitsJobCount();
+        }
+    }, [isDriver]);
+
+    const getSuitsJobCount = async () => {
+        try {
+            const response = await axiosInstance.get(END_POINTS.JOB_THAT_SUITS_YOU);
+            if (response.data && Array.isArray(response.data.data)) {
+                setSuitsJobCount(response.data.data.length);
+            } else {
+                setSuitsJobCount(0);
+            }
+        } catch (error) {
+            console.error('Error fetching suits jobs:', error);
+            setSuitsJobCount(0);
+        }
+    };
+
+    // Determine Driver Badge Text
+    const getDriverBadgeText = () => {
+        if (subscriptionDetails?.hasActiveSubscription || !subscriptionDetails?.showSubscriptionModel) {
+            const paymentType = subscriptionDetails?.payment_type || 'JOB READY';
+            const amount = parseFloat(subscriptionDetails?.amount) || 0;
+            const tier = getTierFromPaymentType(paymentType, amount);
+
+            if (tier === 'TRUSTED') return t('cardTrustedDriver') || 'Trusted Driver';
+            if (tier === 'VERIFIED') return t('cardVerifiedDriver') || 'Verified Driver';
+            if (tier === 'LEGACY') return t('cardLegacyDriver') || 'Legacy Driver';
+            if (tier === 'JOB READY') return t('cardJobReady') || 'Job Ready Driver';
+            return t('cardJobReady') || 'Job Ready Driver';
+        }
+        return t('cardJobReady') || 'Job Ready Driver';
+    };
+
+    const driverBadgeText = getDriverBadgeText();
+
     return (
         <ScrollView style={{ flex: 1, backgroundColor: colors.white }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 50 }}>
             <Space height={safeAreaInsets.top} />
@@ -160,7 +219,7 @@ export default function Dashboard() {
                     <View>
                         <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(2.2), fontFamily: 'Inter-Bold', fontWeight: 'bold', letterSpacing: 0.5 }}>{`${t(`hi`)}, ${user?.name || ''} 👋`}</Text>
                         <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(1.6), fontFamily: 'Inter-Bold', fontWeight: 'bold', marginTop: -3 }}>{`${user?.unique_id || ''}`}</Text>
-                        <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(1.4), fontFamily: 'Inter-Bold', fontWeight: 'bold', marginTop: -3 }}>Job Ready Driver</Text>
+                        <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(1.4), fontFamily: 'Inter-Bold', fontWeight: 'bold', marginTop: -3 }}>{driverBadgeText}</Text>
                     </View>
 
                     {/* Right: Profile Avatar with Progress Ring, Stars, N/A */}
@@ -304,7 +363,7 @@ export default function Dashboard() {
                         <DashboardCard
                             title={t(`jobsThatSuitsYou`)}
                             subtitle={t(`Matches for you`)}
-                            count={dashboard?.jobs_that_suit_you}
+                            count={suitsJobCount !== null ? suitsJobCount : dashboard?.jobs_that_suit_you}
                             icon="https://cdn-icons-png.flaticon.com/512/2966/2966773.png"
                             onPress={() => {
                                 if (subscriptionDetails?.showSubscriptionModel && isDriver) {

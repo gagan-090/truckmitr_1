@@ -9,7 +9,10 @@ import {
     ScrollView,
     KeyboardAvoidingView,
     Platform,
+    Image,
+    Modal,
 } from 'react-native';
+import ImagePicker from 'react-native-image-crop-picker';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useColor, useResponsiveScale, useStatusBarStyle } from '@truckmitr/src/app/hooks';
@@ -23,6 +26,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import LinearGradient from 'react-native-linear-gradient';
 import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
 import { END_POINTS } from '@truckmitr/src/utils/config';
+import { STACKS } from '@truckmitr/src/stacks/stacks';
 import { useDispatch, useSelector } from 'react-redux';
 import { subscriptionModalAction } from '@truckmitr/src/redux/actions/user.action';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
@@ -188,7 +192,7 @@ interface VoterVerificationResponse {
     result?: any;
 }
 
-type TabType = 'DL' | 'PAN' | 'AADHAAR' | 'VOTER';
+type TabType = 'DL' | 'PAN' | 'AADHAAR' | 'VOTER' | 'ID' | 'FACE';
 
 export default function DocumentVerification() {
     const route: any = useRoute();
@@ -200,13 +204,36 @@ export default function DocumentVerification() {
     const { responsiveHeight, responsiveWidth, responsiveFontSize } = useResponsiveScale();
     const navigation = useNavigation<NavigatorProp>();
 
-    const { user, isDriver } = useSelector((state: any) => state?.user);
+    const { user, isDriver, subscriptionDetails } = useSelector((state: any) => state?.user);
+
+    // Check if user has 499 (Trusted) subscription
+    const hasTrustedSubscription = useCallback(() => {
+        if (!subscriptionDetails?.hasActiveSubscription) return false;
+
+        // Check amount from various possible fields
+        const amount = parseFloat(subscriptionDetails?.amount) ||
+            parseFloat(subscriptionDetails?.price) ||
+            parseFloat(subscriptionDetails?.plan_amount) || 0;
+
+        if (amount >= 499) return true;
+
+        // Also check plan name/payment type for "trusted" tier
+        const planName = (subscriptionDetails?.payment_type ||
+            subscriptionDetails?.plan_name ||
+            subscriptionDetails?.name || '').toLowerCase();
+        if (planName.includes('trusted') || planName.includes('premium')) return true;
+
+        return false;
+    }, [subscriptionDetails]);
 
     // Tab State
-    const [activeTab, setActiveTab] = useState<TabType>('DL');
+    const [activeTab, setActiveTab] = useState<TabType>(route.params?.initialTab || 'DL');
 
     // Form State
     const [dlNumber, setDlNumber] = useState('');
+    const [showSubscriptionPrompt, setShowSubscriptionPrompt] = useState(false);
+    const [govtIdNumber, setGovtIdNumber] = useState('');
+    const [idSelfie, setIdSelfie] = useState<any>(null);
     const [panNumber, setPanNumber] = useState('');
     const [aadhaarNumber, setAadhaarNumber] = useState('');
     const [voterIdNumber, setVoterIdNumber] = useState('');
@@ -517,6 +544,21 @@ export default function DocumentVerification() {
         if (inputError) validateVoterId(cleanedValue);
     };
 
+    const handleTakeSelfie = async () => {
+        try {
+            const image = await ImagePicker.openCamera({
+                width: 300,
+                height: 400,
+                cropping: false,
+                useFrontCamera: true,
+                mediaType: 'photo'
+            });
+            setIdSelfie(image);
+        } catch (error) {
+            console.log('Camera Error:', error);
+        }
+    };
+
     // API Call
     const handleVerify = async () => {
         setError(null);
@@ -770,13 +812,19 @@ export default function DocumentVerification() {
 
     const renderTabs = () => (
         <View style={{ marginBottom: 16 }}>
-            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
-                <TabButton type='DL' label={t('drivingLicense') || 'Driving License'} icon='car-outline' />
-                <TabButton type='AADHAAR' label={t('aadhaarCard') || 'Aadhaar Card'} icon='finger-print' />
+            {/* Required Documents Title */}
+            <Text style={styles.requiredDocsTitle}>{t('requiredDocuments') || 'Required Documents'}</Text>
+
+            {/* 3x2 Grid of Rectangular Tab Buttons */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                <TabButton type='DL' label='DL' icon='car-outline' />
+                <TabButton type='AADHAAR' label='Aadhar' icon='finger-print' />
+                <TabButton type='PAN' label='Pan' icon='card-outline' />
             </View>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-                <TabButton type='PAN' label={t('panCard') || 'PAN Card'} icon='card-outline' />
-                <TabButton type='VOTER' label={t('voterId') || 'Voter ID'} icon='person-outline' />
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TabButton type='VOTER' label='Voter' icon='person-outline' />
+                <TabButton type='ID' label='ID' icon='id-card-outline' />
+                <TabButton type='FACE' label='Face' icon='scan-outline' />
             </View>
         </View>
     );
@@ -793,10 +841,10 @@ export default function DocumentVerification() {
             </View>
 
             {/* Content */}
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }} keyboardVerticalOffset={0}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }} keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}>
                 <ScrollView
                     ref={scrollViewRef}
-                    contentContainerStyle={styles.scrollContent}
+                    contentContainerStyle={[styles.scrollContent, { paddingBottom: 250 }]} // Extra padding for button visibility with keyboard
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                     bounces={true}
@@ -818,6 +866,7 @@ export default function DocumentVerification() {
                     {/* Tabs */}
                     {renderTabs()}
 
+                    {/* Main Content Area - Hide for ID and FACE tabs (they navigate to ID Check Info screen) */}
                     {/* Main Content Area */}
                     {isSuccess ? (
                         <View>
@@ -838,7 +887,9 @@ export default function DocumentVerification() {
                                 onPress={() => {
                                     // Reset to allow verify other doc or update
                                     if (activeTab === 'DL') setDlResult(null);
-                                    else setPanResult(null);
+                                    else if (activeTab === 'PAN') setPanResult(null);
+                                    else if (activeTab === 'AADHAAR') setAadhaarResult(null);
+                                    else if (activeTab === 'VOTER') setVoterResult(null);
                                     setConsentChecked(false);
                                 }}
                                 style={styles.secondaryButton}
@@ -866,6 +917,94 @@ export default function DocumentVerification() {
                                     </View>
                                     <Text style={styles.inputHint}>Format: 10-20 alphanumeric characters</Text>
                                 </View>
+                            )}
+
+                            {activeTab === 'ID' && (
+                                hasTrustedSubscription() ? (
+                                    <View>
+                                        <View style={styles.inputGroup}>
+                                            <Text style={styles.inputLabel}><Ionicons name="card" size={14} color={COLORS.textMuted} />  {t('govtIdNumber') || 'Government ID Number'}</Text>
+                                            <View style={styles.inputContainer}>
+                                                <TextInput
+                                                    style={styles.input}
+                                                    placeholder={t('enterAadhaarVoterPan') || "Enter Aadhaar / Voter / PAN"}
+                                                    placeholderTextColor={COLORS.textLight}
+                                                    value={govtIdNumber}
+                                                    onChangeText={setGovtIdNumber}
+                                                    autoCapitalize="characters"
+                                                />
+                                            </View>
+                                        </View>
+                                        <View style={styles.inputGroup}>
+                                            <Text style={styles.inputLabel}><Ionicons name="car" size={14} color={COLORS.textMuted} />  {t('drivingLicenseNumber') || 'Driving License Number'}</Text>
+                                            <View style={styles.inputContainer}>
+                                                <TextInput
+                                                    style={styles.input}
+                                                    placeholder={t('enterDrivingLicenseNumber') || "Enter Driving License Number"}
+                                                    placeholderTextColor={COLORS.textLight}
+                                                    value={dlNumber}
+                                                    onChangeText={setDlNumber}
+                                                    autoCapitalize="characters"
+                                                    maxLength={20}
+                                                />
+                                            </View>
+                                        </View>
+                                        <View style={[styles.inputGroup, { marginTop: 8 }]}>
+                                            <Text style={styles.inputLabel}><Ionicons name="camera" size={14} color={COLORS.textMuted} />  {t('liveSelfie') || 'Live Selfie'}</Text>
+                                            <View
+                                                style={[styles.inputContainer, { paddingVertical: 12, justifyContent: 'center', alignItems: 'center', borderStyle: 'dashed', borderWidth: 1 }]}
+                                            >
+                                                {idSelfie ? (
+                                                    <View>
+                                                        <Image source={{ uri: idSelfie.path }} style={{ width: 100, height: 100, borderRadius: 8 }} />
+                                                        <TouchableOpacity
+                                                            onPress={() => setIdSelfie(null)}
+                                                            style={{ position: 'absolute', top: -8, right: -8, backgroundColor: COLORS.error, borderRadius: 12, width: 24, height: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: COLORS.white }}
+                                                            activeOpacity={0.8}
+                                                        >
+                                                            <Ionicons name="close" size={14} color={COLORS.white} />
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                ) : (
+                                                    <TouchableOpacity onPress={handleTakeSelfie} style={{ alignItems: 'center', width: '100%' }}>
+                                                        <Ionicons name="camera-outline" size={24} color={COLORS.primary} />
+                                                        <Text style={{ color: COLORS.primary, marginTop: 4 }}>{t('clickToTakeSelfie') || 'Click to take selfie'}</Text>
+                                                    </TouchableOpacity>
+                                                )}
+                                            </View>
+                                        </View>
+                                    </View>
+                                ) : (
+                                    // Upgrade Prompt for users without 499 subscription
+                                    <Animated.View entering={FadeInDown.duration(400).springify()} style={{ alignItems: 'center', paddingVertical: 32, paddingHorizontal: 16 }}>
+                                        <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#FEF3C7', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+                                            <MaterialCommunityIcons name="crown" size={40} color="#D97706" />
+                                        </View>
+                                        <Text style={{ fontSize: 20, fontWeight: '700', color: COLORS.text, textAlign: 'center', marginBottom: 8 }}>
+                                            {t('upgradeRequired') || 'Upgrade Required'}
+                                        </Text>
+                                        <Text style={{ fontSize: 14, color: COLORS.textMuted, textAlign: 'center', lineHeight: 22, marginBottom: 24 }}>
+                                            {t('idCheckUpgradeMessage') || 'You need to upgrade to the Trusted Driver plan (₹499/year) to access advanced ID verification features.'}
+                                        </Text>
+                                        <TouchableOpacity
+                                            onPress={() => dispatch(subscriptionModalAction({ visible: true, minPrice: 499 }))}
+                                            activeOpacity={0.9}
+                                            style={{ width: '100%', borderRadius: 14, overflow: 'hidden', shadowColor: '#2563EB', shadowOpacity: 0.3, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 4 }}
+                                        >
+                                            <LinearGradient
+                                                colors={['#1E3A8A', '#3B82F6']}
+                                                start={{ x: 0, y: 0 }}
+                                                end={{ x: 1, y: 0 }}
+                                                style={{ paddingVertical: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+                                            >
+                                                <MaterialCommunityIcons name="arrow-up-circle" size={20} color={COLORS.white} />
+                                                <Text style={{ color: COLORS.white, fontSize: 16, fontWeight: '700' }}>
+                                                    {t('upgradeToTrusted') || 'Upgrade to Trusted Driver @ ₹499'}
+                                                </Text>
+                                            </LinearGradient>
+                                        </TouchableOpacity>
+                                    </Animated.View>
+                                )
                             )}
 
                             {activeTab === 'PAN' && (
@@ -987,6 +1126,43 @@ export default function DocumentVerification() {
                 </ScrollView>
             </KeyboardAvoidingView>
 
+            {/* Subscription Prompt Modal */}
+            <Modal
+                transparent
+                visible={showSubscriptionPrompt}
+                animationType="fade"
+                onRequestClose={() => setShowSubscriptionPrompt(false)}
+            >
+                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
+                    <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 24, alignItems: 'center' }}>
+                        <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: '#E0F2FE', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                            <MaterialCommunityIcons name="shield-crown" size={32} color={COLORS.primary} />
+                        </View>
+                        <Text style={{ fontSize: 20, fontWeight: '700', color: COLORS.text, marginBottom: 8, textAlign: 'center' }}>{t('unlockIdVerification') || 'Unlock ID Verification'}</Text>
+                        <Text style={{ fontSize: 14, color: COLORS.textMuted, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
+                            {t('idCheckPremiumFeature') || 'Advanced ID verification is a premium feature available with the Trusted Driver plan.'}
+                        </Text>
+
+                        <TouchableOpacity
+                            onPress={() => {
+                                setShowSubscriptionPrompt(false);
+                                dispatch(subscriptionModalAction({ visible: true, minPrice: 499 }));
+                            }}
+                            activeOpacity={0.9}
+                            style={{ width: '100%', borderRadius: 12, overflow: 'hidden' }}
+                        >
+                            <LinearGradient colors={['#1E3A8A', '#3B82F6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingVertical: 16, alignItems: 'center' }}>
+                                <Text style={{ color: COLORS.white, fontSize: 16, fontWeight: '700' }}>Subscribe @ ₹499/Year</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity onPress={() => setShowSubscriptionPrompt(false)} style={{ marginTop: 16, padding: 8 }}>
+                            <Text style={{ color: COLORS.textMuted, fontSize: 14, fontWeight: '500' }}>Maybe Later</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
             {/* Loading Overlay */}
             {isLoading && (
                 <View style={styles.loadingOverlay}>
@@ -1106,4 +1282,113 @@ const styles = StyleSheet.create({
     loadingOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.8)', alignItems: 'center', justifyContent: 'center', zIndex: 100 },
     loadingCard: { backgroundColor: COLORS.white, padding: 24, borderRadius: 16, alignItems: 'center', shadowOpacity: 0.1, elevation: 5 },
     loadingText: { marginTop: 12, fontSize: 14, fontWeight: '600', color: COLORS.primary },
+
+    // Required Documents Section
+    requiredDocsSection: { marginBottom: 20 },
+    requiredDocsTitle: { fontSize: 18, fontWeight: '700', color: COLORS.text, marginBottom: 16 },
+
+    // Document Type Grid (3x2)
+    docTypeGrid: { marginBottom: 20 },
+    docTypeRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10, gap: 10 },
+    docTypeButton: {
+        flex: 1,
+        backgroundColor: COLORS.white,
+        borderRadius: 12,
+        paddingVertical: 16,
+        paddingHorizontal: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1.5,
+        borderColor: COLORS.border,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    docTypeIconContainer: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        backgroundColor: '#EFF6FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 8
+    },
+    docTypeLabel: { fontSize: 12, fontWeight: '600', color: COLORS.text, textAlign: 'center' },
+
+    // Placeholder Inputs Section
+    placeholderInputsSection: { marginTop: 8 },
+    placeholderInput: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.inputBg,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        paddingHorizontal: 16,
+        paddingVertical: 14
+    },
+    placeholderText: { fontSize: 14, color: COLORS.textLight },
+    selfieInputPlaceholder: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.inputBg,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        borderStyle: 'dashed',
+        paddingHorizontal: 16,
+        paddingVertical: 14
+    },
+
+    // Verification Process
+    verificationProcessCard: {
+        backgroundColor: COLORS.white,
+        borderRadius: 14,
+        padding: 16,
+        marginBottom: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 4,
+        elevation: 1,
+    },
+    verificationProcessTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: 16 },
+    processStepNumber: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: COLORS.primary,
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+    processStepNumberText: { fontSize: 14, fontWeight: '700', color: COLORS.white },
+    processStepLine: { width: 2, height: 24, backgroundColor: '#E0E7FF', marginTop: 4 },
+    processStepText: { fontSize: 14, color: COLORS.textMuted, flex: 1, paddingTop: 6 },
+
+    // ID Check Button with Glow Effect
+    idCheckButtonContainer: {
+        borderRadius: 14,
+        overflow: 'hidden',
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    idCheckButtonGlow: {
+        shadowColor: '#3B82F6',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6,
+        shadowRadius: 20,
+        elevation: 12,
+    },
+    idCheckButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 16
+    },
+    idCheckButtonText: { fontSize: 17, fontWeight: '700', color: COLORS.white },
 });

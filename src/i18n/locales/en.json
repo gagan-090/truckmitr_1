@@ -286,7 +286,7 @@
   "reject": "Reject",
   "accept": "Accept",
   "pendingFromTransporter": "Pending from transporter",
-  "acceptedByDriver": "Accepted by Driver",
+  "acceptedByDriver": "Accepted by Transporter",
   "searchDrivers": "Search Drivers",
   "deleteDriver": "Delete Driver",
   "areYouSureYouWantToDeleteDriver": "Are you sure you want to delete this driver?",
@@ -1665,5 +1665,9 @@
   "completeFormUsingLink": "Complete the form using the link sent to your mobile",
   "dontShareVerificationLink": "Do not share the verification link with anyone",
   "dataSecurityDescAddress": "Your data is encrypted and used only for address verification.",
-  "startDigitalAddressCheck": "Start Digital Address Check"
+  "startDigitalAddressCheck": "Start Digital Address Check",
+  "idCard": "ID",
+  "faceMatching": "Face Matching",
+  "verificationProcess": "Verification Process",
+  "drivingLicenseNumber": "Driving License number"
 }

@@ -1,5 +1,5 @@
 import { StyleSheet, Text, TouchableOpacity, View, Modal, Linking, ActivityIndicator } from 'react-native'
-import React, {useState, useEffect} from 'react'
+import React, { useState, useEffect } from 'react'
 import { useColor, useResponsiveScale, useShadow } from '@truckmitr/src/app/hooks';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -64,7 +64,7 @@ export default function ContactUs() {
         navigation.goBack()
     }
 
-       const handleCallbackSubmit = async () => {
+    const handleCallbackSubmit = async () => {
         if (!validate()) return;
         setCallbackLoading(true);
         const formData = new FormData();
@@ -148,101 +148,101 @@ export default function ContactUs() {
             </View>
             <Space style={{ flex: 1 }} />
             <View style={{ width: responsiveWidth(100), backgroundColor: colors.royalBlue }}>
-                <Text style={{ color: colors.white, fontSize: responsiveFontSize(1.6), textAlign: 'center', margin: responsiveFontSize(1.5) }}>{`© 2025 TruckMitr Corporate Services Private Limited. \nAll Rights Reserved.`}</Text>
+                <Text style={{ color: colors.white, fontSize: responsiveFontSize(1.6), textAlign: 'center', margin: responsiveFontSize(1.5) }}>{`© 2026 TruckMitr Corporate Services Private Limited. \nAll Rights Reserved.`}</Text>
                 <Space height={safeAreaInsets.bottom} />
             </View>
             {/* Callback Modal */}
-                <Modal
-                    visible={showCallbackModal}
-                    transparent
-                    onRequestClose={() => setShowCallbackModal(false)}
-                >
-                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
-                        <View style={{ width: '90%', backgroundColor: '#fff', borderRadius: 12, padding: 20 }}>
-                            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>{t('requestCallback')}</Text>
-                            <Space height={responsiveFontSize(2.5)} />
-                            <View>
-                                <Text style={{ color: colors.blackOpacity(.9), fontSize: responsiveFontSize(1.7), fontWeight: '600' }}>{t('contactReason')}</Text>
-                                {callbackOptions.map((option) => (
-                                    <TouchableOpacity
-                                        key={option}
+            <Modal
+                visible={showCallbackModal}
+                transparent
+                onRequestClose={() => setShowCallbackModal(false)}
+            >
+                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
+                    <View style={{ width: '90%', backgroundColor: '#fff', borderRadius: 12, padding: 20 }}>
+                        <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>{t('requestCallback')}</Text>
+                        <Space height={responsiveFontSize(2.5)} />
+                        <View>
+                            <Text style={{ color: colors.blackOpacity(.9), fontSize: responsiveFontSize(1.7), fontWeight: '600' }}>{t('contactReason')}</Text>
+                            {callbackOptions.map((option) => (
+                                <TouchableOpacity
+                                    key={option}
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        marginVertical: responsiveFontSize(0.8),
+                                    }}
+                                    onPress={() => {
+                                        setCallbackReason(option);
+                                        setErrors((prevData) => ({
+                                            ...prevData,
+                                            callReason: undefined,
+                                        }));
+                                    }}
+                                >
+                                    <View
                                         style={{
-                                            flexDirection: 'row',
+                                            height: 22,
+                                            width: 22,
+                                            borderRadius: 11,
+                                            borderWidth: 2,
+                                            borderColor: colors.royalBlue,
                                             alignItems: 'center',
-                                            marginVertical: responsiveFontSize(0.8),
-                                        }}
-                                        onPress={() => {
-                                            setCallbackReason(option);
-                                            setErrors((prevData) => ({
-                                                ...prevData,
-                                                callReason: undefined,
-                                            }));
+                                            justifyContent: 'center',
+                                            marginRight: 10,
                                         }}
                                     >
-                                        <View
-                                            style={{
-                                                height: 22,
-                                                width: 22,
-                                                borderRadius: 11,
-                                                borderWidth: 2,
-                                                borderColor: colors.royalBlue,
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                marginRight: 10,
-                                            }}
-                                        >
-                                            {callbackReason === option && (
-                                                <View
-                                                    style={{
-                                                        height: 12,
-                                                        width: 12,
-                                                        borderRadius: 6,
-                                                        backgroundColor: colors.royalBlue,
-                                                    }}
-                                                />
-                                            )}
-                                        </View>
-                                        <Text style={{
-                                            fontSize: responsiveFontSize(1.9),
-                                            color: colors.blackOpacity(0.8),
-                                            fontWeight: callbackReason === option ? 'bold' : '500',
-                                        }}>
-                                            {option}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                                {errors?.callReason && (
-                                    <Text style={{ color: 'red', fontSize: responsiveFontSize(1.6), marginTop: responsiveFontSize(.5) }}>{errors?.callReason}</Text>
-                                )}
-                            </View>
-                            <TouchableOpacity
-                                style={{ backgroundColor: colors.royalBlue, borderRadius: 8, padding: 12, alignItems: 'center', marginTop: responsiveFontSize(2) }}
-                                onPress={handleCallbackSubmit}
-                                disabled={callbackLoading}
-                            >
-                                {callbackLoading ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{t('submit')}</Text>}
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => setShowCallbackModal(false)} style={{ marginTop: 12, alignItems: 'center' }}>
-                                <Text style={{ color: colors.royalBlue, fontWeight: 'bold' }}>{t('cancel')}</Text>
-                            </TouchableOpacity>
+                                        {callbackReason === option && (
+                                            <View
+                                                style={{
+                                                    height: 12,
+                                                    width: 12,
+                                                    borderRadius: 6,
+                                                    backgroundColor: colors.royalBlue,
+                                                }}
+                                            />
+                                        )}
+                                    </View>
+                                    <Text style={{
+                                        fontSize: responsiveFontSize(1.9),
+                                        color: colors.blackOpacity(0.8),
+                                        fontWeight: callbackReason === option ? 'bold' : '500',
+                                    }}>
+                                        {option}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                            {errors?.callReason && (
+                                <Text style={{ color: 'red', fontSize: responsiveFontSize(1.6), marginTop: responsiveFontSize(.5) }}>{errors?.callReason}</Text>
+                            )}
                         </View>
+                        <TouchableOpacity
+                            style={{ backgroundColor: colors.royalBlue, borderRadius: 8, padding: 12, alignItems: 'center', marginTop: responsiveFontSize(2) }}
+                            onPress={handleCallbackSubmit}
+                            disabled={callbackLoading}
+                        >
+                            {callbackLoading ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{t('submit')}</Text>}
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setShowCallbackModal(false)} style={{ marginTop: 12, alignItems: 'center' }}>
+                            <Text style={{ color: colors.royalBlue, fontWeight: 'bold' }}>{t('cancel')}</Text>
+                        </TouchableOpacity>
                     </View>
-                </Modal>
-             <AnimatedFAB
-                            icon={'phone'}
-                            label={t('callback')}
-                            color={colors.white}
-                            extended={isExtended}
-                            onPress={() => setShowCallbackModal(true)}
-                            visible={true}
-                            iconMode={'dynamic'}
-                            style={{
-                                position: 'absolute',
-                                bottom: responsiveWidth(35),
-                                right: responsiveWidth(5),
-                                backgroundColor: colors.royalBlue
-                            }}
-                        />
+                </View>
+            </Modal>
+            <AnimatedFAB
+                icon={'phone'}
+                label={t('callback')}
+                color={colors.white}
+                extended={isExtended}
+                onPress={() => setShowCallbackModal(true)}
+                visible={true}
+                iconMode={'dynamic'}
+                style={{
+                    position: 'absolute',
+                    bottom: responsiveWidth(35),
+                    right: responsiveWidth(5),
+                    backgroundColor: colors.royalBlue
+                }}
+            />
         </View>
     )
 }

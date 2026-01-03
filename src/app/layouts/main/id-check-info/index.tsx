@@ -21,8 +21,8 @@ const IdCheckInfo = () => {
     const [refreshKey, setRefreshKey] = useState(0);
 
     // Form State
-    const [govtId, setGovtId] = useState('');
-    const [licenseNumber, setLicenseNumber] = useState('');
+    const [govtId] = useState('');
+    const [licenseNumber] = useState('');
     const [selfie, setSelfie] = useState<any>(null);
 
     const _takeSelfie = async () => {
@@ -42,8 +42,8 @@ const IdCheckInfo = () => {
 
     const _goBack = () => navigation.goBack();
     const _navigateToSubscription = () => {
-        // Open subscription modal
-        dispatch(subscriptionModalAction(true));
+        // Navigate to DL Verification screen, ID tab
+        navigation.navigate(STACKS.DL_VERIFICATION, { initialTab: 'ID' });
     };
     const _contactSupport = () => {
         Linking.openURL('tel:+911234567890');
@@ -148,7 +148,8 @@ const IdCheckInfo = () => {
                                 placeholder={t('enterAadhaarVoterPan')}
                                 placeholderTextColor="#94A3B8"
                                 value={govtId}
-                                onChangeText={setGovtId}
+                                editable={false}
+                                pointerEvents="none"
                             />
                         </View>
                     </View>
@@ -163,7 +164,8 @@ const IdCheckInfo = () => {
                                 placeholder={t('enterDrivingLicenseNumber')}
                                 placeholderTextColor="#94A3B8"
                                 value={licenseNumber}
-                                onChangeText={setLicenseNumber}
+                                editable={false}
+                                pointerEvents="none"
                             />
                         </View>
                     </View>
@@ -171,20 +173,12 @@ const IdCheckInfo = () => {
                     {/* Live Selfie Input (Simulated) */}
                     <View style={{ marginBottom: 8 }}>
                         <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600', marginBottom: 8 }}>{t('liveSelfie')}</Text>
-                        <TouchableOpacity onPress={_takeSelfie} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 14, paddingVertical: 14, borderStyle: 'dashed' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 14, paddingVertical: 14, borderStyle: 'dashed' }}>
                             <Ionicons name="camera-outline" size={22} color="#64748B" style={{ marginRight: 12 }} />
-                            {selfie ? (
-                                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                                    <Image source={{ uri: selfie.path }} style={{ width: 36, height: 36, borderRadius: 18, marginRight: 10 }} />
-                                    <Text style={{ fontSize: responsiveFontSize(1.8), color: '#0F172A' }}>{t('selfieCaptured')}</Text>
-                                </View>
-                            ) : (
-                                <Text style={{ fontSize: responsiveFontSize(1.8), color: '#94A3B8' }}>{t('clickToTakeSelfie')}</Text>
-                            )}
+                            <Text style={{ fontSize: responsiveFontSize(1.8), color: '#94A3B8' }}>{t('clickToTakeSelfie')}</Text>
                             <View style={{ flex: 1 }} />
-                            {!selfie && <Ionicons name="cloud-upload-outline" size={20} color="#2563EB" />}
-                            {selfie && <Ionicons name="checkmark-circle" size={20} color="#16A34A" />}
-                        </TouchableOpacity>
+                            <Ionicons name="cloud-upload-outline" size={20} color="#2563EB" />
+                        </View>
                     </View>
                 </View>
 

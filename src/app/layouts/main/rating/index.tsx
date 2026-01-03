@@ -154,7 +154,7 @@ export default function Rating() {
         </ScrollView>
       </KeyboardAvoidingView>
       <View style={{ width: responsiveWidth(100), backgroundColor: colors.royalBlue }}>
-        <Text style={{ color: colors.white, fontSize: responsiveFontSize(1.6), textAlign: 'center', margin: responsiveFontSize(1.5) }}>{`© 2025 TruckMitr Corporate Services Private Limited. \nAll Rights Reserved.`}</Text>
+        <Text style={{ color: colors.white, fontSize: responsiveFontSize(1.6), textAlign: 'center', margin: responsiveFontSize(1.5) }}>{`© 2026 TruckMitr Corporate Services Private Limited. \nAll Rights Reserved.`}</Text>
         <Space height={safeAreaInsets.bottom} />
       </View>
     </View>
