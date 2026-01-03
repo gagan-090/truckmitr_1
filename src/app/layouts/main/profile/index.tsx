@@ -152,6 +152,58 @@ const capitalizeFirst = (str: string): string => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
+// State ID to Name Mapping (based on API states data)
+const STATE_ID_MAP: Record<string, string> = {
+  '1': 'Andaman and Nicobar Islands',
+  '2': 'Andhra Pradesh',
+  '3': 'Arunachal Pradesh',
+  '4': 'Assam',
+  '5': 'Bihar',
+  '6': 'Chandigarh',
+  '7': 'Chhattisgarh',
+  '8': 'Dadra and Nagar Haveli',
+  '9': 'Delhi',
+  '10': 'Goa',
+  '11': 'Gujarat',
+  '12': 'Haryana',
+  '13': 'Himachal Pradesh',
+  '14': 'Jammu and Kashmir',
+  '15': 'Jharkhand',
+  '16': 'Karnataka',
+  '17': 'Kerala',
+  '18': 'Ladakh',
+  '19': 'Lakshadweep',
+  '20': 'Madhya Pradesh',
+  '21': 'Maharashtra',
+  '22': 'Manipur',
+  '23': 'Meghalaya',
+  '24': 'Mizoram',
+  '25': 'Nagaland',
+  '26': 'Odisha',
+  '27': 'Puducherry',
+  '28': 'Punjab',
+  '29': 'Rajasthan',
+  '30': 'Sikkim',
+  '31': 'Tamil Nadu',
+  '32': 'Telangana',
+  '33': 'Tripura',
+  '34': 'Uttar Pradesh',
+  '35': 'Uttarakhand',
+  '36': 'West Bengal',
+};
+
+// Helper function to get state name from ID or return the value as-is if it's already a name
+const getStateName = (stateValue: string | number | undefined): string => {
+  if (!stateValue) return '';
+  const stateStr = String(stateValue).trim();
+  // If it's a numeric ID, look up the name
+  if (STATE_ID_MAP[stateStr]) {
+    return STATE_ID_MAP[stateStr];
+  }
+  // If it's already a name (non-numeric), return as-is
+  return stateStr;
+};
+
 // Apple-style Confirmation Dialog Component
 interface ConfirmDialogProps {
   visible: boolean;
@@ -1056,7 +1108,10 @@ export default function Profile() {
           // User data
           const userName = user?.name?.toUpperCase() || t('memberNameDefault').toUpperCase();
           const uniqueId = user?.unique_id || 'TM0000000000000';
-          const userLocation = user?.city?.toUpperCase() || user?.state?.toUpperCase() || t('userLocationDefault').toUpperCase();
+          // Build location string: "City, State" if city present, otherwise just "State"
+          const stateName = user?.state_name || getStateName(user?.states) || getStateName(user?.state) || '';
+          const cityName = user?.city || '';
+          const userLocation = (cityName && stateName ? `${cityName}, ${stateName}` : (cityName || stateName)).toUpperCase();
           const licenseType = user?.Type_of_License || 'HMV';
           const profileImage = user?.images ? { uri: `${BASE_URL}public/${user?.images}` } : PROFILE_PLACEHOLDER;
 
