@@ -206,22 +206,26 @@ export default function DocumentVerification() {
 
     const { user, isDriver, subscriptionDetails } = useSelector((state: any) => state?.user);
 
-    // Check if user has 499 (Trusted) subscription
-    const hasTrustedSubscription = useCallback(() => {
-        if (!subscriptionDetails?.hasActiveSubscription) return false;
+    // Check if user has 499 (Trusted) subscription for ID verification access
+    const canAccessIdVerification = React.useMemo(() => {
+        if (!subscriptionDetails) return false;
 
-        // Check amount from various possible fields
-        const amount = parseFloat(subscriptionDetails?.amount) ||
-            parseFloat(subscriptionDetails?.price) ||
-            parseFloat(subscriptionDetails?.plan_amount) || 0;
+        // Handle both array and single object structures
+        const subs = Array.isArray(subscriptionDetails) ? subscriptionDetails : [subscriptionDetails];
 
-        if (amount >= 499) return true;
+        for (const sub of subs) {
+            if (!sub) continue;
 
-        // Also check plan name/payment type for "trusted" tier
-        const planName = (subscriptionDetails?.payment_type ||
-            subscriptionDetails?.plan_name ||
-            subscriptionDetails?.name || '').toLowerCase();
-        if (planName.includes('trusted') || planName.includes('premium')) return true;
+            // Check amount (handle string or number)
+            const amount = parseFloat(sub.amount) || 0;
+
+            // Only allow 499+ plan for ID verification
+            if (Math.floor(amount) >= 499) return true;
+
+            // Also check plan name for trusted tier
+            const planName = String(sub.payment_type || sub.plan_name || sub.name || '').toLowerCase();
+            if (planName.includes('trusted') || planName.includes('premium')) return true;
+        }
 
         return false;
     }, [subscriptionDetails]);
@@ -920,7 +924,7 @@ export default function DocumentVerification() {
                             )}
 
                             {activeTab === 'ID' && (
-                                hasTrustedSubscription() ? (
+                                canAccessIdVerification ? (
                                     <View>
                                         <View style={styles.inputGroup}>
                                             <Text style={styles.inputLabel}><Ionicons name="card" size={14} color={COLORS.textMuted} />  {t('govtIdNumber') || 'Government ID Number'}</Text>
