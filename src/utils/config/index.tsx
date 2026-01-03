@@ -132,4 +132,7 @@ export const END_POINTS = {
     // GET 
     CHALLAN_VERIFY_VEHICLE_NUMBER: (vehicle_number: any) => `api/kyc/challan/${vehicle_number}`,
 
+    // Face Match Verification
+    FACE_MATCH_VERIFY: `api/kyc/face-match/verify`,
+
 }
