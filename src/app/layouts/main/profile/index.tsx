@@ -47,6 +47,7 @@ import { ZegoSendCallInvitationButton } from '@zegocloud/zego-uikit-prebuilt-cal
 import { startVideoCall } from '@truckmitr/src/utils/zegoService';
 import ViewShot from 'react-native-view-shot';
 import RNShare from 'react-native-share';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // Membership Card Asset Images
 const LOGO_IMAGE = require('@truckmitr/src/assets/membership-card/logotrick.png');
 const PROFILE_PLACEHOLDER = require('@truckmitr/src/assets/membership-card/man.png');
@@ -563,6 +564,32 @@ export default function Profile() {
     isDriver && navigation.navigate(STACKS.PROFILE_EDIT)
     isTransporter && navigation.navigate(STACKS.PROFILE_EDIT_TRANSPORTER)
   }
+
+  const logAllAsyncStorage = async () => {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+
+      if (!keys || keys.length === 0) {
+        console.log('📦 AsyncStorage is empty');
+        return;
+      }
+
+      const items = await AsyncStorage.multiGet(keys);
+
+      console.log('📦 AsyncStorage contents:');
+      items.forEach(([key, value]) => {
+        try {
+          const parsedValue = value ? JSON.parse(value) : value;
+          console.log(`🔑 ${key}:`, parsedValue);
+        } catch (e) {
+          console.log(`🔑 ${key}:`, value);
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error reading AsyncStorage:', error);
+    }
+  };
+
   const _navigateRating = () => navigation.navigate(STACKS.RATING)
   const _navigateContactUs = () => navigation.navigate(STACKS.CONTACT_US)
   const _navigatePrivacy = () => navigation.navigate(STACKS.PRIVACY)
