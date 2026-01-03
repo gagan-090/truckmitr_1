@@ -23,8 +23,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { ZegoSendCallInvitationButton } from '@zegocloud/zego-uikit-prebuilt-call-rn';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import LinearGradient from 'react-native-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import BottomSheet, { BottomSheetModal, BottomSheetView, BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 
@@ -61,6 +60,8 @@ export default function TransporterAppliedJob() {
     const [showTimePicker, setShowTimePicker] = useState(false);
     const [expandedJobIds, setExpandedJobIds] = useState<string[]>([]);
     const [jobFilters, setJobFilters] = useState<Record<string, string>>({});
+    const [callLoading, setCallLoading] = useState(false);
+    const [videoCallLoading, setVideoCallLoading] = useState(false);
 
     const setFilter = (jobId: string, filter: string) => {
         setJobFilters(prev => ({ ...prev, [jobId]: filter }));
@@ -209,19 +210,132 @@ export default function TransporterAppliedJob() {
     }
 
     const callToDriver = async (item: any) => {
+        console.log('------------------call initiated==========');
+        console.log('logged data-------------', 'id', item.driver_details?.driver_id, 'job_id', item.job_id);
+
         try {
-            Linking.openURL(`tel:${item?.driver_mobile}`)
+            setCallLoading(true);
+
             const formData = new FormData();
-            formData.append('id', item.driver_id);
+            formData.append('id', item.driver_details?.driver_id);
             formData.append('job_id', item.job_id);
+
             const response: any = await axiosInstance.post(END_POINTS?.CALL_TRANSPORTER, formData);
-            if (response?.data?.status) {
-                console.log(response, "response")
+            console.log("response of call driver", response);
+
+            if (response?.data?.success) {
+                // Success: Navigate to dial pad with phone number from response
+                const phoneNumber = response.data.phone;
+                console.log('Call logged successfully, dialing:', phoneNumber);
+                Linking.openURL(`tel:${phoneNumber}`);
+                showToast(response.data.message || 'Call logged successfully');
+            } else {
+                // Failed: Still navigate to dial pad with driver's original number
+                console.log('Call logging failed, using driver mobile:', item?.driver_details?.driver_mobile);
+                Linking.openURL(`tel:${item?.driver_details?.driver_mobile}`);
+                showToast(response?.data?.message || 'Call logging failed, but call initiated');
             }
+
+            // Close modal after API response (success or failure)
+            closeDriverProfileModal();
+
         } catch (error) {
-            console.log(error)
+            console.log('Error in callToDriver:', error);
+            // Error: Navigate to dial pad with driver's original number as fallback
+            Linking.openURL(`tel:${item?.driver_details?.driver_mobile}`);
+            showToast('Something went wrong, but call initiated');
+
+            // Close modal after error
+            closeDriverProfileModal();
+        } finally {
+            setCallLoading(false);
         }
     }
+
+    // const initiateVideoCall = async (item: any, onPress: any) => {
+    //     console.log('------------------video call initiated==========');
+    //     console.log('video call data-------------','driver_id', item.driver_details?.driver_id,'job_id', item.job_id);
+
+    //     try {
+    //         setVideoCallLoading(true);
+
+    //         const formData = new FormData();
+    //         formData.append('driver_id', item.driver_details?.driver_id);
+    //         formData.append('job_id', item.job_id);
+    //         formData.append('interview_type', 'video');
+
+    //         const response: any = await axiosInstance.post(END_POINTS?.VIDEO_CALL_TRANSPORTER, formData);
+    //         console.log("response of video call", response);
+
+    //         if (response?.data?.success) {
+    //             console.log('Video call logged successfully');
+    //             showToast(response.data.message || 'Video call initiated successfully');
+    //             // Close modal and start video call
+    //             setShowVideoInterviewModal(false);
+    //             onPress();
+    //         } else {
+    //             console.log('Video call logging failed');
+    //             showToast(response?.data?.message || 'Video call logging failed, but call will proceed');
+    //             // Still proceed with video call even if logging fails
+    //             setShowVideoInterviewModal(false);
+    //             onPress();
+    //         }
+
+    //     } catch (error) {
+    //         console.log('Error in initiateVideoCall:', error);
+    //         showToast('Something went wrong, but video call will proceed');
+    //         // Still proceed with video call even if API fails
+    //         setShowVideoInterviewModal(false);
+    //         onPress();
+    //     } finally {
+    //         setVideoCallLoading(false);
+    //     }
+    // }
+    // Add useEffect to handle video call logging when call starts
+    useEffect(() => {
+        // This will run when the component mounts and when selectedDriver changes
+        if (showVideoInterviewModal && selectedDriver) {
+            console.log('🎥 Video Interview Modal opened for:', selectedDriver?.driver_details?.driver_name);
+        }
+    }, [showVideoInterviewModal, selectedDriver]);
+
+    const logVideoCallStart = async (driver: any) => {
+        try {
+            console.log('🎥 Logging video call start for:', driver?.driver_details?.driver_name);
+            console.log('🎥 Driver data structure:', driver);
+            console.log('🎥 Application ID:', driver?.application_id);
+            console.log('🎥 Job ID:', driver?.job_id);
+
+            const formData = new FormData();
+            formData.append('id', driver?.application_id?.toString()); // ✅ Fixed: use application_id
+            formData.append('job_id', driver?.job_id);
+            formData.append('start_at', moment().format('YYYY-MM-DD HH:mm:ss')); // ✅ Added: current timestamp
+
+            console.log('🎥 API Call Data (UPDATED VERSION):', {
+                id: driver?.application_id, // application_id
+                job_id: driver?.job_id,
+                start_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+                endpoint: END_POINTS.VIDEO_CALL_TRANSPORTER
+            });
+
+            const response = await axiosInstance.post(END_POINTS.VIDEO_CALL_TRANSPORTER, formData);
+            console.log('🎥 Video call API response:', response?.data);
+
+            if (response?.data?.success) {
+                showToast(response?.data?.message || 'Video call logged successfully');
+            } else {
+                console.log('🎥 API returned success: false', response?.data);
+                showToast(response?.data?.message || 'Failed to log video call');
+            }
+        } catch (error) {
+            console.log('🎥 Error logging video call:', error);
+            // if (error) {
+            //     console.log('🎥 Error response:', error);
+            //     // console.log('🎥 Error status:', error.response.status);
+            // }
+        }
+    };
+
 
     const getInterviewUIState = (interviewAt?: string) => {
         if (!interviewAt) {
@@ -1264,14 +1378,12 @@ export default function TransporterAppliedJob() {
                                         <>
                                             {/* Call Driver Button - Always visible */}
                                             <TouchableOpacity
-                                                onPress={() => {
-                                                    closeDriverProfileModal();
-                                                    setTimeout(() => callToDriver(selectedDriverForModal), 300);
-                                                }}
+                                                onPress={() => callToDriver(selectedDriverForModal)}
                                                 style={{ marginBottom: 12 }}
+                                                disabled={callLoading}
                                             >
                                                 <LinearGradient
-                                                    colors={['#3B82F6', '#1D4ED8']}
+                                                    colors={callLoading ? ['#9CA3AF', '#6B7280'] : ['#3B82F6', '#1D4ED8']}
                                                     start={{ x: 0, y: 0 }}
                                                     end={{ x: 1, y: 0 }}
                                                     style={{
@@ -1282,9 +1394,13 @@ export default function TransporterAppliedJob() {
                                                         flexDirection: 'row',
                                                     }}
                                                 >
-                                                    <Ionicons name="call" size={18} color={colors.white} style={{ marginRight: 8 }} />
+                                                    {callLoading ? (
+                                                        <ActivityIndicator size="small" color={colors.white} style={{ marginRight: 8 }} />
+                                                    ) : (
+                                                        <Ionicons name="call" size={18} color={colors.white} style={{ marginRight: 8 }} />
+                                                    )}
                                                     <Text style={{ color: colors.white, fontWeight: '600', fontSize: responsiveFontSize(1.5) }}>
-                                                        {t('callDriver') || 'Call Driver'}
+                                                        {callLoading ? (t('calling') || 'Calling...') : (t('callDriver') || 'Call Driver')}
                                                     </Text>
                                                 </LinearGradient>
                                             </TouchableOpacity>
@@ -1556,7 +1672,7 @@ export default function TransporterAppliedJob() {
 
                         {/* ACTION BUTTONS */}
                         <View style={{ width: '100%', alignItems: 'center', gap: 24 }}>
-                            <ZegoSendCallInvitationButton
+                            {/* <ZegoSendCallInvitationButton
                                 invitees={[{
                                     userID: selectedDriver?.driver_details?.unique_id || selectedDriver?.driver_details?.driver_id?.toString(),
                                     userName: selectedDriver?.driver_details?.driver_name || 'Driver'
@@ -1565,10 +1681,7 @@ export default function TransporterAppliedJob() {
                                 resourceID={"TruckMitr"}
                                 renderNormal={(onPress: any) => (
                                     <TouchableOpacity
-                                        onPress={() => {
-                                            setShowVideoInterviewModal(false);
-                                            onPress();
-                                        }}
+                                        onPress={() => initiateVideoCall(selectedDriver, onPress)}
                                         style={{
                                             width: 80,
                                             height: 80,
@@ -1576,9 +1689,10 @@ export default function TransporterAppliedJob() {
                                             ...shadow,
                                             elevation: 5
                                         }}
+                                        disabled={videoCallLoading}
                                     >
                                         <LinearGradient
-                                            colors={['#8B5CF6', '#6D28D9']}
+                                            colors={videoCallLoading ? ['#9CA3AF', '#6B7280'] : ['#8B5CF6', '#6D28D9']}
                                             start={{ x: 0, y: 0 }}
                                             end={{ x: 1, y: 1 }}
                                             style={{
@@ -1588,11 +1702,72 @@ export default function TransporterAppliedJob() {
                                                 justifyContent: 'center'
                                             }}
                                         >
-                                            <Ionicons name="videocam" size={36} color={colors.white} />
+                                            {videoCallLoading ? (
+                                                <ActivityIndicator size="large" color={colors.white} />
+                                            ) : (
+                                                <Ionicons name="videocam" size={36} color={colors.white} />
+                                            )}
                                         </LinearGradient>
                                     </TouchableOpacity>
                                 )}
+                            /> */}
+
+                            <ZegoSendCallInvitationButton
+                                invitees={[{
+                                    userID:
+                                        selectedDriver?.driver_details?.unique_id ||
+                                        selectedDriver?.driver_details?.driver_id?.toString(),
+                                    userName: selectedDriver?.driver_details?.driver_name || 'Driver',
+                                }]}
+                                isVideoCall={true}
+                                resourceID={"TruckMitr"}
+                                onPressed={(code: any, message: any, invitees: any) => {
+                                    // console.log('🎥 ZegoCloud onPressed callback triggered');
+                                    // console.log('🎥 Code:', code, 'Message:', message, 'Invitees:', invitees);
+                                    // console.log('🎥 Selected driver for API call:', selectedDriver?.driver_details?.driver_name);
+
+                                    // Log the video call when ZegoCloud button is actually pressed
+                                    if (selectedDriver) {
+                                        logVideoCallStart(selectedDriver);
+                                    } else {
+                                        console.log('🎥 ERROR: selectedDriver is null/undefined');
+                                    }
+
+                                    // Close modal
+                                    setShowVideoInterviewModal(false);
+                                }}
+                                renderNormal={(onPress: any) => {
+                                    console.log('🎥 ZegoCloud renderNormal called, onPress function:', typeof onPress);
+                                    return (
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                console.log('🎥 Video call button pressed - calling onPress');
+                                                onPress();
+                                            }}
+                                            style={{
+                                                width: 80,
+                                                height: 80,
+                                                borderRadius: 40,
+                                                ...shadow,
+                                                elevation: 5,
+                                            }}
+                                        >
+                                            <LinearGradient
+                                                colors={['#8B5CF6', '#6D28D9']}
+                                                style={{
+                                                    flex: 1,
+                                                    borderRadius: 40,
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                }}
+                                            >
+                                                <Ionicons name="videocam" size={36} color="#fff" />
+                                            </LinearGradient>
+                                        </TouchableOpacity>
+                                    );
+                                }}
                             />
+
 
                             <TouchableOpacity
                                 onPress={() => setShowVideoInterviewModal(false)}

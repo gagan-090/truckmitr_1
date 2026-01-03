@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { STACKS } from '@truckmitr/stacks/stacks';
 import Bottom from './tabs/bottom';
-import { AddDriver, AddJob, AddLoad, AppliedJob, AvailableJob, ContactUs, Dashboard, DriverDrivingDetailsByTransporter, DriverList, DriverProfileEditByTransporter, DriverUploadDocumentsByTransporter, DrivingDetails, DrivingDetailsTransporter, ExcelImport, JobStep2, JobStep3, LanguageMain, LocationSearch, LocationMap, Modules, Notification, PaymentSuccess, Player, PreferredColor, Privacy, ProfileEdit, ProfileEditTransporter, Quiz, QuizResult, Rating, Search, Settings, SuitsJob, TransporterAppliedJob, TransporterVerificationScreen, UploadDocuments, UploadDocumentsTransporter, ViewJobs, DLVerification, DriverKiAwazInfo, CallJobManagerList, CallJobManagerInfo, ChallanCheckInfo, ChallanCheckResult, CourtCheckInfo, DigitalAddressCheckInfo, DriverInvites, RcCheckInfo } from '@truckmitr/layouts/index';
+import { AddDriver, AddJob, AddLoad, AppliedJob, AvailableJob, ContactUs, Dashboard, DriverDrivingDetailsByTransporter, DriverList, DriverProfileEditByTransporter, DriverUploadDocumentsByTransporter, DrivingDetails, DrivingDetailsTransporter, ExcelImport, JobStep2, JobStep3, LanguageMain, LocationSearch, LocationMap, Modules, Notification, PaymentSuccess, Player, PreferredColor, Privacy, ProfileEdit, ProfileEditTransporter, Quiz, QuizResult, Rating, Search, Settings, SuitsJob, TransporterAppliedJob, TransporterVerificationScreen, UploadDocuments, UploadDocumentsTransporter, ViewJobs, DLVerification, DriverKiAwazInfo, CallJobManagerList, CallJobManagerInfo, ChallanCheckInfo, ChallanCheckResult, CourtCheckInfo, DigitalAddressCheckInfo, DriverInvites, RcCheckInfo, IdCheckInfo } from '@truckmitr/layouts/index';
 import { setupFirebaseNotifications, initializeNotificationChannel } from '@truckmitr/src/utils/notification';
 import { DocumentUploadScreen, VerificationStatusScreen, } from '../app/layouts/main';
 // import DriverInvites from '@truckmitr/src/app/layouts/main/driver-invites/driver-invites';
@@ -19,6 +19,15 @@ import MembershipCard from '../app/layouts/main/membership-card';
 import { ZegoUIKitPrebuiltCallInCallScreen, ZegoUIKitPrebuiltCallWaitingScreen } from '@zegocloud/zego-uikit-prebuilt-call-rn';
 import { useSelector } from 'react-redux';
 import { initializeZeegoService } from '../utils/zegoService';
+import DriverTripWallet from '../app/layouts/main/driver-trip-wallet';
+import DriverWelfare from '../app/layouts/main/driver-welfare';
+import DriverLoan from '../app/layouts/main/driver-loan';
+import JobInvitationsList from '../app/layouts/main/job-invitations-list';
+import RcCheckResult from '../app/layouts/main/rc-check-result';
+import ScheduledInterview from '../app/layouts/main/scheduled-interview';
+import TruckMitrDhaba from '../app/layouts/main/truckmitr-dhaba';
+import TruckMitrSuvidhaKendra from '../app/layouts/main/truckmitr-suvidha-kendra';
+import VideoInterviewInfo from '../app/layouts/main/video-interview-info';
 
 const Stack = createNativeStackNavigator();
 
@@ -175,6 +184,19 @@ export default function Main() {
       <Stack.Screen name={STACKS.COURT_CHECK_INFO} component={CourtCheckInfo} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.DIGITAL_ADDRESS_CHECK_INFO} component={DigitalAddressCheckInfo} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.RC_CHECK_INFO} component={RcCheckInfo} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.ID_CHECK_INFO} component={IdCheckInfo} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.RC_CHECK_RESULT} component={RcCheckResult} options={{ animation: 'fade' }} />
+
+      <Stack.Screen name={STACKS.VIDEO_INTERVIEW_INFO} component={VideoInterviewInfo} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.SCHEDULED_INTERVIEWS} component={ScheduledInterview} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.JOB_INVITATIONS_LIST} component={JobInvitationsList} options={{ animation: 'fade' }} />
+
+      <Stack.Screen name={STACKS.DRIVER_TRIP_WALLET} component={DriverTripWallet} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.DRIVER_WELFARE} component={DriverWelfare} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.DRIVER_LOAN} component={DriverLoan} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.TRUCKMITR_DHABA} component={TruckMitrDhaba} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.TRUCKMITR_SUVIDHA_KENDRA} component={TruckMitrSuvidhaKendra} options={{ animation: 'fade' }} />
+
       {/* DriverInvites usually mapped to STACKS.DRIVERINVITES, but checking stacks definition: invites */}
       {/* already there at line 165 as invites? No line 165 is DriverInvites component from local import. */}
       {/* I will remove the specific DriverInvites import if I am importing from layouts index now, to avoid duplication or confusion, but keep using it if it works. NO, I should use the one from layouts/index for consistency. */}

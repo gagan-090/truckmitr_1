@@ -47,7 +47,7 @@ export const END_POINTS = {
     PRIVACY_POLICY: `api/privacy-policy`,
     TERMS_AND_CONDITIONS: `api/terms-and-conditions`,
     DRIVER_CONSENT: `api/driver-consent-for-job-application-data-sharing`,
-    TRANSPORTER_CONSENT: `api/transporter-consent-for-job-posting-data-sharing`,
+    // TRANSPORTER_CONSENT: `api/transporter-consent-for-job-posting-data-sharing`,
     SUBSCRIPTION_CONSENT: `api/subscription-consent-and-disclaimer`,
 
     TRANSPORTER_ADD_JOB: `api/transporter/add-job`,
@@ -115,7 +115,7 @@ export const END_POINTS = {
     PAYMENT_DETAIL: 'api/orders/payments_details',
     REFERRAL: 'api/referrals/send',
     CALL_TRANSPORTER: 'api/call-logs/logCallTransporter',
-
+    VIDEO_CALL_TRANSPORTER: 'api/call-logs/video-interview',
     INVOICE_DOWNLOAD: (payment_id: any) => `api/invoice/${payment_id}`,
     GET_DRIVERS_PROFILE: (driver_id: any) => `api/profile?driver_id=${driver_id}`,
     DRIVER_UPLOAD_DOCUMENTS_BY_TRANSPORTER: (driver_id: any) => `api/driver-verification/upload-documents?driver_id=${driver_id}`,

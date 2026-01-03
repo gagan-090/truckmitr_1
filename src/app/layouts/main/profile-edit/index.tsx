@@ -73,32 +73,32 @@ const TRANSPORTER_STEPS = [
 // Voice file mapping for Hindi step descriptions - using step IDs
 const DRIVER_VOICE_FILES: { [key: string]: any } = {
     'avatar': require('@truckmitr/src/assets/voice/step_profile_photo.mp3'),
-    'personal_info': require('@truckmitr/src/assets/voice/step_personal_info.mp3'),
+    // 'personal_info': require('@truckmitr/src/assets/voice/step_personal_info.mp3'),
     'dob': require('@truckmitr/src/assets/voice/step_dob.mp3'),
     'gender': require('@truckmitr/src/assets/voice/step_gender.mp3'),
     'education': require('@truckmitr/src/assets/voice/step_education.mp3'),
-    'address': require('@truckmitr/src/assets/voice/step_address.mp3'),
+    // 'address': require('@truckmitr/src/assets/voice/step_address.mp3'),
     'vehicle': require('@truckmitr/src/assets/voice/step_vehicle.mp3'),
     'experience': require('@truckmitr/src/assets/voice/step_experience.mp3'),
     'license_type': require('@truckmitr/src/assets/voice/step_license_type.mp3'),
     'salary': require('@truckmitr/src/assets/voice/step_salary.mp3'),
-    'preferences': require('@truckmitr/src/assets/voice/step_preferences.mp3'),
-    'aadhar_details': require('@truckmitr/src/assets/voice/step_aadhar.mp3'),
-    'license_details': require('@truckmitr/src/assets/voice/step_license.mp3'),
-    'pan_details': require('@truckmitr/src/assets/voice/step_pan_gst.mp3'),
+    // 'preferences': require('@truckmitr/src/assets/voice/step_preferences.mp3'),
+    // 'aadhar_details': require('@truckmitr/src/assets/voice/step_aadhar.mp3'),
+    // 'license_details': require('@truckmitr/src/assets/voice/step_license.mp3'),
+    // 'pan_details': require('@truckmitr/src/assets/voice/step_pan_gst.mp3'),
 };
 
 const TRANSPORTER_VOICE_FILES: { [key: string]: any } = {
-    'avatar': require('@truckmitr/src/assets/voice/step_profile_photo.mp3'),
-    'personal_info': require('@truckmitr/src/assets/voice/step_personal_info.mp3'),
-    'transport_details': require('@truckmitr/src/assets/voice/step_transport_details.mp3'),
-    'address': require('@truckmitr/src/assets/voice/step_address.mp3'),
-    'year_of_exp': require('@truckmitr/src/assets/voice/step_experience_years.mp3'),
-    'fleet_size': require('@truckmitr/src/assets/voice/step_fleet_size.mp3'),
-    'industry_segment': require('@truckmitr/src/assets/voice/step_industry.mp3'),
-    'avg_km_run': require('@truckmitr/src/assets/voice/step_avg_km.mp3'),
-    'vehicle': require('@truckmitr/src/assets/voice/step_vehicle_transporter.mp3'),
-    'pan_gst': require('@truckmitr/src/assets/voice/step_pan_gst.mp3'),
+    // 'avatar': require('@truckmitr/src/assets/voice/step_profile_photo.mp3'),
+    // 'personal_info': require('@truckmitr/src/assets/voice/step_personal_info.mp3'),
+    // 'transport_details': require('@truckmitr/src/assets/voice/step_transport_details.mp3'),
+    // 'address': require('@truckmitr/src/assets/voice/step_address.mp3'),
+    // 'year_of_exp': require('@truckmitr/src/assets/voice/step_experience_years.mp3'),
+    // 'fleet_size': require('@truckmitr/src/assets/voice/step_fleet_size.mp3'),
+    // 'industry_segment': require('@truckmitr/src/assets/voice/step_industry.mp3'),
+    // 'avg_km_run': require('@truckmitr/src/assets/voice/step_avg_km.mp3'),
+    // 'vehicle': require('@truckmitr/src/assets/voice/step_vehicle_transporter.mp3'),
+    // 'pan_gst': require('@truckmitr/src/assets/voice/step_pan_gst.mp3'),
 };
 
 export default function ProfileEdit() {

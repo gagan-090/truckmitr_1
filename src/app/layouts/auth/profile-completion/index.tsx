@@ -68,27 +68,27 @@ const TruckImages = {
 
 // Voice file mapping for Hindi step descriptions - Profile Completion
 const DRIVER_VOICE_FILES: { [key: string]: any } = {
-    'dob': require('@truckmitr/src/assets/voice/step_dob.mp3'),
+    'dob': require('@truckmitr/src/assets/voice/date-of-birth.mp3'),
     'gender': require('@truckmitr/src/assets/voice/step_gender.mp3'),
     'education': require('@truckmitr/src/assets/voice/step_education.mp3'),
     'vehicle': require('@truckmitr/src/assets/voice/step_vehicle.mp3'),
     'experience': require('@truckmitr/src/assets/voice/step_experience.mp3'),
-    'license': require('@truckmitr/src/assets/voice/step_license_type.mp3'),
-    'endorsement': require('@truckmitr/src/assets/voice/step_preferences.mp3'),
-    'current_salary': require('@truckmitr/src/assets/voice/step_salary.mp3'),
-    'expected_salary': require('@truckmitr/src/assets/voice/step_salary.mp3'),
-    'avatar': require('@truckmitr/src/assets/voice/step_profile_photo.mp3'),
-    'id_numbers': require('@truckmitr/src/assets/voice/step_aadhar.mp3'),
+    'license': require('@truckmitr/src/assets/voice/type-of-license.mp3'),
+    'endorsement': require('@truckmitr/src/assets/voice/driving-endorsement.mp3'),
+    'current_salary': require('@truckmitr/src/assets/voice/monthly-salary.mp3'),
+    'expected_salary': require('@truckmitr/src/assets/voice/expected-salary.mp3'),
+    'avatar': require('@truckmitr/src/assets/voice/profile-photo.mp3'),
+    'id_numbers': require('@truckmitr/src/assets/voice/id_details.mp3'),
 };
 
 const TRANSPORTER_VOICE_FILES: { [key: string]: any } = {
-    'year_of_exp': require('@truckmitr/src/assets/voice/step_experience_years.mp3'),
-    'fleet_size': require('@truckmitr/src/assets/voice/step_fleet_size.mp3'),
-    'industry_segment': require('@truckmitr/src/assets/voice/step_industry.mp3'),
-    'avg_km_run': require('@truckmitr/src/assets/voice/step_avg_km.mp3'),
-    'vehicle': require('@truckmitr/src/assets/voice/step_vehicle_transporter.mp3'),
-    'operational_segment': require('@truckmitr/src/assets/voice/step_preferences.mp3'),
-    'pan_gst': require('@truckmitr/src/assets/voice/step_pan_gst.mp3'),
+    'year_of_exp': null, // require('@truckmitr/src/assets/voice/step_experience_years.mp3'),
+    'fleet_size': null, // require('@truckmitr/src/assets/voice/step_fleet_size.mp3'),
+    'industry_segment': null, // require('@truckmitr/src/assets/voice/step_industry.mp3'),
+    'avg_km_run': null, // require('@truckmitr/src/assets/voice/step_avg_km.mp3'),
+    'vehicle': null, // require('@truckmitr/src/assets/voice/step_vehicle_transporter.mp3'),
+    'operational_segment': null, // require('@truckmitr/src/assets/voice/step_preferences.mp3'),
+    'pan_gst': null, // require('@truckmitr/src/assets/voice/step_pan_gst.mp3'),
 };
 
 const { width } = Dimensions.get('window');
@@ -366,6 +366,9 @@ export default function ProfileCompletion() {
     const [yearPickerOpen, setYearPickerOpen] = useState(false);
     const [calendarMonth, setCalendarMonth] = useState(moment().subtract(18, 'years').format('YYYY-MM-DD'));
 
+    // License Expiry Modal
+    const [licenseExpiryModal, setLicenseExpiryModal] = useState(false);
+
     // Fade animation for content transition
     const contentOpacity = useSharedValue(1);
     const contentTranslateX = useSharedValue(0);
@@ -535,11 +538,11 @@ export default function ProfileCompletion() {
         contentOpacity.value = withTiming(1, { duration: 400 });
         contentTranslateX.value = withSpring(0, { damping: 12 });
 
-        // Play voice for Hindi language only if not muted
-        if (i18n.language === 'hi' && !isVoiceMuted) {
+        // Play voice if not muted (regardless of language)
+        if (!isVoiceMuted) {
             playStepVoice();
         }
-    }, [currentStep, i18n.language, isVoiceMuted]);
+    }, [currentStep, isVoiceMuted]);
 
     const animatedContentStyle = useAnimatedStyle(() => ({
         opacity: contentOpacity.value,
@@ -704,6 +707,141 @@ export default function ProfileCompletion() {
         return [];
     };
 
+    const logFormDataPayload = (formData: FormData) => {
+        console.log('📦 ===== PROFILE SUBMIT PAYLOAD START =====');
+
+        // @ts-ignore – React Native FormData internal structure
+        const parts = formData?._parts;
+
+        if (!parts || !Array.isArray(parts)) {
+            console.log('⚠️ Unable to read FormData parts');
+            return;
+        }
+
+        parts.forEach(([key, value]) => {
+            if (typeof value === 'object' && value?.uri) {
+                console.log(`🖼️ ${key}:`, {
+                    uri: value.uri,
+                    type: value.type,
+                    name: value.name,
+                });
+            } else {
+                console.log(`🔑 ${key}:`, value);
+            }
+        });
+
+        console.log('📦 ===== PROFILE SUBMIT PAYLOAD END =====');
+    };
+
+    const profilePayloadPreview = {
+    // ===== BASIC INFO =====
+    name: userEdit?.name || user?.name || '',
+    email: userEdit?.email || user?.email || '',
+    mobile: userEdit?.mobile || user?.mobile || '',
+    father_name: userEdit?.Father_Name || user?.Father_Name || '',
+
+    dob: userEdit?.DOB
+        ? moment(userEdit.DOB).format('DD-MM-YYYY')
+        : '',
+
+    sex: userEdit?.Sex || '',
+
+    highest_education:
+        userEdit?.education ||
+        userEdit?.Highest_Education ||
+        '',
+
+    // ===== VEHICLE =====
+    vehicle_type: normalizeArrayField(userEdit?.vehicle_type), // Array for both roles
+
+    type_of_license: userEdit?.Type_of_License || '',
+
+    licence_endorsement:
+        userEdit?.endorsement?.split(', ').filter(Boolean) || [],
+
+    Driving_Experience:
+        ({
+            'less_than_1': '0',
+            '1-2': '1',
+            '3-5': '3',
+            '6-10': '6',
+            '10+': '10',
+        } as any)[userEdit?.Driving_Experience] ||
+        userEdit?.Driving_Experience ||
+        '0',
+
+    // ===== DOCUMENTS =====
+    Aadhar_Number: userEdit?.Aadhar_Number || '',
+    License_Number:
+        userEdit?.license_number ||
+        userEdit?.License_Number ||
+        '',
+
+    expiry_date_of_license:
+        userEdit?.Expiry_date_of_License
+            ? moment(userEdit.Expiry_date_of_License).format('DD-MM-YYYY')
+            : moment().add(5, 'years').format('DD-MM-YYYY'),
+
+    // ===== SALARY =====
+    current_monthly_income:
+        userEdit?.current_salary ||
+        userEdit?.Current_Monthly_Income ||
+        '',
+
+    expected_monthly_income:
+        userEdit?.expected_salary ||
+        userEdit?.Expected_Monthly_Income ||
+        '',
+
+    // ===== TAX =====
+    pan_number: userEdit?.pan || userEdit?.PAN_Number || '',
+    gst_number: userEdit?.gst || userEdit?.GST_Number || '',
+
+    // ===== ADDRESS =====
+    address: userEdit?.address || savedSignupData?.address || '',
+    city: userEdit?.city || savedSignupData?.city || '',
+    pincode: userEdit?.pincode || savedSignupData?.pincode || '',
+    state:
+        userEdit?.state_id ||
+        userEdit?.states ||
+        savedSignupData?.state ||
+        '',
+
+    // ===== TRANSPORTER ONLY =====
+    ...(userRole === 'transporter'
+        ? {
+              transport_name:
+                  userEdit?.transport_name ||
+                  savedSignupData?.transport_name ||
+                  '',
+
+              year_of_exp: userEdit?.year_of_exp || '',
+
+              year_of_establishment:
+                  userEdit?.year_of_exp ||
+                  userEdit?.year_of_establishment ||
+                  userEdit?.establishment_year ||
+                  '',
+
+              fleet_size: userEdit?.fleet_size || '',
+              average_km: userEdit?.avg_km_run || '',
+              registered_id: userEdit?.registered_id || '',
+
+              operational_segment:
+                  userEdit?.industry_segment
+                      ?.split(',')
+                      .filter(Boolean) || [],
+
+              routes:
+                  userEdit?.operational_segment
+                      ?.split(',')
+                      .filter(Boolean) || [],
+          }
+        : {}),
+};
+
+
+
     const submitProfile = async () => {
         setFinishing(true);
         console.log('=== Profile Completion - Submitting to API ===');
@@ -728,21 +866,16 @@ export default function ProfileCompletion() {
             // Education
             formData.append('highest_education', userEdit?.education || userEdit?.Highest_Education || '');
 
-            // Vehicle Type - Driver expects array, Transporter expects string
+            // Vehicle Type - Both Driver and Transporter now expect array format
             // Use helper to normalize corrupted data
             const cleanVehicleTypes = normalizeArrayField(userEdit?.vehicle_type);
             console.log('Cleaned Vehicle Types:', cleanVehicleTypes);
 
             if (cleanVehicleTypes.length > 0) {
-                if (userRole === 'driver') {
-                    // Driver: API expects array format with vehicle_type[]
-                    cleanVehicleTypes.forEach((vt: string) => {
-                        formData.append('vehicle_type[]', vt.trim());
-                    });
-                } else {
-                    // Transporter: API expects string format
-                    formData.append('vehicle_type', cleanVehicleTypes.join(','));
-                }
+                // Both roles: API expects array format with vehicle_type[]
+                cleanVehicleTypes.forEach((vt: string) => {
+                    formData.append('vehicle_type[]', vt.trim());
+                });
             }
 
             // License Type
@@ -871,6 +1004,8 @@ export default function ProfileCompletion() {
             console.log('=== Sending profile update request ===');
 
             console.log('=== formData ===', formData);
+            logFormDataPayload(formData);
+
 
 
             const response = await axiosInstance.post(END_POINTS.EDIT_PROFILE, formData);
@@ -1401,6 +1536,47 @@ export default function ProfileCompletion() {
                             value={userEdit?.License_Number || ''}
                             onChangeText={(text) => dispatch(userEditAction({ ...userEdit, License_Number: text }))}
                         />
+
+                        <Space height={20} />
+                        <Text style={styles.classicLabel}>{t('expiryDateOfLicense')}</Text>
+                        <TouchableOpacity style={[styles.classicInput, { justifyContent: 'center' }]} onPress={() => setLicenseExpiryModal(true)}>
+                            <Text style={{ color: userEdit?.Expiry_date_of_License ? '#333' : '#999', fontSize: 16 }}>
+                                {userEdit?.Expiry_date_of_License ? moment(userEdit.Expiry_date_of_License).format('DD-MM-YYYY') : 'DD-MM-YYYY'}
+                            </Text>
+                            <Ionicons name="calendar" size={20} color={colors.royalBlue} style={{ position: 'absolute', right: 14, top: 14 }} />
+                        </TouchableOpacity>
+
+                        <Modal visible={licenseExpiryModal} transparent animationType="fade">
+                            <TouchableWithoutFeedback onPress={() => setLicenseExpiryModal(false)}>
+                                <View style={styles.modalOverlay}>
+                                    <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 20, width: '90%', alignItems: 'center' }}>
+                                        <Text style={{ fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 16 }}>{t('expiryDateOfLicense')}</Text>
+                                        <DatePicker
+                                            mode="date"
+                                            theme="light"
+                                            date={userEdit?.Expiry_date_of_License ? new Date(userEdit.Expiry_date_of_License) : new Date()}
+                                            minimumDate={new Date()}
+                                            maximumDate={moment().add(30, 'years').toDate()}
+                                            onDateChange={(date) => dispatch(userEditAction({ ...userEdit, Expiry_date_of_License: date }))}
+                                        />
+                                        <View style={{ flexDirection: 'row', marginTop: 16 }}>
+                                            <TouchableOpacity
+                                                style={{ flex: 1, paddingVertical: 12, alignItems: 'center', backgroundColor: '#F0F0F0', borderRadius: 8, marginRight: 8 }}
+                                                onPress={() => setLicenseExpiryModal(false)}
+                                            >
+                                                <Text style={{ fontSize: 15, fontWeight: '500', color: '#666' }}>{t('cancel')}</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={{ flex: 1, paddingVertical: 12, alignItems: 'center', backgroundColor: colors.royalBlue, borderRadius: 8 }}
+                                                onPress={() => setLicenseExpiryModal(false)}
+                                            >
+                                                <Text style={{ fontSize: 15, fontWeight: '600', color: 'white' }}>{t('confirm')}</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </View>
+                            </TouchableWithoutFeedback>
+                        </Modal>
                     </View>
                 );
             // === TRANSPORTER-SPECIFIC STEPS ===

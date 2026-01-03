@@ -108,6 +108,11 @@ export type NavigatorParams = {
     challanCheckInfo: undefined
     challanCheckResult: undefined
     driverKiAwazInfo: undefined
+    driverTripWallet: undefined
+    driverWelfare: undefined
+    driverLoan: undefined
+    truckMitrDhaba: undefined
+    truckMitrSuvidhaKendra: undefined
 };
 
 export const STACKS = {
@@ -229,4 +234,9 @@ export const STACKS = {
     CHALLAN_CHECK_INFO: 'challanCheckInfo',
     CHALLAN_CHECK_RESULT: 'challanCheckResult',
     DRIVER_KI_AWAZ_INFO: 'driverKiAwazInfo',
+    DRIVER_TRIP_WALLET: 'driverTripWallet',
+    DRIVER_WELFARE: 'driverWelfare',
+    DRIVER_LOAN: 'driverLoan',
+    TRUCKMITR_DHABA: 'truckMitrDhaba',
+    TRUCKMITR_SUVIDHA_KENDRA: 'truckMitrSuvidhaKendra',
 } as const;

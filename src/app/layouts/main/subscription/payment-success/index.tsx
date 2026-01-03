@@ -154,6 +154,9 @@ export default function PaymentSuccess() {
     // Check if driver should verify their license (for 199 or 499 plans)
     const showDLVerification = isDriver && (planPrice === 199 || planPrice === 499);
 
+    // Check if driver should see Court Check button (only for 499 plan)
+    const showCourtCheck = isDriver && planPrice === 499;
+
     // Animation
     const checkScale = useSharedValue(0);
 
@@ -163,6 +166,14 @@ export default function PaymentSuccess() {
 
     const _navigateToDLVerification = () => {
         navigation.navigate(STACKS.DL_VERIFICATION as any);
+    };
+
+    const _navigateToCourtCheck = () => {
+        navigation.navigate(STACKS.COURT_CHECK_INFO as any);
+    };
+
+    const _navigateToDigitalAddressCheck = () => {
+        navigation.navigate(STACKS.DIGITAL_ADDRESS_CHECK_INFO as any);
     };
 
     const _handleEmailSubmit = async () => {
@@ -229,6 +240,10 @@ export default function PaymentSuccess() {
         } finally {
             setIsLoading(false);
             checkScale.value = withDelay(200, withSpring(1, { damping: 12 }));
+            // Always show email popup after payment success for invoice
+            setTimeout(() => {
+                setEmailPopupVisible(true);
+            }, 500);
         }
     };
 
@@ -332,7 +347,7 @@ export default function PaymentSuccess() {
                 </Animated.View>
 
                 {/* Spacer for button */}
-                <View style={{ height: showDLVerification ? 160 : 100 }} />
+                <View style={{ height: showCourtCheck ? 260 : (showDLVerification ? 160 : 100) }} />
             </ScrollView>
 
             {/* Fixed Bottom Button */}
@@ -340,32 +355,90 @@ export default function PaymentSuccess() {
                 entering={FadeInUp.delay(900).duration(400)}
                 style={[styles.bottomContainer, { paddingBottom: safeAreaInsets.bottom + 16 }]}
             >
-                {showDLVerification && (
+                {/* For 499 plan: Show Court Check, KYC Verification, and Digital Address Check buttons */}
+                {showCourtCheck && (
                     <>
-                        {/* DL Verification Button */}
+                        {/* First Row: Court Check and KYC Verification */}
+                        <View style={styles.actionButtonsRow}>
+                            {/* Court Check Button */}
+                            <TouchableOpacity
+                                onPress={_navigateToCourtCheck}
+                                activeOpacity={0.8}
+                                style={[styles.actionButton]}
+                            >
+                                <LinearGradient
+                                    colors={['#2563EB', '#60A5FA']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={styles.actionButtonGradient}
+                                >
+                                    <Ionicons name="shield-checkmark-outline" size={18} color={COLORS.white} />
+                                    <Text style={styles.actionButtonText}>{t('courtCheckBtn')}</Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
+
+                            {/* KYC Verification Button */}
+                            <TouchableOpacity
+                                onPress={_navigateToDLVerification}
+                                activeOpacity={0.8}
+                                style={[styles.actionButton]}
+                            >
+                                <LinearGradient
+                                    colors={[COLORS.success, COLORS.successLight]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={styles.actionButtonGradient}
+                                >
+                                    <Ionicons name="card-outline" size={18} color={COLORS.white} />
+                                    <Text style={styles.actionButtonText}>{t('kycVerifyBtn')}</Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Second Row: Digital Address Check - Full Width */}
                         <TouchableOpacity
-                            onPress={_navigateToDLVerification}
+                            onPress={_navigateToDigitalAddressCheck}
                             activeOpacity={0.8}
                             style={[styles.homeButton, { marginBottom: 10 }]}
                         >
                             <LinearGradient
-                                colors={[COLORS.success, COLORS.successLight]}
+                                colors={['#7C3AED', '#A78BFA']}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
                                 style={styles.homeButtonGradient}
                             >
-                                <Ionicons name="card-outline" size={20} color={COLORS.white} />
-                                <Text style={styles.homeButtonText}>{t('dlVerifyLicense') || 'Verify License'}</Text>
+                                <Ionicons name="location-outline" size={20} color={COLORS.white} />
+                                <Text style={styles.homeButtonText}>{t('digitalAddressBtn')}</Text>
                             </LinearGradient>
                         </TouchableOpacity>
                     </>
                 )}
+
+                {/* For 199 plan: Show only DL Verification button */}
+                {showDLVerification && !showCourtCheck && (
+                    <TouchableOpacity
+                        onPress={_navigateToDLVerification}
+                        activeOpacity={0.8}
+                        style={[styles.homeButton, { marginBottom: 10 }]}
+                    >
+                        <LinearGradient
+                            colors={[COLORS.success, COLORS.successLight]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.homeButtonGradient}
+                        >
+                            <Ionicons name="card-outline" size={20} color={COLORS.white} />
+                            <Text style={styles.homeButtonText}>{t('dlVerifyLicense')}</Text>
+                        </LinearGradient>
+                    </TouchableOpacity>
+                )}
+
                 <TouchableOpacity
                     onPress={_goback}
                     activeOpacity={0.8}
-                    style={showDLVerification ? styles.secondaryButton : styles.homeButton}
+                    style={(showDLVerification || showCourtCheck) ? styles.secondaryButton : styles.homeButton}
                 >
-                    {showDLVerification ? (
+                    {(showDLVerification || showCourtCheck) ? (
                         <View style={styles.secondaryButtonInner}>
                             <Ionicons name="home-outline" size={20} color={COLORS.text} />
                             <Text style={styles.secondaryButtonText}>{t('backToHome')}</Text>
@@ -814,6 +887,34 @@ const styles = StyleSheet.create({
     submitBtnText: {
         fontSize: 15,
         fontWeight: '600',
+        color: COLORS.white,
+    },
+    // Action buttons row for 499 plan
+    actionButtonsRow: {
+        flexDirection: 'row',
+        gap: 10,
+        marginBottom: 10,
+    },
+    actionButton: {
+        flex: 1,
+        borderRadius: 12,
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    actionButtonGradient: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+        gap: 6,
+    },
+    actionButtonText: {
+        fontSize: 13,
+        fontWeight: '700',
         color: COLORS.white,
     },
 });

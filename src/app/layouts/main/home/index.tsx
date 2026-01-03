@@ -549,14 +549,31 @@ const Home = React.forwardRef((props, ref) => {
             // Try to deduce tier from payment_type or plan_name
             const type = (activeSub.payment_type || activeSub.plan_name || '').toUpperCase();
 
-            if (type.includes('TRUSTED') || (activeSub.amount && parseFloat(activeSub.amount) >= 499)) tier = 'Trusted';
-            else if (type.includes('VERIFIED') || (activeSub.amount && parseFloat(activeSub.amount) >= 199)) tier = 'Verified';
-            else if (type.includes('JOB READY') || (activeSub.amount && parseFloat(activeSub.amount) >= 99)) tier = 'Job Ready'; // 99 plan is Job Ready
+            // Prioritize explicit name matching first
+            if (type.includes('TRUSTED')) tier = 'Trusted';
+            else if (type.includes('VERIFIED')) tier = 'Verified';
+            else if (type.includes('JOB READY') || type.includes('JOBREADY')) tier = 'Job Ready';
             else if (type.includes('STANDARD')) tier = 'Standard';
             else if (type.includes('LEGACY')) tier = 'Legacy';
-            else if (type && type !== 'SUBSCRIPTION') tier = capitalizeFirst(activeSub.payment_type || activeSub.plan_name);
+
+            // Fallback to amount-based detection if name didn't match
+            if (!tier && activeSub.amount) {
+                const amt = parseFloat(activeSub.amount);
+                if (amt >= 499) tier = 'Trusted';
+                else if (amt >= 199) tier = 'Verified';
+                else if (amt >= 99) tier = 'Job Ready';
+            }
+
+            // Fallback to raw name
+            if (!tier && type && type !== 'SUBSCRIPTION') {
+                tier = capitalizeFirst(activeSub.payment_type || activeSub.plan_name);
+            }
 
             if (tier) {
+                // Ensure we don't duplicate "Driver" e.g. "Trusted Driver Driver"
+                if (tier.toLowerCase().endsWith(' driver')) {
+                    tier = tier.substring(0, tier.length - 7);
+                }
                 return `${tier} ${role}`;
             }
         }
@@ -591,11 +608,7 @@ const Home = React.forwardRef((props, ref) => {
             dispatch(subscriptionModalAction(true))
         } else {
             navigation.navigate(STACKS.SUITS_JOB)
-            // if (dashboard?.jobs_that_suit_you === 0) {
-            //     showToast(t(`youNeedToUpdateYourProfileFirstToSeeJobs`))
-            // } else {
-            //     navigation.navigate(STACKS.SUITS_JOB)
-            // }
+
         }
     }
     const _navigateAppliedJobs = () => {
@@ -677,17 +690,41 @@ const Home = React.forwardRef((props, ref) => {
         navigation.navigate(STACKS.ADD_DRIVER)
     }
     const _navigateAppliedJobsTransporter = () => {
-        if (subscriptionDetails?.showSubscriptionModel && isTransporter) {
-            !subscriptionModal && dispatch(subscriptionModalAction(true))
-        } else {
-            navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
-        }
+        // if (subscriptionDetails?.showSubscriptionModel && isTransporter) {
+        //     !subscriptionModal && dispatch(subscriptionModalAction(true))
+        // } else {
+        //     navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
+        // }
 
-        // navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
+        navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
     }
     const _navigateDriverList = () => {
         navigation.navigate(STACKS.DRIVER_LIST)
     }
+    const _navigateDriverTripWallet = () => {
+        navigation.navigate(STACKS.DRIVER_TRIP_WALLET)
+    }
+    const _navigateDriverWelfare = () => {
+        navigation.navigate(STACKS.DRIVER_WELFARE)
+    }
+    const _navigateDriverLoan = () => {
+        navigation.navigate(STACKS.DRIVER_LOAN)
+    }
+    const _navigateTruckMitrDhaba = () => {
+        navigation.navigate(STACKS.TRUCKMITR_DHABA)
+    }
+    const _navigateTruckMitrSuvidhaKendra = () => {
+        navigation.navigate(STACKS.TRUCKMITR_SUVIDHA_KENDRA)
+    }
+    const _navigateJobInvitationsList = () => {
+        navigation.navigate(STACKS.JOB_INVITATIONS_LIST)
+    }
+    const _navigateScheduledInterview = () => {
+        navigation.navigate(STACKS.SCHEDULED_INTERVIEWS)
+    }
+    // const _navigateRcCheckResult = () => {
+    //     navigation.navigate(STACKS.RC_CHECK_RESULT, { rcNumber: '' }) // Needs params usually
+    // }
 
     const closeWelcomePopup = async (Id: any) => {
         // get closed count for this popupId
@@ -882,12 +919,12 @@ const Home = React.forwardRef((props, ref) => {
                                 </View>
                             </View>
                             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: responsiveFontSize(1.5), gap: 2 }}>
-                                {[1, 2, 3, 4, 5].map((curr) => (
+                                {Array.from({ length: 5 }).map((_, i) => (
                                     <FontAwesome
-                                        key={curr}
-                                        name="star"
+                                        key={i}
+                                        name={i < (star_rating || 0) ? 'star' : 'star-o'}
                                         size={responsiveFontSize(1.6)}
-                                        color={curr <= (star_rating || 5) ? "#FFD700" : "#D3D3D3"}
+                                        color={i < (star_rating || 0) ? '#FFD700' : colors.blackOpacity(0.2)}
                                     />
                                 ))}
                             </View>
@@ -1225,7 +1262,7 @@ const Home = React.forwardRef((props, ref) => {
                     {/* Communication Row: Transporter Invitations, Video Interview */}
                     <View style={{ flexDirection: 'row', paddingHorizontal: responsiveWidth(4), paddingVertical: responsiveWidth(3) }}>
                         <TourGuideZone zone={8} text={t('hereYouCanSeeTheInvitationOfTheTransporter')} borderRadius={16} style={{ flex: 1 }}>
-                            <TouchableOpacity onPress={_navigateTransporterInvitation} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
+                            <TouchableOpacity onPress={_navigateJobInvitationsList} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                                 <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                     <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/6003/6003724.png' }} />
                                     <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('jobInviteByTransporter', 'Job Invite by Transporter')}</Text>
@@ -1319,14 +1356,14 @@ const Home = React.forwardRef((props, ref) => {
                             </View>
                         </TouchableOpacity>
                         <Space width={responsiveFontSize(1.5)} />
-                        <TouchableOpacity onPress={() => showToast('This feature is coming soon')} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
+                        <TouchableOpacity onPress={_navigateDriverLoan} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                 <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2489/2489756.png' }} />
                                 <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('truckMitrDriverLoan', 'TruckMitr Driver Loan')}</Text>
                             </View>
                         </TouchableOpacity>
                         <Space width={responsiveFontSize(1.5)} />
-                        <TouchableOpacity onPress={() => showToast('This feature is coming soon')} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
+                        <TouchableOpacity onPress={_navigateDriverWelfare} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                 <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2921/2921222.png' }} />
                                 <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('truckMitrDriverWelfare', 'TruckMitr Driver Welfare')}</Text>
@@ -1336,21 +1373,21 @@ const Home = React.forwardRef((props, ref) => {
 
                     {/* Coming Soon Row 2: Driver Trip Wallet, TruckMitr Dhabha, TruckMitr Suvidha Kendra */}
                     <View style={{ flexDirection: 'row', paddingHorizontal: responsiveWidth(4), paddingBottom: responsiveWidth(3) }}>
-                        <TouchableOpacity onPress={() => showToast('This feature is coming soon')} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
+                        <TouchableOpacity onPress={_navigateDriverTripWallet} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                 <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/855/855279.png' }} />
                                 <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('driverTripWallet', 'Driver Trip Wallet')}</Text>
                             </View>
                         </TouchableOpacity>
                         <Space width={responsiveFontSize(1.5)} />
-                        <TouchableOpacity onPress={() => showToast('This feature is coming soon')} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
+                        <TouchableOpacity onPress={_navigateTruckMitrDhaba} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                 <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/1046/1046857.png' }} />
                                 <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('truckMitrDhaba', 'TruckMitr Dhaba')}</Text>
                             </View>
                         </TouchableOpacity>
                         <Space width={responsiveFontSize(1.5)} />
-                        <TouchableOpacity onPress={() => showToast('This feature is coming soon')} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
+                        <TouchableOpacity onPress={_navigateTruckMitrSuvidhaKendra} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                 <Text style={{ fontSize: responsiveFontSize(4), marginBottom: 5 }}>🏢</Text>
                                 <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('truckMitrSuvidhaKendra', 'TruckMitr Suvidha Kendra')}</Text>

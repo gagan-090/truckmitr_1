@@ -57,7 +57,7 @@ const AppliedJobCard = ({
     index,
     expandedJobs,
     toggleExpand,
-    callToTransporter,
+    // callToTransporter,
     colors,
     responsiveFontSize,
     responsiveHeight,
@@ -334,46 +334,46 @@ const AppliedJobCard = ({
                     </View>
 
                     {/* Call Transporter Button - Only for accepted */}
-                    {_item?.transporter_mobile && item?.accept_reject_status === 'accepted' && (
-                        <Pressable
-                            onPress={() => callToTransporter(_item)}
-                            style={({ pressed }) => [{
-                                height: responsiveFontSize(5.5),
-                                width: '100%',
-                                opacity: pressed ? 0.9 : 1,
-                                transform: [{ scale: pressed ? 0.98 : 1 }],
-                                marginBottom: responsiveFontSize(1),
-                            }]}
-                        >
-                            <LinearGradient
-                                colors={['#10B981', '#059669']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={{
-                                    flex: 1,
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    borderRadius: responsiveFontSize(1.2),
-                                }}
-                            >
-                                <Ionicons
-                                    name='call'
-                                    size={18}
-                                    color={colors.white}
-                                    style={{ marginRight: responsiveFontSize(0.8) }}
-                                />
-                                <Text style={{
-                                    color: colors.white,
-                                    fontSize: responsiveFontSize(1.8),
-                                    fontWeight: '600',
-                                    letterSpacing: 0.3
-                                }}>
-                                    {t(`callToTransporter`)}
-                                </Text>
-                            </LinearGradient>
-                        </Pressable>
-                    )}
+                    {/* {_item?.transporter_mobile && item?.accept_reject_status === 'accepted' && (
+                        // <Pressable
+                        //     onPress={() => callToTransporter(_item)}
+                        //     style={({ pressed }) => [{
+                        //         height: responsiveFontSize(5.5),
+                        //         width: '100%',
+                        //         opacity: pressed ? 0.9 : 1,
+                        //         transform: [{ scale: pressed ? 0.98 : 1 }],
+                        //         marginBottom: responsiveFontSize(1),
+                        //     }]}
+                        // >
+                        //     <LinearGradient
+                        //         colors={['#10B981', '#059669']}
+                        //         start={{ x: 0, y: 0 }}
+                        //         end={{ x: 1, y: 0 }}
+                        //         style={{
+                        //             flex: 1,
+                        //             flexDirection: 'row',
+                        //             alignItems: 'center',
+                        //             justifyContent: 'center',
+                        //             borderRadius: responsiveFontSize(1.2),
+                        //         }}
+                        //     >
+                        //         <Ionicons
+                        //             name='call'
+                        //             size={18}
+                        //             color={colors.white}
+                        //             style={{ marginRight: responsiveFontSize(0.8) }}
+                        //         />
+                        //         <Text style={{
+                        //             color: colors.white,
+                        //             fontSize: responsiveFontSize(1.8),
+                        //             fontWeight: '600',
+                        //             letterSpacing: 0.3
+                        //         }}>
+                        //             {t(`callToTransporter`)}
+                        //         </Text>
+                        //     </LinearGradient>
+                        // </Pressable>
+                    )} */}
                 </View>
             </View>
         </Animated.View>

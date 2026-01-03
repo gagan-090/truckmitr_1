@@ -32,6 +32,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { NavigatorParams, STACKS } from '@truckmitr/stacks/stacks';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
+import Video from 'react-native-video';
 import { Space } from '@truckmitr/src/app/components';
 import Clipboard from '@react-native-clipboard/clipboard';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
@@ -296,7 +297,7 @@ const SparkleRing = () => {
 };
 
 export default function Congratulations() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const colors = useColor();
     const safeAreaInsets = useSafeAreaInsets();
     const navigation = useNavigation<NavigatorProp>();
@@ -367,9 +368,62 @@ export default function Congratulations() {
         navigation.navigate(STACKS.PROFILE_COMPLETION as any);
     };
 
+    // Audio Playback State
+    const [audioPaused, setAudioPaused] = useState(false);
+    const audioRef = React.useRef<any>(null);
+
+    // Audio file source
+    const audioSource = require('@truckmitr/src/assets/voice/congrutulation-screen.mp3');
+
+    // Play/Pause Audio Handler
+    const toggleAudio = () => {
+        setAudioPaused(!audioPaused);
+    };
+
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#F8FBFF" />
+
+            {/* Audio Player (Hidden) */}
+            {i18n.language === 'hi' && (
+                <Video
+                    source={audioSource}
+                    ref={audioRef}
+                    paused={audioPaused}
+                    style={{ width: 0, height: 0 }}
+                    resizeMode="cover"
+                    repeat={false}
+                    onEnd={() => setAudioPaused(true)}
+                    onError={(e) => console.log('Audio Error:', e)}
+                />
+            )}
+
+            {/* Play/Mute Button - Only for Hindi */}
+            {i18n.language === 'hi' && (
+                <TouchableOpacity
+                    onPress={toggleAudio}
+                    style={{
+                        position: 'absolute',
+                        top: safeAreaInsets.top + 10,
+                        right: 20,
+                        zIndex: 100,
+                        backgroundColor: colors.white,
+                        padding: 8,
+                        borderRadius: 20,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 4,
+                        elevation: 5,
+                    }}
+                >
+                    <Ionicons
+                        name={audioPaused ? "volume-mute" : "volume-high"}
+                        size={24}
+                        color={colors.royalBlue}
+                    />
+                </TouchableOpacity>
+            )}
 
             {/* Gradient Background */}
             <LinearGradient
