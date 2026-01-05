@@ -1952,5 +1952,17 @@
   "subTermsAndConditions": "सब्सक्रिप्शन नियम और अस्वीकरण",
   "subAuthorizePayments": " और भुगतान को अधिकृत करता/करती हूं",
   "transporterProBadge": "ट्रांसपोर्टर प्रो",
-  "inviteDriverForJob": "ड्राइवर को जॉब के लिए इनवाइट करें"
+  "inviteDriverForJob": "ड्राइवर को जॉब के लिए इनवाइट करें",
+  "periodOfStay": "रहने की अवधि",
+  "enterPeriodOfStay": "जैसे, जनवरी 2020 से दिसंबर 2025",
+  "pleaseEnterFullName": "कृपया पूरा नाम दर्ज करें",
+  "pleaseEnterDob": "कृपया जन्म तिथि दर्ज करें",
+  "pleaseEnterAddress": "कृपया पता दर्ज करें",
+  "pleaseEnterFatherName": "कृपया पिता का नाम दर्ज करें",
+  "courtCheckSuccess": "कोर्ट चेक केस सफलतापूर्वक बनाया गया",
+  "courtCheckFailed": "कोर्ट चेक जमा करना विफल रहा",
+  "somethingWentWrong": "कुछ गलत हो गया",
+  "from": "से",
+  "to": "तक",
+  "selectDate": "तारीख चुनें"
 }
