@@ -47,6 +47,7 @@ import { ZegoSendCallInvitationButton } from '@zegocloud/zego-uikit-prebuilt-cal
 import { startVideoCall } from '@truckmitr/src/utils/zegoService';
 import ViewShot from 'react-native-view-shot';
 import RNShare from 'react-native-share';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // Membership Card Asset Images
 const LOGO_IMAGE = require('@truckmitr/src/assets/membership-card/logotrick.png');
 const PROFILE_PLACEHOLDER = require('@truckmitr/src/assets/membership-card/man.png');
@@ -620,6 +621,32 @@ export default function Profile() {
     isDriver && navigation.navigate(STACKS.PROFILE_EDIT)
     isTransporter && navigation.navigate(STACKS.PROFILE_EDIT_TRANSPORTER)
   }
+
+  const logAllAsyncStorage = async () => {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+
+      if (!keys || keys.length === 0) {
+        console.log('📦 AsyncStorage is empty');
+        return;
+      }
+
+      const items = await AsyncStorage.multiGet(keys);
+
+      console.log('📦 AsyncStorage contents:');
+      items.forEach(([key, value]) => {
+        try {
+          const parsedValue = value ? JSON.parse(value) : value;
+          console.log(`🔑 ${key}:`, parsedValue);
+        } catch (e) {
+          console.log(`🔑 ${key}:`, value);
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error reading AsyncStorage:', error);
+    }
+  };
+
   const _navigateRating = () => navigation.navigate(STACKS.RATING)
   const _navigateContactUs = () => navigation.navigate(STACKS.CONTACT_US)
   const _navigatePrivacy = () => navigation.navigate(STACKS.PRIVACY)
@@ -670,8 +697,41 @@ export default function Profile() {
       const result = await Share.share({
         message: t('shareAppMessage'),
       });
+
+      console.log('📤 Share app result:', result);
     } catch (error) {
-      console.error('Error sharing the app:', error);
+      console.error('❌ Error sharing the app:', error);
+    }
+  };
+
+  const _onPressShareProfile = async () => {
+    try {
+      const userName = user?.name || 'TruckMitr User';
+      const userRole = capitalizeFirst(user?.role || 'member');
+      const userId = user?.unique_id || '';
+      
+      // Create a web URL that will be clickable and redirect to the app
+      // This follows the same pattern as Instagram, Twitter, etc.
+      const profileUrl = `https://truckmitr.com/u/${userId}`;
+      
+      const shareMessage = `👋 Hi! Check out my ${userRole} profile on TruckMitr:
+
+� O${userName}
+🆔 ID: ${userId}
+
+� Vienw my profile: ${profileUrl}
+
+📥 Download TruckMitr: https://play.google.com/store/apps/details?id=com.truckmitr`;
+      
+      const result = await Share.share({
+        message: shareMessage,
+        url: profileUrl, // This makes it clickable on iOS
+        title: `${userName}'s TruckMitr Profile`,
+      });
+      
+      console.log('📤 Share profile result:', result);
+    } catch (error) {
+      console.error('❌ Error sharing profile:', error);
     }
   };
 
@@ -1506,6 +1566,12 @@ onPress={()=>{
             icon={<Ionicons name="share-social-outline" size={20} color={colors.azureBlue} />}
             title={t('shareTheApp')}
             onPress={_onPressShareApp}
+          />
+          <View style={[styles.divider, { backgroundColor: colors.blackOpacity(0.06) }]} />
+          <MenuItem
+            icon={<Ionicons name="person-circle-outline" size={20} color={colors.royalBlue} />}
+            title={t('shareMyProfile')}
+            onPress={_onPressShareProfile}
           />
         </CardContainer>
 

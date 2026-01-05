@@ -696,13 +696,13 @@ const Home = React.forwardRef((props, ref) => {
         navigation.navigate(STACKS.ADD_DRIVER)
     }
     const _navigateAppliedJobsTransporter = () => {
-        if (subscriptionDetails?.showSubscriptionModel && isTransporter) {
-            !subscriptionModal && dispatch(subscriptionModalAction(true))
-        } else {
-            navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
-        }
+        // if (subscriptionDetails?.showSubscriptionModel && isTransporter) {
+        //     !subscriptionModal && dispatch(subscriptionModalAction(true))
+        // } else {
+        //     navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
+        // }
 
-        // navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
+        navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
     }
     const _navigateDriverList = () => {
         navigation.navigate(STACKS.DRIVER_LIST)
@@ -1562,7 +1562,7 @@ const Home = React.forwardRef((props, ref) => {
                 {showLottie && <View style={{ height: responsiveHeight(100), width: responsiveWidth(100), alignItems: 'center', justifyContent: 'center', position: 'absolute', pointerEvents: 'none' }}>
                     <LottieView style={{ height: responsiveHeight(50), width: responsiveWidth(70) }} source={require('@truckmitr/res/lotties/boom.json')} autoPlay loop />
                 </View>}
-                {isTransporter && <>
+                {/* {isTransporter && <>
                     <Space height={responsiveHeight(2)} />
                     <View style={{ backgroundColor: colors.royalBlueOpacity(.9), padding: responsiveWidth(5) }}>
                         <Text style={{ color: colors.white, fontSize: responsiveFontSize(2.4), fontWeight: 'bold' }}>{t(`elevatingTheIndianTitle`)}</Text>
@@ -1571,7 +1571,7 @@ const Home = React.forwardRef((props, ref) => {
                     <View style={{ width: responsiveWidth(100), backgroundColor: colors.royalBlueOpacity(.02) }}>
                         <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(1.6), textAlign: 'center', fontWeight: '500', margin: responsiveFontSize(1.5) }}>{`© 2025 TruckMitr Corporate Services Private Limited. \nAll Rights Reserved.`}</Text>
                     </View>
-                </>}
+                </>} */}
             </ScrollView>
 
             {/* Draggable Floating Reel-Style Video Player */}

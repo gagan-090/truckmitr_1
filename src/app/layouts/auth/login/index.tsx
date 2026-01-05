@@ -56,10 +56,10 @@ export default function Login() {
             seterror(t(`pleaseEnterYourMobileNumber`));
             return false;
         }
-        if (!/^[6-9]\d{9}$/.test(mobile)) {
-            seterror(t(`mobileNumber_10_digits`));
-            return false;
-        }
+        // if (!/^[6-9]\d{9}$/.test(mobile)) {
+        //     seterror(t(`mobileNumber_10_digits`));
+        //     return false;
+        // }
         return true;
     }, [mobile]);
 

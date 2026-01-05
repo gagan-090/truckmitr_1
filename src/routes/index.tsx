@@ -1,4 +1,4 @@
-import { StatusBar, useColorScheme, View, Image, AppState, Linking } from 'react-native';
+import { StatusBar, useColorScheme, View, Image, AppState, Linking, TouchableOpacity, Text } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { darkTheme, lightTheme } from '@truckmitr/res/colors';
@@ -52,6 +52,7 @@ export default function Routes() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const hasInitialized = useRef(false);
   const lastBackgroundTime = useRef<number>(0);
+  const pendingDeepLink = useRef<string | null>(null); // Store pending deep link
   const isProfileCompleted = Boolean(
     user?.data?.profile_completed
   );
@@ -328,12 +329,137 @@ export default function Routes() {
     SystemNavigationBar.setNavigationColor('translucent');
   }, []);
   useEffect(() => {
+    // Handle initial URL (when app is opened from closed state)
+    const getInitialURL = async () => {
+      try {
+        const initialUrl = await Linking.getInitialURL();
+        if (initialUrl) {
+          console.log('🌐 Initial URL received:', initialUrl);
+          console.log('🌐 App ready status:', isAppReady);
+          console.log('🌐 Navigation ready status:', isNavigationReady);
+          console.log('🌐 Is authenticated:', isAuthenticated);
+          
+          if (isAppReady && isNavigationReady && isAuthenticated) {
+            // App is fully ready, process immediately
+            handleDeepLink(initialUrl);
+          } else {
+            // App not ready yet, store for later
+            console.log('🌐 App not ready, storing deep link for later processing');
+            pendingDeepLink.current = initialUrl;
+          }
+        } else {
+          console.log('🌐 No initial URL found');
+        }
+      } catch (error) {
+        console.log('❌ Error getting initial URL:', error);
+      }
+    };
+
+    // Handle URL when app is already running
     const sub = Linking.addEventListener('url', ({ url }) => {
       console.log('🌐 Deep link received by Navigation:', url);
+      console.log('🌐 Navigation ready status:', isNavigationReady);
+      handleDeepLink(url);
     });
 
+    // Function to handle deep link navigation
+    const handleDeepLink = (url: string) => {
+      console.log('🔍 Processing deep link:', url);
+      console.log('🔍 Current navigation state:', navigationRef.current?.getRootState());
+      
+      // Parse the URL to see what we're trying to navigate to
+      const urlParts = url.replace('truckmitr://', '').split('/');
+      console.log('🔍 URL parts:', urlParts);
+      
+      // Manual navigation for testing
+      if (urlParts[0] === 'profile') {
+        console.log('🎯 Attempting to navigate to profile tab');
+        console.log('🎯 Navigation ref available:', !!navigationRef.current);
+        console.log('🎯 Is authenticated:', isAuthenticated);
+        
+        if (!navigationRef.current) {
+          console.log('❌ Navigation ref not available');
+          return;
+        }
+
+        if (!isAuthenticated) {
+          console.log('❌ User not authenticated, cannot navigate to profile');
+          return;
+        }
+        
+        // Wait a bit for navigation to be ready and try multiple times if needed
+        const attemptNavigation = (attempt = 1) => {
+          console.log(`🎯 Navigation attempt ${attempt}`);
+          
+          try {
+            navigationRef.current?.navigate('bottomTab', {
+              screen: 'profile'
+            });
+            console.log('✅ Navigation command sent successfully');
+          } catch (error) {
+            console.log(`❌ Navigation attempt ${attempt} failed:`, error);
+            
+            if (attempt < 3) {
+              setTimeout(() => attemptNavigation(attempt + 1), 1000);
+            }
+          }
+        };
+
+        // Start navigation attempts
+        if (isNavigationReady) {
+          attemptNavigation();
+        } else {
+          console.log('⏳ Navigation not ready, waiting...');
+          setTimeout(() => attemptNavigation(), 2000);
+        }
+      } else {
+        console.log('🔍 Deep link path not recognized:', urlParts[0]);
+      }
+    };
+
+    // Check for initial URL
+    getInitialURL();
+
     return () => sub.remove();
-  }, []);
+  }, [isAuthenticated]);
+
+  // Handle pending deep link when app becomes ready
+  useEffect(() => {
+    if (pendingDeepLink.current && isAppReady && isNavigationReady && isAuthenticated) {
+      console.log('🌐 Processing pending deep link:', pendingDeepLink.current);
+      
+      const url = pendingDeepLink.current;
+      pendingDeepLink.current = null; // Clear pending link
+      
+      // Add extra delay for kill state to ensure everything is fully loaded
+      setTimeout(() => {
+        const urlParts = url.replace('truckmitr://', '').split('/');
+        
+        if (urlParts[0] === 'profile') {
+          console.log('🎯 Processing pending profile navigation');
+          
+          const attemptNavigation = (attempt = 1) => {
+            console.log(`🎯 Pending navigation attempt ${attempt}`);
+            
+            try {
+              navigationRef.current?.navigate('bottomTab', {
+                screen: 'profile'
+              });
+              console.log('✅ Pending navigation successful');
+            } catch (error) {
+              console.log(`❌ Pending navigation attempt ${attempt} failed:`, error);
+              
+              if (attempt < 5) {
+                setTimeout(() => attemptNavigation(attempt + 1), 1000);
+              }
+            }
+          };
+          
+          attemptNavigation();
+        }
+      }, 2000); // Extra delay for kill state
+    }
+  }, [isAppReady, isNavigationReady, isAuthenticated]);
 
   // Only show loading screen during initial app load, not during refresh
   if (!isAppReady && isInitializing) {
@@ -347,12 +473,75 @@ export default function Routes() {
     );
   }
 
+  const linking = {
+    prefixes: ['truckmitr://', 'https://truckmitr.com'],
+    config: {
+      screens: {
+        Auth: {
+          screens: {
+            login: 'login',
+          },
+        },
+        ProfileCompletionStack: {
+          screens: {
+            profileCompletion: 'profile-completion',
+          },
+        },
+        Main: {
+          screens: {
+            // Bottom Tab Navigator
+            bottomTab: {
+              screens: {
+                // Driver tabs
+                home: 'home',
+                training: 'training', 
+                job: 'job',
+                healthHygiene: 'health-hygiene',
+                profile: 'profile',
+                // Transporter tabs
+                transporterAppliedJob: 'applied-jobs',
+                viewJobs: 'view-jobs',
+                driverList: 'drivers',
+              },
+            },
+            // Main Stack Screens (outside bottom tabs)
+            dashboard: 'dashboard',
+            modules: 'modules',
+            quiz: 'quiz',
+            quizResult: 'quiz-result',
+            player: 'player',
+            availableJob: 'available-job',
+            suitsJob: 'suits-job',
+            appliedJob: 'applied-job',
+            search: 'search',
+            profileEdit: 'profile-edit',
+            drivingDetails: 'driving-details',
+            uploadDocuments: 'upload-documents',
+            settings: 'settings',
+            notification: 'notification',
+            rating: 'rating',
+            contactUs: 'contact-us',
+            privacy: 'privacy',
+            addJob: 'add-job',
+            jobStep2: 'job-step2',
+            jobStep3: 'job-step3',
+            addDriver: 'add-driver',
+            excelImport: 'excel-import',
+            // Add more screens as needed
+          },
+        },
+      },
+    },
+  };
+
+
+
   // -------------------------------
   // 🔹 Navigation Tracking
   // -------------------------------
   return (
     <NavigationContainer
-      // linking={linking}
+      linking={linking}
       ref={navigationRef}
       theme={theme}
       onReady={async () => {
@@ -395,7 +584,9 @@ export default function Routes() {
         // ) : profileRequiredFieldsStatus === false ? (
         //   <ProfileCompletionStack />
       ) : (
-        <Main />
+        <>
+          <Main />
+        </>
       )}
       {subscriptionModal && <Subscription />}
       <InAppUpdatePopup />

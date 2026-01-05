@@ -707,6 +707,141 @@ export default function ProfileCompletion() {
         return [];
     };
 
+    const logFormDataPayload = (formData: FormData) => {
+        console.log('📦 ===== PROFILE SUBMIT PAYLOAD START =====');
+
+        // @ts-ignore – React Native FormData internal structure
+        const parts = formData?._parts;
+
+        if (!parts || !Array.isArray(parts)) {
+            console.log('⚠️ Unable to read FormData parts');
+            return;
+        }
+
+        parts.forEach(([key, value]) => {
+            if (typeof value === 'object' && value?.uri) {
+                console.log(`🖼️ ${key}:`, {
+                    uri: value.uri,
+                    type: value.type,
+                    name: value.name,
+                });
+            } else {
+                console.log(`🔑 ${key}:`, value);
+            }
+        });
+
+        console.log('📦 ===== PROFILE SUBMIT PAYLOAD END =====');
+    };
+
+    const profilePayloadPreview = {
+    // ===== BASIC INFO =====
+    name: userEdit?.name || user?.name || '',
+    email: userEdit?.email || user?.email || '',
+    mobile: userEdit?.mobile || user?.mobile || '',
+    father_name: userEdit?.Father_Name || user?.Father_Name || '',
+
+    dob: userEdit?.DOB
+        ? moment(userEdit.DOB).format('DD-MM-YYYY')
+        : '',
+
+    sex: userEdit?.Sex || '',
+
+    highest_education:
+        userEdit?.education ||
+        userEdit?.Highest_Education ||
+        '',
+
+    // ===== VEHICLE =====
+    vehicle_type: normalizeArrayField(userEdit?.vehicle_type), // Array for both roles
+
+    type_of_license: userEdit?.Type_of_License || '',
+
+    licence_endorsement:
+        userEdit?.endorsement?.split(', ').filter(Boolean) || [],
+
+    Driving_Experience:
+        ({
+            'less_than_1': '0',
+            '1-2': '1',
+            '3-5': '3',
+            '6-10': '6',
+            '10+': '10',
+        } as any)[userEdit?.Driving_Experience] ||
+        userEdit?.Driving_Experience ||
+        '0',
+
+    // ===== DOCUMENTS =====
+    Aadhar_Number: userEdit?.Aadhar_Number || '',
+    License_Number:
+        userEdit?.license_number ||
+        userEdit?.License_Number ||
+        '',
+
+    expiry_date_of_license:
+        userEdit?.Expiry_date_of_License
+            ? moment(userEdit.Expiry_date_of_License).format('DD-MM-YYYY')
+            : moment().add(5, 'years').format('DD-MM-YYYY'),
+
+    // ===== SALARY =====
+    current_monthly_income:
+        userEdit?.current_salary ||
+        userEdit?.Current_Monthly_Income ||
+        '',
+
+    expected_monthly_income:
+        userEdit?.expected_salary ||
+        userEdit?.Expected_Monthly_Income ||
+        '',
+
+    // ===== TAX =====
+    pan_number: userEdit?.pan || userEdit?.PAN_Number || '',
+    gst_number: userEdit?.gst || userEdit?.GST_Number || '',
+
+    // ===== ADDRESS =====
+    address: userEdit?.address || savedSignupData?.address || '',
+    city: userEdit?.city || savedSignupData?.city || '',
+    pincode: userEdit?.pincode || savedSignupData?.pincode || '',
+    state:
+        userEdit?.state_id ||
+        userEdit?.states ||
+        savedSignupData?.state ||
+        '',
+
+    // ===== TRANSPORTER ONLY =====
+    ...(userRole === 'transporter'
+        ? {
+              transport_name:
+                  userEdit?.transport_name ||
+                  savedSignupData?.transport_name ||
+                  '',
+
+              year_of_exp: userEdit?.year_of_exp || '',
+
+              year_of_establishment:
+                  userEdit?.year_of_exp ||
+                  userEdit?.year_of_establishment ||
+                  userEdit?.establishment_year ||
+                  '',
+
+              fleet_size: userEdit?.fleet_size || '',
+              average_km: userEdit?.avg_km_run || '',
+              registered_id: userEdit?.registered_id || '',
+
+              operational_segment:
+                  userEdit?.industry_segment
+                      ?.split(',')
+                      .filter(Boolean) || [],
+
+              routes:
+                  userEdit?.operational_segment
+                      ?.split(',')
+                      .filter(Boolean) || [],
+          }
+        : {}),
+};
+
+
+
     const submitProfile = async () => {
         setFinishing(true);
         console.log('=== Profile Completion - Submitting to API ===');
@@ -731,21 +866,16 @@ export default function ProfileCompletion() {
             // Education
             formData.append('highest_education', userEdit?.education || userEdit?.Highest_Education || '');
 
-            // Vehicle Type - Driver expects array, Transporter expects string
+            // Vehicle Type - Both Driver and Transporter now expect array format
             // Use helper to normalize corrupted data
             const cleanVehicleTypes = normalizeArrayField(userEdit?.vehicle_type);
             console.log('Cleaned Vehicle Types:', cleanVehicleTypes);
 
             if (cleanVehicleTypes.length > 0) {
-                if (userRole === 'driver') {
-                    // Driver: API expects array format with vehicle_type[]
-                    cleanVehicleTypes.forEach((vt: string) => {
-                        formData.append('vehicle_type[]', vt.trim());
-                    });
-                } else {
-                    // Transporter: API expects string format
-                    formData.append('vehicle_type', cleanVehicleTypes.join(','));
-                }
+                // Both roles: API expects array format with vehicle_type[]
+                cleanVehicleTypes.forEach((vt: string) => {
+                    formData.append('vehicle_type[]', vt.trim());
+                });
             }
 
             // License Type
@@ -874,6 +1004,8 @@ export default function ProfileCompletion() {
             console.log('=== Sending profile update request ===');
 
             console.log('=== formData ===', formData);
+            logFormDataPayload(formData);
+
 
 
             const response = await axiosInstance.post(END_POINTS.EDIT_PROFILE, formData);

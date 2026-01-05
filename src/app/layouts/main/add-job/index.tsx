@@ -13,6 +13,7 @@ import {
     Dimensions,
     TouchableWithoutFeedback,
     AccessibilityInfo,
+    FlatList,
 } from 'react-native';
 import Animated, {
     useSharedValue,
@@ -143,6 +144,7 @@ export default function AddJob() {
     const [datePickerOpen, setDatePickerOpen] = useState(false);
     const [locationsList, setLocationsList] = useState<any[]>([]);
     const [locationModalOpen, setLocationModalOpen] = useState(false);
+    const [locationSearchQuery, setLocationSearchQuery] = useState('');
     const [finishing, setFinishing] = useState(false);
     const [checkBoxSelect, setCheckBoxSelect] = useState<boolean>(true);
     const [availableFreeJob, setAvailableFreeJob] = useState<boolean>(false);
@@ -654,13 +656,14 @@ export default function AddJob() {
                             {t('jobLocationHintDetail') || 'Select the state where the job is located'}
                         </Text>
                         <TouchableOpacity
+                            activeOpacity={0.8}
                             style={styles.classicBox}
                             onPress={() => setLocationModalOpen(true)}
                         >
                             <Text style={[styles.classicBoxText, !addJob?.job_location && { color: '#999' }]}>
-                                {addJob?.job_location || t('tapToSelectLocation') || 'Tap to select location'}
+                                {addJob?.job_location || t('selectLocation') || 'Select Location'}
                             </Text>
-                            <Ionicons name="chevron-down" size={20} color="#246BFD" />
+                            <Ionicons name="chevron-down" size={20} color="#666" />
                         </TouchableOpacity>
                     </View>
                 );
@@ -1456,18 +1459,37 @@ export default function AddJob() {
                 </TouchableOpacity>
             </Animated.View>
 
-            {/* Location Modal */}
+            {/* Location Modal - Updated to match Profile Completion State Selector UI */}
             <Modal visible={locationModalOpen} transparent animationType="slide">
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>{t('selectLocation')}</Text>
-                            <TouchableOpacity onPress={() => setLocationModalOpen(false)}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                            <Text style={styles.modalTitle}>
+                                {t('selectLocation') || 'Select Location'}
+                            </Text>
+                            <TouchableOpacity onPress={() => {
+                                setLocationModalOpen(false);
+                                setLocationSearchQuery('');
+                            }}>
                                 <Ionicons name="close" size={24} color="#333" />
                             </TouchableOpacity>
                         </View>
-                        <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={true}>
-                            {locationsList.map((location) => (
+                        
+                        {/* Search Input */}
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder={t('searchLocation') || 'Search location...'}
+                            placeholderTextColor="#999"
+                            value={locationSearchQuery}
+                            onChangeText={setLocationSearchQuery}
+                        />
+                        
+                        <ScrollView style={{ flex: 1, marginTop: 10 }} showsVerticalScrollIndicator={true}>
+                            {locationsList
+                                .filter(location => 
+                                    location.name.toLowerCase().includes(locationSearchQuery.toLowerCase())
+                                )
+                                .map((location) => (
                                 <TouchableOpacity
                                     key={location.id}
                                     style={[
@@ -1477,6 +1499,7 @@ export default function AddJob() {
                                     onPress={() => {
                                         dispatch(jobAddAction({ ...addJob, job_location: location.name }));
                                         setLocationModalOpen(false);
+                                        setLocationSearchQuery('');
                                     }}
                                 >
                                     <Ionicons name="location-outline" size={20} color={addJob?.job_location === location.name ? "#246BFD" : "#666"} />
@@ -1493,6 +1516,166 @@ export default function AddJob() {
                             ))}
                         </ScrollView>
                     </View>
+                </View>
+            </Modal>
+
+            {/* Full-screen Location Modal - Matching Registration State Selector */}
+            <Modal
+                visible={locationModalOpen}
+                animationType="slide"
+                presentationStyle="fullScreen"
+                onRequestClose={() => setLocationModalOpen(false)}
+            >
+                <View style={{ flex: 1, backgroundColor: colors.white }}>
+                    <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+                    {/* Modal Header */}
+                    <View style={{
+                        paddingTop: safeAreaInsets.top,
+                        backgroundColor: colors.white,
+                        borderBottomWidth: 1,
+                        borderBottomColor: colors.blackOpacity(0.08),
+                    }}>
+                        <View style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingHorizontal: responsiveFontSize(2),
+                            paddingVertical: responsiveHeight(1),
+                        }}>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setLocationModalOpen(false);
+                                    setLocationSearchQuery('');
+                                }}
+                                style={{
+                                    height: 40,
+                                    width: 40,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: colors.blackOpacity(0.05),
+                                    borderRadius: 12,
+                                }}>
+                                <Ionicons name="close" size={24} color={colors.royalBlue} />
+                            </TouchableOpacity>
+                            <Text style={{
+                                flex: 1,
+                                textAlign: 'center',
+                                fontSize: responsiveFontSize(2.2),
+                                fontWeight: '700',
+                                color: colors.black,
+                                marginRight: 40, // Balance the close button
+                            }}>
+                                {t('selectLocation') || 'Select Location'}
+                            </Text>
+                        </View>
+
+                        {/* Search Bar */}
+                        <View style={{
+                            marginHorizontal: responsiveFontSize(2),
+                            marginBottom: responsiveHeight(1),
+                            backgroundColor: colors.blackOpacity(0.04),
+                            borderRadius: 12,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingHorizontal: 14,
+                            height: 48,
+                        }}>
+                            <Ionicons name="search" size={20} color={colors.blackOpacity(0.4)} />
+                            <TextInput
+                                style={{
+                                    flex: 1,
+                                    marginLeft: 10,
+                                    fontSize: responsiveFontSize(1.8),
+                                    color: colors.black,
+                                    padding: 0,
+                                }}
+                                placeholder={t('searchLocation') || 'Search location...'}
+                                placeholderTextColor={colors.blackOpacity(0.4)}
+                                value={locationSearchQuery}
+                                onChangeText={setLocationSearchQuery}
+                                autoCorrect={false}
+                            />
+                            {locationSearchQuery.length > 0 && (
+                                <TouchableOpacity onPress={() => setLocationSearchQuery('')}>
+                                    <Ionicons name="close-circle" size={20} color={colors.blackOpacity(0.4)} />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+
+                    {/* Location List */}
+                    <FlatList
+                        data={locationsList.filter(location => 
+                            location.name.toLowerCase().includes(locationSearchQuery.toLowerCase())
+                        )}
+                        keyExtractor={(item) => item.id.toString()}
+                        keyboardShouldPersistTaps="handled"
+                        contentContainerStyle={{
+                            paddingHorizontal: responsiveFontSize(2),
+                            paddingTop: 0,
+                            paddingBottom: safeAreaInsets.bottom + 20,
+                        }}
+                        ListEmptyComponent={() => (
+                            <View style={{
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                paddingVertical: responsiveHeight(10),
+                            }}>
+                                <Ionicons name="location-outline" size={48} color={colors.blackOpacity(0.2)} />
+                                <Text style={{
+                                    marginTop: 12,
+                                    fontSize: responsiveFontSize(1.8),
+                                    color: colors.blackOpacity(0.4),
+                                }}>
+                                    {t('noLocationsFound') || 'No locations found'}
+                                </Text>
+                            </View>
+                        )}
+                        renderItem={({ item }) => {
+                            const isSelected = item.name === addJob?.job_location;
+                            return (
+                                <TouchableOpacity
+                                    activeOpacity={0.7}
+                                    onPress={() => {
+                                        dispatch(jobAddAction({ ...addJob, job_location: item.name }));
+                                        setLocationModalOpen(false);
+                                        setLocationSearchQuery('');
+                                    }}
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        paddingVertical: responsiveHeight(1.8),
+                                        paddingHorizontal: 16,
+                                        marginBottom: 8,
+                                        backgroundColor: isSelected ? colors.royalBlue + '10' : colors.white,
+                                        borderRadius: 12,
+                                        borderWidth: 1,
+                                        borderColor: isSelected ? colors.royalBlue : colors.blackOpacity(0.08),
+                                    }}>
+                                    <View style={{
+                                        width: 24,
+                                        height: 24,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        marginRight: 14,
+                                    }}>
+                                        <MaterialCommunityIcons
+                                            name={isSelected ? 'radiobox-marked' : 'radiobox-blank'}
+                                            size={24}
+                                            color={isSelected ? colors.royalBlue : colors.blackOpacity(0.3)}
+                                        />
+                                    </View>
+                                    <Text style={{
+                                        flex: 1,
+                                        fontSize: responsiveFontSize(1.9),
+                                        fontWeight: isSelected ? '600' : '500',
+                                        color: isSelected ? colors.royalBlue : colors.black,
+                                    }}>
+                                        {item.name}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        }}
+                    />
                 </View>
             </Modal>
 
@@ -2039,6 +2222,16 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 20,
         padding: 20,
         maxHeight: '70%',
+    },
+    searchInput: {
+        borderWidth: 1,
+        borderColor: '#CED4DA',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        fontSize: 15,
+        color: '#333',
+        backgroundColor: '#F8F9FA',
     },
     modalHeader: {
         flexDirection: 'row',
