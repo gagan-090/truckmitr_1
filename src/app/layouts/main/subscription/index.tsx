@@ -1148,7 +1148,7 @@ export default function Subscription({ }: any) {
           return {
             id: apiPlan.id,
             tier,
-            name: tier === 'base' ? t('subJobReadyDriver') : (apiPlan.name || `Plan ${index + 1}`),
+            name: (role === 'transporter' && (amount === 99 || (amount >= 90 && amount <= 100))) ? t('cardLegacyTransporter') : (tier === 'base' ? t('subJobReadyDriver') : (apiPlan.name || `Plan ${index + 1}`)),
             subtitle: tier === 'base' ? t('subJobReadySubtitle') : (role === 'transporter' ? t('subTransporterSubtitle') || 'For Transporters' : (tier === 'verified' ? t('subVerifiedSubtitle') : t('subTrustedSubtitle'))),
             tagline: tier === 'base' ? t('subJobReadyTagline') : (apiPlan.tagline || (tier === 'trusted' ? t('subTrustedTagline') : tier === 'verified' ? t('subVerifiedTagline') : t('subStartYourJourney'))),
             badge,

@@ -98,7 +98,7 @@ const TIER_CONFIGS: Record<TierType, TierConfig> = {
         ],
         categoryText: 'LEGACY MEMBER', // Will be overridden dynamically
     },
-        'TRANSPORTER PRO': {
+    'TRANSPORTER PRO': {
         background: BACKGROUND_TRUSTED,
         borderColors: ['#A67C00', '#C9A23F', '#FFF6C8', '#C9A23F', '#A67C00'],
         chromeGradient: [
@@ -179,7 +179,7 @@ export default function MembershipCard() {
     // Get tier config and dynamically set categoryText for LEGACY based on role
     let tierConfig = { ...TIER_CONFIGS[tier] };
     if (tier === 'LEGACY') {
-        tierConfig.categoryText = userRole === 'transporter' ? 'LEGACY TRANSPORTER' : 'LEGACY DRIVER';
+        tierConfig.categoryText = userRole === 'transporter' ? (t('cardLegacyTransporter') || 'LEGACY TRANSPORTER') : (t('cardLegacyDriver') || 'LEGACY DRIVER');
     }
 
     const startDate = subscriptionDetails?.start_at

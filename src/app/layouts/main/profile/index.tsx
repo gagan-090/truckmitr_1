@@ -56,7 +56,7 @@ const BACKGROUND_TRUSTED = require('@truckmitr/src/assets/membership-card/member
 const BACKGROUND_JOB_READY = require('@truckmitr/src/assets/membership-card/membershipcard3.png');
 
 // Card tier configurations
-type TierType = 'JOB READY' | 'VERIFIED' | 'TRUSTED' | 'Standard' | 'LEGACY' | 'TRANSPORTER PRO';
+type TierType = 'JOB READY' | 'VERIFIED' | 'TRUSTED' | 'Standard' | 'LEGACY' | 'TRANSPORTER PRO' | 'LEGACY TRANSPORTER';
 
 interface TierConfig {
   background: any;
@@ -138,6 +138,18 @@ const getTierConfigs = (t: any): Record<TierType, TierConfig> => ({
     ],
     categoryText: 'TRANSPORTER PRO',
   },
+  'LEGACY TRANSPORTER': {
+    background: BACKGROUND_VERIFIED,
+    borderColors: ['#8B4513', '#CD853F', '#DEB887', '#CD853F', '#8B4513'],
+    chromeGradient: [
+      { offset: '0', color: '#DEB887' },
+      { offset: '0.25', color: '#CD853F' },
+      { offset: '0.5', color: '#8B4513' },
+      { offset: '0.75', color: '#CD853F' },
+      { offset: '1', color: '#DEB887' },
+    ],
+    categoryText: t('cardLegacyTransporter'),
+  },
 });
 
 // Helper function to get tier from payment_type
@@ -153,14 +165,9 @@ const getTierFromPaymentType = (paymentType: string, amount?: number, role?: str
     return 'TRANSPORTER PRO';
   }
 
-  // Legacy transporter detection: Rs 99 payment for TRANSPORTERS
-  if (role === 'transporter' && (amount === 99 || amount === 99.00)) {
-    return 'LEGACY';
-  }
-
-  // Transporter Pro detection: Rs 499 payment
-  if (role === 'transporter' && (amount === 499 || amount === 499.00)) {
-    return 'TRANSPORTER PRO';
+  // Legacy transporter detection: Rs 99 or Rs 100 payment for TRANSPORTERS
+  if (role === 'transporter' && (amount === 99 || amount === 99.00 || amount === 100 || amount === 100.00)) {
+    return 'LEGACY TRANSPORTER';
   }
 
   const normalizedType = paymentType?.toUpperCase().replace(/\s+/g, ' ').trim();
@@ -1056,6 +1063,7 @@ export default function Profile() {
                     else if (tier === 'TRUSTED') tierName = 'Trusted';
                     else if (tier === 'Standard') tierName = 'Standard';
                     else if (tier === 'LEGACY') tierName = 'Legacy';
+                    else if (tier === 'LEGACY TRANSPORTER') tierName = 'Legacy';
                     else if (tier === 'TRANSPORTER PRO') tierName = 'Transporter Pro';
                     else tierName = capitalizeFirst((tier as string)?.toLowerCase() || '');
 
@@ -1190,7 +1198,7 @@ export default function Profile() {
           // Get tier configuration based on payment_type and amount (for legacy driver detection)
           const paymentType = subscriptionDetails?.payment_type || 'JOB READY';
           const amount = parseFloat(subscriptionDetails?.amount) || 0;
-          const tier = getTierFromPaymentType(paymentType, amount);
+          const tier = getTierFromPaymentType(paymentType, amount, user?.role);
           const tierConfig = getTierConfigs(t)[tier];
 
           // User data
