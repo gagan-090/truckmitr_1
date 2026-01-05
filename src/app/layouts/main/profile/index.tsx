@@ -56,7 +56,7 @@ const BACKGROUND_TRUSTED = require('@truckmitr/src/assets/membership-card/member
 const BACKGROUND_JOB_READY = require('@truckmitr/src/assets/membership-card/membershipcard3.png');
 
 // Card tier configurations
-type TierType = 'JOB READY' | 'VERIFIED' | 'TRUSTED' | 'Standard' | 'LEGACY';
+type TierType = 'JOB READY' | 'VERIFIED' | 'TRUSTED' | 'Standard' | 'LEGACY' | 'TRANSPORTER PRO';
 
 interface TierConfig {
   background: any;
@@ -126,13 +126,35 @@ const getTierConfigs = (t: any): Record<TierType, TierConfig> => ({
     ],
     categoryText: t('cardLegacyDriver'),
   },
+  'TRANSPORTER PRO': {
+    background: BACKGROUND_TRUSTED,
+    borderColors: ['#A67C00', '#C9A23F', '#FFF6C8', '#C9A23F', '#A67C00'],
+    chromeGradient: [
+      { offset: '0', color: '#FFF6C8' },
+      { offset: '0.25', color: '#C9A23F' },
+      { offset: '0.5', color: '#A67C00' },
+      { offset: '0.75', color: '#C9A23F' },
+      { offset: '1', color: '#FFF6C8' },
+    ],
+    categoryText: 'TRANSPORTER PRO',
+  },
 });
 
 // Helper function to get tier from payment_type
-// Now also accepts amount to detect legacy drivers (Rs 49 payment)
-const getTierFromPaymentType = (paymentType: string, amount?: number): TierType => {
-  // Legacy driver detection: Rs 49 payment = Legacy Driver
-  if (amount === 49 || amount === 49.00) {
+// Now also accepts amount to detect legacy drivers (Rs 49/100 payment) and legacy transporters (Rs 99 payment)
+const getTierFromPaymentType = (paymentType: string, amount?: number, role?: string): TierType => {
+  // Legacy driver detection: Rs 49, Rs 1, or Rs 100 payment for DRIVERS
+  if (role === 'driver' && (amount === 49 || amount === 49.00 || amount === 1 || amount === 1.00 || amount === 100 || amount === 100.00)) {
+    return 'LEGACY';
+  }
+
+  // Transporter Pro detection: Rs 499 payment for transporters
+  if (role === 'transporter' && (amount === 499 || amount === 499.00)) {
+    return 'TRANSPORTER PRO';
+  }
+
+  // Legacy transporter detection: Rs 99 payment for TRANSPORTERS
+  if (role === 'transporter' && (amount === 99 || amount === 99.00)) {
     return 'LEGACY';
   }
 
@@ -704,11 +726,11 @@ export default function Profile() {
       const userName = user?.name || 'TruckMitr User';
       const userRole = capitalizeFirst(user?.role || 'member');
       const userId = user?.unique_id || '';
-      
+
       // Create a web URL that will be clickable and redirect to the app
       // This follows the same pattern as Instagram, Twitter, etc.
       const profileUrl = `https://truckmitr.com/u/${userId}`;
-      
+
       const shareMessage = `👋 Hi! Check out my ${userRole} profile on TruckMitr:
 
 � O${userName}
@@ -717,13 +739,13 @@ export default function Profile() {
 � Vienw my profile: ${profileUrl}
 
 📥 Download TruckMitr: https://play.google.com/store/apps/details?id=com.truckmitr`;
-      
+
       const result = await Share.share({
         message: shareMessage,
         url: profileUrl, // This makes it clickable on iOS
         title: `${userName}'s TruckMitr Profile`,
       });
-      
+
       console.log('📤 Share profile result:', result);
     } catch (error) {
       console.error('❌ Error sharing profile:', error);
@@ -1022,13 +1044,14 @@ export default function Profile() {
                 {(() => {
                   const hasSub = subscriptionDetails && (subscriptionDetails?.id || subscriptionDetails?.payment_id);
                   if (hasSub) {
-                    const tier = getTierFromPaymentType(subscriptionDetails?.payment_type, getPaidAmount());
+                    const tier = getTierFromPaymentType(subscriptionDetails?.payment_type, getPaidAmount(), user?.role);
                     let tierName = '';
                     if (tier === 'JOB READY') tierName = 'Job Ready';
                     else if (tier === 'VERIFIED') tierName = 'Verified';
                     else if (tier === 'TRUSTED') tierName = 'Trusted';
                     else if (tier === 'Standard') tierName = 'Standard';
                     else if (tier === 'LEGACY') tierName = 'Legacy';
+                    else if (tier === 'TRANSPORTER PRO') return 'Transporter Pro';
                     else tierName = capitalizeFirst((tier as string)?.toLowerCase() || '');
 
                     return `${tierName} ${capitalizeFirst(user?.role)}`;
@@ -1157,8 +1180,8 @@ export default function Profile() {
           </>
         )}
 
-        {/* Dynamic Membership Card - Show when user has an active subscription */}
-        {(subscriptionDetails?.hasActiveSubscription || !subscriptionDetails?.showSubscriptionModel) && subscriptionDetails?.id && (() => {
+        {/* Dynamic Membership Card - Show when user has an active subscription (only for drivers) */}
+        {isDriver && (subscriptionDetails?.hasActiveSubscription || !subscriptionDetails?.showSubscriptionModel) && subscriptionDetails?.id && (() => {
           // Get tier configuration based on payment_type and amount (for legacy driver detection)
           const paymentType = subscriptionDetails?.payment_type || 'JOB READY';
           const amount = parseFloat(subscriptionDetails?.amount) || 0;

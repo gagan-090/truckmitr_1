@@ -121,6 +121,7 @@ export const END_POINTS = {
     DRIVER_UPLOAD_DOCUMENTS_BY_TRANSPORTER: (driver_id: any) => `api/driver-verification/upload-documents?driver_id=${driver_id}`,
     VERIFICATION_VIDEO: `api/driver-verification/verification-video`,
     LOG_USER_EVENT: `api/user-logs`,
+    COURT_CHECK_CASE_STATUS: `api/kyc/courtcheck/addcase`,
 
     // Driving License Verification
     DL_VERIFY: `api/kyc/dl`,
@@ -138,5 +139,8 @@ export const END_POINTS = {
 
     // Face Match Verification
     FACE_MATCH_VERIFY: `api/kyc/face-match/verify`,
+
+    // Document Verification (DigiLocker)
+    DOC_VERIFY: `api/kyc/doc-verify`,
 
 }

@@ -12,6 +12,7 @@ import {
     Image,
     Modal,
 } from 'react-native';
+import WebView from 'react-native-webview';
 import ImagePicker from 'react-native-image-crop-picker';
 import RNFetchBlob from 'react-native-blob-util';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
@@ -185,7 +186,11 @@ interface PANVerificationCheckResponse {
 interface AadhaarVerificationResponse {
     status: number;
     message: string;
-    result?: any;
+    txn_id?: string;
+    result?: {
+        url?: string; // DigiLocker redirect URL
+        [key: string]: any;
+    };
 }
 
 interface VoterVerificationResponse {
@@ -254,6 +259,11 @@ export default function DocumentVerification() {
     const [aadhaarNumber, setAadhaarNumber] = useState('');
     const [voterIdNumber, setVoterIdNumber] = useState('');
     const [consentChecked, setConsentChecked] = useState(false);
+
+    // DigiLocker WebView State
+    const [digiLockerUrl, setDigiLockerUrl] = useState<string | null>(null);
+    const [showDigiLockerModal, setShowDigiLockerModal] = useState(false);
+    const [aadhaarConsentChecked, setAadhaarConsentChecked] = useState(false);
 
     // Face Verification State
     const [faceImage1, setFaceImage1] = useState<any>(null);
@@ -325,7 +335,7 @@ export default function DocumentVerification() {
                     const pan = profileData?.pan || profileData?.PAN_Number || profileData?.pan_number || profileData?.Pan_Number || '';
                     if (pan) setPanNumber(pan.trim().toUpperCase());
 
-                    const aadhaar = profileData?.aadhaar_number || profileData?.Aadhaar_Number || profileData?.aadhaar || '';
+                    const aadhaar = profileData?.aadhaar_number || profileData?.Aadhaar_Number || profileData?.aadhaar || profileData?.Aadhar_Number || '';
                     if (aadhaar) setAadhaarNumber(aadhaar.trim());
 
                     const voter = profileData?.voter_id || profileData?.Voter_Id || profileData?.voter_id_number || '';
@@ -798,15 +808,35 @@ export default function DocumentVerification() {
         } else if (activeTab === 'AADHAAR') {
             if (!validateAadhaar(aadhaarNumber)) return;
 
+            // Check consent for Aadhaar verification
+            if (!aadhaarConsentChecked) {
+                showToast(t('aadhaarConsentRequired') || 'Please provide consent to proceed');
+                return;
+            }
+
             try {
                 setIsLoading(true);
-                const payload = { aadhaar: aadhaarNumber };
-                const config = { headers: { 'Content-Type': 'application/json' } };
-                const response = await axiosInstance.post(END_POINTS.AADHAAR_VERIFY, payload, config);
 
-                if (response?.data?.status === 1) {
+                // Get user's name from profile - prioritize 'name' as used in profile-edit
+                const userName = user?.name || user?.Name || user?.full_name || user?.first_name || 'User';
+
+                const payload = {
+                    doc_type: ["aadhaar", "pan"],
+                    udf1: aadhaarNumber,
+                    udf2: "first_name",
+                    udf3: userName,
+                    consent: "Y",
+                    consent_text: "We confirm obtaining valid customer consent to access/process their data. Consent remains valid, informed, and unwithdrawn."
+                };
+
+                const config = { headers: { 'Content-Type': 'application/json' } };
+                const response = await axiosInstance.post(END_POINTS.DOC_VERIFY, payload, config);
+
+                if (response?.data?.status === 1 && response?.data?.result?.url) {
+                    // Set the DigiLocker URL and show the WebView modal
+                    setDigiLockerUrl(response.data.result.url);
+                    setShowDigiLockerModal(true);
                     setAadhaarResult(response.data);
-                    cardScale.value = 0;
                 } else {
                     const apiError = response?.data?.message || t('verificationFailed') || 'Verification failed';
                     processError(apiError);
@@ -1229,6 +1259,20 @@ export default function DocumentVerification() {
                                         />
                                     </View>
                                     <Text style={styles.inputHint}>Format: 12-digit numeric code</Text>
+
+                                    {/* Aadhaar Consent Checkbox */}
+                                    <TouchableOpacity
+                                        style={styles.consentRow}
+                                        onPress={() => setAadhaarConsentChecked(!aadhaarConsentChecked)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={[styles.checkbox, aadhaarConsentChecked && styles.checkboxChecked]}>
+                                            {aadhaarConsentChecked && <Ionicons name="checkmark" size={14} color={COLORS.white} />}
+                                        </View>
+                                        <Text style={styles.consentText}>
+                                            {t('aadhaarConsentText') || 'I consent to verify my identity via DigiLocker for Aadhaar and PAN verification.'}
+                                        </Text>
+                                    </TouchableOpacity>
                                 </View>
                             )}
 
@@ -1469,6 +1513,73 @@ export default function DocumentVerification() {
                             <Text style={{ color: COLORS.textMuted, fontSize: 14, fontWeight: '500' }}>Maybe Later</Text>
                         </TouchableOpacity>
                     </View>
+                </View>
+            </Modal>
+
+            {/* DigiLocker WebView Modal */}
+            <Modal
+                visible={showDigiLockerModal}
+                animationType="slide"
+                presentationStyle="fullScreen"
+                onRequestClose={() => setShowDigiLockerModal(false)}
+            >
+                <View style={styles.digiLockerModalContainer}>
+                    {/* Modal Header */}
+                    <View style={[styles.digiLockerHeader, { paddingTop: safeAreaInsets.top }]}>
+                        <TouchableOpacity
+                            style={styles.digiLockerCloseBtn}
+                            onPress={() => {
+                                setShowDigiLockerModal(false);
+                                setDigiLockerUrl(null);
+                            }}
+                            hitSlop={hitSlop()}
+                        >
+                            <Ionicons name="close" size={24} color={COLORS.text} />
+                        </TouchableOpacity>
+                        <Text style={styles.digiLockerTitle}>{t('digiLockerVerification') || 'DigiLocker Verification'}</Text>
+                        <View style={{ width: 32 }} />
+                    </View>
+
+                    {/* WebView */}
+                    {digiLockerUrl && (
+                        <WebView
+                            source={{ uri: digiLockerUrl }}
+                            style={{ flex: 1 }}
+                            startInLoadingState={true}
+                            renderLoading={() => (
+                                <View style={styles.webViewLoading}>
+                                    <ActivityIndicator size="large" color={COLORS.primary} />
+                                    <Text style={styles.webViewLoadingText}>{t('loadingDigiLocker') || 'Loading DigiLocker...'}</Text>
+                                </View>
+                            )}
+                            onNavigationStateChange={(navState) => {
+                                console.log('DigiLocker Navigation:', navState.url);
+                                // Check if redirected to success/callback URL
+                                // Using startsWith to avoid matching the redirect_uri param in the initial URL
+                                if (navState.url.startsWith('https://secure.befisc.com') ||
+                                    navState.url.includes('truckmitr.com/callback') ||
+                                    navState.url.includes('success=true')) {
+                                    // Close modal after successful verification
+                                    setTimeout(() => {
+                                        setShowDigiLockerModal(false);
+                                        setDigiLockerUrl(null);
+                                        showToast(t('aadhaarVerificationSuccess') || 'Aadhaar verification initiated successfully!');
+                                    }, 2000);
+                                }
+                            }}
+                            onError={(syntheticEvent) => {
+                                const { nativeEvent } = syntheticEvent;
+                                console.warn('DigiLocker WebView error:', nativeEvent);
+                            }}
+                            javaScriptEnabled={true}
+                            domStorageEnabled={true}
+                            thirdPartyCookiesEnabled={true}
+                            sharedCookiesEnabled={true}
+                            allowsInlineMediaPlayback={true}
+                            mediaPlaybackRequiresUserAction={false}
+                            mixedContentMode="compatibility"
+                        />
+                    )}
                 </View>
             </Modal>
 
@@ -1807,5 +1918,49 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '500',
         lineHeight: 19,
+    },
+
+    // DigiLocker Modal Styles
+    digiLockerModalContainer: {
+        flex: 1,
+        backgroundColor: COLORS.white,
+    },
+    digiLockerHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingBottom: 12,
+        backgroundColor: COLORS.white,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: COLORS.border,
+    },
+    digiLockerCloseBtn: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: COLORS.inputBg,
+    },
+    digiLockerTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: COLORS.text,
+    },
+    webViewLoading: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: COLORS.background,
+    },
+    webViewLoadingText: {
+        marginTop: 12,
+        fontSize: 14,
+        color: COLORS.textMuted,
     },
 });

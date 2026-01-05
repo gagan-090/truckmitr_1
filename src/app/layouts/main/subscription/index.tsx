@@ -430,6 +430,381 @@ const BulletPoint = ({ text, color }: { text: string; color: string }) => (
   </View>
 );
 
+// --- Transporter Subscription Modal Component (Clean White UI) ---
+const TransporterSubscriptionModal = ({
+  visible,
+  onClose,
+  onSubscribe,
+  isLoading,
+  safeAreaInsets,
+  responsiveFontSize,
+  consentChecked,
+  onConsentToggle,
+  onOpenConsent,
+  t,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSubscribe: () => void;
+  isLoading: boolean;
+  safeAreaInsets: { top: number; bottom: number };
+  responsiveFontSize: (s: number) => number;
+  consentChecked: boolean;
+  onConsentToggle: () => void;
+  onOpenConsent: () => void;
+  t: (key: string) => string;
+}) => {
+  const benefits = [
+    {
+      icon: '✔',
+      title: t('transporterFeatureVerifiedDrivers') || 'Verified Drivers',
+      desc: t('transporterFeatureVerifiedDriversDesc') || 'Driving License, ID & Face verification. Court & address checks (where applicable). Hire with confidence.',
+    },
+    {
+      icon: '✔',
+      title: t('transporterFeatureSmartHiring') || 'Smart Driver Hiring',
+      desc: t('transporterFeatureSmartHiringDesc') || 'View detailed driver profiles. Shortlist and hire faster. No brokers, no fake calls.',
+    },
+    {
+      icon: '✔',
+      title: t('transporterFeatureInAppCall') || 'In-App Call & Video Interview',
+      desc: t('transporterFeatureInAppCallDesc') || 'Call or video interview drivers securely. Take hiring decisions instantly.',
+    },
+    {
+      icon: '✔',
+      title: t('transporterFeatureFullAccess') || 'Full Platform Access',
+      desc: t('transporterFeatureFullAccessDesc') || 'Post driver jobs. Contact and manage drivers. Browse a large pool of drivers.',
+    },
+  ];
+
+  return (
+    <Modal
+      animationType="slide"
+      transparent={false}
+      visible={visible}
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      <View style={[tStyles.container, { paddingTop: safeAreaInsets.top }]}>
+        {/* Close Button */}
+        <TouchableOpacity
+          onPress={onClose}
+          style={tStyles.closeButton}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="close" size={24} color={COLORS.text} />
+        </TouchableOpacity>
+
+        <ScrollView
+          contentContainerStyle={[tStyles.scrollContent, { paddingBottom: safeAreaInsets.bottom + 100 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={tStyles.header}>
+            <Text style={[tStyles.badge, { fontSize: responsiveFontSize(1.8) }]}>🚚 {t('transporterProBadge') || 'TRANSPORTER PRO'}</Text>
+            <Text style={[tStyles.title, { fontSize: responsiveFontSize(2.8) }]}>
+              {t('transporterHeroSubtitle') || 'Hire Drivers Without Worry'}
+            </Text>
+            <View style={tStyles.priceRow}>
+              <Text style={[tStyles.price, { fontSize: responsiveFontSize(4.2) }]}>₹499</Text>
+              <Text style={[tStyles.duration, { fontSize: responsiveFontSize(1.8) }]}> / {t('quarterly') || 'Quarterly'}</Text>
+            </View>
+            <Text style={[tStyles.tagline, { fontSize: responsiveFontSize(1.6) }]}>
+              {t('transporterTagline') || 'One subscription that gives you verified drivers, secure hiring, and complete peace of mind.'}
+            </Text>
+          </View>
+
+          {/* What You Get Section */}
+          <View style={tStyles.section}>
+            <Text style={[tStyles.sectionTitle, { fontSize: responsiveFontSize(2.2) }]}>
+              🔐 {t('transporterWhatYouGet') || 'What You Get'}
+            </Text>
+
+            {benefits.map((item, index) => (
+              <View key={index} style={tStyles.benefitRow}>
+                <Text style={[tStyles.checkIcon, { fontSize: responsiveFontSize(1.8) }]}>{item.icon}</Text>
+                <View style={tStyles.benefitContent}>
+                  <Text style={[tStyles.benefitTitle, { fontSize: responsiveFontSize(1.8) }]}>{item.title}</Text>
+                  <Text style={[tStyles.benefitDesc, { fontSize: responsiveFontSize(1.5) }]}>{item.desc}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+
+          {/* Additional Benefits */}
+          <View style={tStyles.section}>
+            <View style={tStyles.benefitRow}>
+              <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
+              <Text style={[tStyles.simpleBenefit, { fontSize: responsiveFontSize(1.7) }]}>
+                {t('transporterBenefit1') || 'Hire faster, with less dependency on brokers'}
+              </Text>
+            </View>
+            <View style={tStyles.benefitRow}>
+              <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
+              <Text style={[tStyles.simpleBenefit, { fontSize: responsiveFontSize(1.7) }]}>
+                {t('transporterBenefit2') || 'Use all current & future features'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Trust Section */}
+          <View style={tStyles.trustBox}>
+            <Text style={[tStyles.trustTitle, { fontSize: responsiveFontSize(1.8) }]}>
+              💼 {t('transporterTrustTitle') || 'Built for Transporters Who Value Safety'}
+            </Text>
+            <Text style={[tStyles.trustDesc, { fontSize: responsiveFontSize(1.5) }]}>
+              {t('transporterTrustDesc') || 'Reduce risk. Save time. Build a trusted driver network.'}
+            </Text>
+          </View>
+
+          {/* Consent */}
+          <View style={tStyles.consentRow}>
+            <TouchableOpacity onPress={onConsentToggle} activeOpacity={0.7}>
+              <View style={[tStyles.checkbox, consentChecked && tStyles.checkboxChecked]}>
+                {consentChecked && <Ionicons name="checkmark" size={16} color={COLORS.white} />}
+              </View>
+            </TouchableOpacity>
+            <Text style={[tStyles.consentText, { fontSize: responsiveFontSize(1.5) }]}>
+              {t('subTransporterConsentText') || 'I agree to the '}{' '}
+              <Text style={tStyles.consentLink} onPress={onOpenConsent}>
+                {t('subTermsAndConditions') || 'subscription terms and disclaimer'}
+              </Text>
+              {' '}{t('subAuthorizePayments') || 'and authorize payments'}
+            </Text>
+          </View>
+        </ScrollView>
+
+        {/* CTA Button */}
+        <View style={[tStyles.ctaContainer, { paddingBottom: safeAreaInsets.bottom + 16 }]}>
+          <TouchableOpacity
+            onPress={onSubscribe}
+            activeOpacity={consentChecked ? 0.9 : 1}
+            disabled={!consentChecked || isLoading}
+            style={[tStyles.ctaButton, { opacity: consentChecked ? 1 : 0.5 }]}
+          >
+            <LinearGradient
+              colors={[COLORS.trusted, '#60A5FA']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={tStyles.ctaGradient}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color={COLORS.white} />
+              ) : (
+                <Text style={[tStyles.ctaText, { fontSize: responsiveFontSize(2.0) }]}>
+                  👉 {t('transporterSubscribeNow') || 'Subscribe Now'}
+                </Text>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <View style={tStyles.secureRow}>
+            <Ionicons name="shield-checkmark" size={18} color={COLORS.success} />
+            <Text style={[tStyles.secureText, { fontSize: responsiveFontSize(1.4) }]}>
+              {t('subSecurePayment') || 'Secure payment powered by Razorpay'}
+            </Text>
+          </View>
+        </View>
+
+        <LoadingOverlay visible={isLoading} t={t} />
+      </View>
+    </Modal>
+  );
+};
+
+// --- Clean Transporter Modal Styles ---
+const tStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 60,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  badge: {
+    color: COLORS.trusted,
+    fontWeight: '800',
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  title: {
+    fontWeight: '800',
+    color: COLORS.text,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 12,
+  },
+  price: {
+    fontWeight: '900',
+    color: COLORS.trusted,
+  },
+  duration: {
+    fontWeight: '600',
+    color: COLORS.textMuted,
+  },
+  tagline: {
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 10,
+  },
+  section: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  sectionTitle: {
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 16,
+  },
+  benefitRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+    gap: 12,
+  },
+  checkIcon: {
+    color: COLORS.success,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  benefitContent: {
+    flex: 1,
+  },
+  benefitTitle: {
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  benefitDesc: {
+    color: COLORS.textMuted,
+    lineHeight: 18,
+  },
+  simpleBenefit: {
+    flex: 1,
+    color: COLORS.text,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  trustBox: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    alignItems: 'center',
+  },
+  trustTitle: {
+    fontWeight: '700',
+    color: COLORS.text,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  trustDesc: {
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  consentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    gap: 10,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.white,
+  },
+  checkboxChecked: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  consentText: {
+    flex: 1,
+    color: COLORS.textMuted,
+    lineHeight: 18,
+  },
+  consentLink: {
+    color: COLORS.primary,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+  ctaContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    backgroundColor: COLORS.background,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  ctaButton: {
+    width: '100%',
+    borderRadius: 14,
+    shadowColor: COLORS.trusted,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  ctaGradient: {
+    height: 52,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaText: {
+    fontWeight: '700',
+    color: COLORS.white,
+  },
+  secureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    gap: 6,
+  },
+  secureText: {
+    color: COLORS.textMuted,
+  },
+});
+
 // Plan data type definition
 interface PlanDataType {
   id: number;
@@ -1028,6 +1403,40 @@ export default function Subscription({ }: any) {
         showToast(t('oopsPaymentUnsuccessful'));
       });
   };
+
+  // Handle transporter subscription
+  const handleTransporterSubscribe = useCallback(async () => {
+    // Find the 499 plan for transporter
+    const transporterPlan = dynamicPlans.find(plan => plan.price === 499) || dynamicPlans[0];
+    if (transporterPlan) {
+      await handleSelectPlan(transporterPlan);
+    }
+  }, [dynamicPlans]);
+
+  // Show TransporterSubscriptionModal for transporter role
+  if (user?.role === 'transporter') {
+    return (
+      <>
+        <TransporterSubscriptionModal
+          visible={subscriptionModal}
+          onClose={() => dispatch(subscriptionModalAction(false))}
+          onSubscribe={handleTransporterSubscribe}
+          isLoading={isLoading}
+          safeAreaInsets={safeAreaInsets}
+          responsiveFontSize={responsiveFontSize}
+          consentChecked={consentChecked}
+          onConsentToggle={() => setConsentChecked(!consentChecked)}
+          onOpenConsent={() => setConsentModalVisible(true)}
+          t={t}
+        />
+        <ConsentModal
+          visible={consentModalVisible}
+          onClose={() => setConsentModalVisible(false)}
+          safeAreaInsets={safeAreaInsets}
+        />
+      </>
+    );
+  }
 
   return (
     <Modal

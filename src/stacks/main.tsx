@@ -28,6 +28,12 @@ import ScheduledInterview from '../app/layouts/main/scheduled-interview';
 import TruckMitrDhaba from '../app/layouts/main/truckmitr-dhaba';
 import TruckMitrSuvidhaKendra from '../app/layouts/main/truckmitr-suvidha-kendra';
 import VideoInterviewInfo from '../app/layouts/main/video-interview-info';
+import TMLoadMandal from '../app/layouts/main/tm-load-mandal';
+import TransporterLoan from '../app/layouts/main/transporter-loan';
+import SecondHandTruckMarketplace from '../app/layouts/main/second-hand-truck-marketplace';
+import FleetManagementSolution from '../app/layouts/main/fleet-management-solution';
+import FuelDiscount from '../app/layouts/main/fuel-discount';
+import TruckInsurance from '../app/layouts/main/truck-insurance';
 
 const Stack = createNativeStackNavigator();
 
@@ -196,6 +202,12 @@ export default function Main() {
       <Stack.Screen name={STACKS.DRIVER_LOAN} component={DriverLoan} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.TRUCKMITR_DHABA} component={TruckMitrDhaba} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.TRUCKMITR_SUVIDHA_KENDRA} component={TruckMitrSuvidhaKendra} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.TM_LOAD_MANDAL} component={TMLoadMandal} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.TRANSPORTER_LOAN} component={TransporterLoan} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.SECOND_HAND_TRUCK_MARKETPLACE} component={SecondHandTruckMarketplace} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.FLEET_MANAGEMENT_SOLUTION} component={FleetManagementSolution} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.FUEL_DISCOUNT} component={FuelDiscount} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.TRUCK_INSURANCE} component={TruckInsurance} options={{ animation: 'fade' }} />
 
       {/* DriverInvites usually mapped to STACKS.DRIVERINVITES, but checking stacks definition: invites */}
       {/* already there at line 165 as invites? No line 165 is DriverInvites component from local import. */}

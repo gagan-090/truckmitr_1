@@ -113,6 +113,12 @@ export type NavigatorParams = {
     driverLoan: undefined
     truckMitrDhaba: undefined
     truckMitrSuvidhaKendra: undefined
+    tmLoadMandal: undefined
+    transporterLoan: undefined
+    secondHandTruckMarketplace: undefined
+    fleetManagementSolution: undefined
+    fuelDiscount: undefined
+    truckInsurance: undefined
 };
 
 export const STACKS = {
@@ -239,4 +245,10 @@ export const STACKS = {
     DRIVER_LOAN: 'driverLoan',
     TRUCKMITR_DHABA: 'truckMitrDhaba',
     TRUCKMITR_SUVIDHA_KENDRA: 'truckMitrSuvidhaKendra',
+    TM_LOAD_MANDAL: 'tmLoadMandal',
+    TRANSPORTER_LOAN: 'transporterLoan',
+    SECOND_HAND_TRUCK_MARKETPLACE: 'secondHandTruckMarketplace',
+    FLEET_MANAGEMENT_SOLUTION: 'fleetManagementSolution',
+    FUEL_DISCOUNT: 'fuelDiscount',
+    TRUCK_INSURANCE: 'truckInsurance',
 } as const;

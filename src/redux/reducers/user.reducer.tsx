@@ -102,10 +102,21 @@ const userReducer = (state = initialState, action: any) => {
             // Find the first active subscription
             const currentTimeInSeconds = Math.floor(Date.now() / 1000);
 
-            // Helper function to check if a subscription is a legacy driver (Rs 49 payment)
+            // Helper function to check if a subscription is a legacy driver (Rs 49 or Rs 100 payment for DRIVERS)
             const isLegacyDriverSubscription = (item: any): boolean => {
                 const amount = parseFloat(item.amount) || 0;
-                const isLegacyAmount = amount === 49 || amount === 49.00;
+                // Legacy driver: Rs 49 or Rs 100 payment
+                const isLegacyAmount = amount === 49 || amount === 49.00 || amount === 100 || amount === 100.00;
+                const isPaymentCaptured = item.payment_status === 'captured';
+                const isNotExpired = currentTimeInSeconds < item.end_at;
+                return isLegacyAmount && isPaymentCaptured && isNotExpired;
+            };
+
+            // Helper function to check if a transporter has legacy subscription (Rs 99 payment for TRANSPORTERS)
+            const isLegacyTransporterSubscription = (item: any): boolean => {
+                const amount = parseFloat(item.amount) || 0;
+                // Legacy transporter: Rs 99 payment
+                const isLegacyAmount = amount === 99 || amount === 99.00;
                 const isPaymentCaptured = item.payment_status === 'captured';
                 const isNotExpired = currentTimeInSeconds < item.end_at;
                 return isLegacyAmount && isPaymentCaptured && isNotExpired;
@@ -113,9 +124,14 @@ const userReducer = (state = initialState, action: any) => {
 
             // Helper function to check if a subscription is active
             const isActiveSubscription = (item: any): boolean => {
-                // First check for legacy driver (Rs 49 payment)
+                // Check for legacy driver (Rs 49 or Rs 100 payment)
                 if (isLegacyDriverSubscription(item)) {
-                    console.log('[userReducer] Legacy driver detected (Rs 49 subscription)');
+                    console.log('[userReducer] Legacy driver detected (Rs 49/100 subscription)');
+                    return true;
+                }
+                // Check for legacy transporter subscription (Rs 99 payment)
+                if (isLegacyTransporterSubscription(item)) {
+                    console.log('[userReducer] Legacy transporter detected (Rs 99 subscription)');
                     return true;
                 }
                 // Standard subscription check
