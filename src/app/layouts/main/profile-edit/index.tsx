@@ -396,7 +396,7 @@ export default function ProfileEdit() {
                 console.log('Normalizing transporter data with updates:', updates);
                 // We must spread userEdit to preserve other fields, but avoid infinite loops
                 // strictly update only if values are different
-                dispatch(userEditAction({ ...(userEdit || {}), ...updates }));
+                dispatch(userEditAction({ ...(userEditRef.current || {}), ...updates }));
             } else {
                 console.log('No normalization updates needed');
             }
@@ -805,7 +805,7 @@ export default function ProfileEdit() {
             }
 
             // PAN image
-            if (userEdit?.panImagePath?.path && userEdit?.panImagePath?.mime && !userEdit?.PAN_Image) {
+            if (userEdit?.panImagePath?.path && userEdit?.panImagePath?.mime) {
                 formData.append('pan_image', {
                     uri: userEdit.panImagePath.path,
                     type: userEdit.panImagePath.mime,
@@ -814,7 +814,7 @@ export default function ProfileEdit() {
             }
 
             // GST Certificate
-            if (userEdit?.gstCertificatePath?.path && userEdit?.gstCertificatePath?.mime && !userEdit?.GST_Certificate) {
+            if (userEdit?.gstCertificatePath?.path && userEdit?.gstCertificatePath?.mime) {
                 formData.append('gst_certificate', {
                     uri: userEdit.gstCertificatePath.path,
                     type: userEdit.gstCertificatePath.mime,
@@ -823,7 +823,7 @@ export default function ProfileEdit() {
             }
 
             // Aadhar photo
-            if (userEdit?.aadharImagePath?.path && userEdit?.aadharImagePath?.mime && !userEdit?.Aadhar_Photo) {
+            if (userEdit?.aadharImagePath?.path && userEdit?.aadharImagePath?.mime) {
                 formData.append('aadhar_photo', {
                     uri: userEdit.aadharImagePath.path,
                     type: userEdit.aadharImagePath.mime,
@@ -832,7 +832,7 @@ export default function ProfileEdit() {
             }
 
             // Driving license photo
-            if (userEdit?.drivingLicensePath?.path && userEdit?.drivingLicensePath?.mime && !userEdit?.Driving_License) {
+            if (userEdit?.drivingLicensePath?.path && userEdit?.drivingLicensePath?.mime) {
                 formData.append('driving_license', {
                     uri: userEdit.drivingLicensePath.path,
                     type: userEdit.drivingLicensePath.mime,
@@ -845,6 +845,20 @@ export default function ProfileEdit() {
             console.log('User Role:', userRole);
             console.log('Vehicle Type:', userEdit?.vehicle_type);
             console.log('Sending to:', END_POINTS.EDIT_PROFILE);
+
+            // Debug: Log driving license details
+            console.log('=== Driving License Debug ===');
+            console.log('drivingLicensePath:', JSON.stringify(userEdit?.drivingLicensePath, null, 2));
+            console.log('Driving_License (existing):', userEdit?.Driving_License);
+            if (userEdit?.drivingLicensePath?.path) {
+                console.log('UPLOADING driving_license with:', {
+                    uri: userEdit.drivingLicensePath.path,
+                    type: userEdit.drivingLicensePath.mime,
+                    name: userEdit.drivingLicensePath.filename || 'license.jpg'
+                });
+            } else {
+                console.log('NOT uploading driving_license - no new image selected');
+            }
 
             const response = await axiosInstance.post(END_POINTS.EDIT_PROFILE, formData);
 
@@ -918,7 +932,7 @@ export default function ProfileEdit() {
                     updates[fieldMap[field]] = null;
                 }
 
-                dispatch(userEditAction({ ...userEdit, ...updates }));
+                dispatch(userEditAction({ ...(userEditRef.current || {}), ...updates }));
                 setImagePickerOpen(false);
             }
         } catch (error: any) {
@@ -947,7 +961,7 @@ export default function ProfileEdit() {
                     updates[fieldMap[field]] = null;
                 }
 
-                dispatch(userEditAction({ ...userEdit, ...updates }));
+                dispatch(userEditAction({ ...(userEditRef.current || {}), ...updates }));
                 setImagePickerOpen(false);
             }
         } catch (error: any) {
@@ -986,7 +1000,7 @@ export default function ProfileEdit() {
                         <TouchableOpacity style={styles.documentDelete} onPress={() => {
                             const updates: any = { [fieldName]: null };
                             if (existingImageKey) updates[existingImageKey] = null;
-                            dispatch(userEditAction({ ...userEdit, ...updates }));
+                            dispatch(userEditAction({ ...(userEditRef.current || {}), ...updates }));
                         }}>
                             <Ionicons name="close-circle" size={28} color="#dc3545" />
                         </TouchableOpacity>

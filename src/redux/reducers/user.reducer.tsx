@@ -186,6 +186,7 @@ const userReducer = (state = initialState, action: any) => {
                     subscriptionModal: payload.visible || false,
                     subscriptionModalOptions: {
                         upgradeOnly: payload.upgradeOnly || false,
+                        minPrice: payload.minPrice,
                     }
                 }
             }

@@ -1110,7 +1110,11 @@ export default function Subscription({ }: any) {
             ) : dynamicPlans.length > 0 ? (
               // Filter plans based on upgradeOnly option (exclude ₹99 plan when upgrading)
               dynamicPlans
-                .filter((plan: PlanDataType) => !upgradeOnly || plan.price >= 199)
+                .filter((plan: PlanDataType) => {
+                  const minPrice = subscriptionModalOptions?.minPrice;
+                  if (minPrice) return plan.price >= minPrice;
+                  return !upgradeOnly || plan.price >= 199;
+                })
                 .map((plan: PlanDataType, index: number, filteredPlans: PlanDataType[]) => (
                   <PlanCard
                     key={plan.id}

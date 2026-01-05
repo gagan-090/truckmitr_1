@@ -21,8 +21,8 @@ const IdCheckInfo = () => {
     const [refreshKey, setRefreshKey] = useState(0);
 
     // Form State
-    const [govtId, setGovtId] = useState('');
-    const [licenseNumber, setLicenseNumber] = useState('');
+    const [govtId] = useState('');
+    const [licenseNumber] = useState('');
     const [selfie, setSelfie] = useState<any>(null);
 
     const _takeSelfie = async () => {
@@ -42,8 +42,8 @@ const IdCheckInfo = () => {
 
     const _goBack = () => navigation.goBack();
     const _navigateToSubscription = () => {
-        // Open subscription modal
-        dispatch(subscriptionModalAction(true));
+        // Navigate to DL Verification screen, ID tab
+        navigation.navigate(STACKS.DL_VERIFICATION, { initialTab: 'ID' });
     };
     const _contactSupport = () => {
         Linking.openURL('tel:+911234567890');
@@ -134,57 +134,44 @@ const IdCheckInfo = () => {
                     </Text>
                 </View>
 
-                {/* 📄 Required Documents - Input Fields */}
-                <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: '700', color: '#001F3F', marginBottom: 12, textAlign: 'left' }}>{t('requiredDocuments')}</Text>
+                {/* 📄 Required Documents - List */}
+                <View style={{ backgroundColor: colors.white, borderRadius: 12, padding: responsiveWidth(4), marginBottom: responsiveHeight(2), ...shadow, shadowColor: 'rgba(0,0,0,0.06)' }}>
+                    <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: '700', color: '#001F3F', marginBottom: 16 }}>{t('requiredDocuments')}</Text>
 
-                <View style={{ marginBottom: responsiveHeight(2) }}>
-                    {/* Government ID Input */}
-                    <View style={{ marginBottom: 18 }}>
-                        <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600', marginBottom: 8 }}>{t('govtIdNumber')}</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 14 }}>
-                            <Ionicons name="card-outline" size={22} color="#64748B" style={{ marginRight: 12 }} />
-                            <TextInput
-                                style={{ flex: 1, paddingVertical: 14, fontSize: responsiveFontSize(1.8), color: '#0F172A' }}
-                                placeholder={t('enterAadhaarVoterPan')}
-                                placeholderTextColor="#94A3B8"
-                                value={govtId}
-                                onChangeText={setGovtId}
-                            />
+                    {/* Document 1: Government ID */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}>
+                        <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                            <Ionicons name="card-outline" size={22} color="#2563EB" />
                         </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: responsiveFontSize(1.8), fontWeight: '600', color: '#1E293B', marginBottom: 2 }}>{t('govtIdNumber')}</Text>
+                            <Text style={{ fontSize: responsiveFontSize(1.5), color: '#64748B' }}>{t('aadhaarVoterPanDesc') || 'Aadhaar Card / Voter ID / PAN Card'}</Text>
+                        </View>
+                        <Ionicons name="checkmark-circle" size={22} color="#10B981" />
                     </View>
 
-                    {/* Driving License Input */}
-                    <View style={{ marginBottom: 18 }}>
-                        <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600', marginBottom: 8 }}>{t('drivingLicenseNumber')}</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 14 }}>
-                            <Ionicons name="car-outline" size={22} color="#64748B" style={{ marginRight: 12 }} />
-                            <TextInput
-                                style={{ flex: 1, paddingVertical: 14, fontSize: responsiveFontSize(1.8), color: '#0F172A' }}
-                                placeholder={t('enterDrivingLicenseNumber')}
-                                placeholderTextColor="#94A3B8"
-                                value={licenseNumber}
-                                onChangeText={setLicenseNumber}
-                            />
+                    {/* Document 2: Driving License */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}>
+                        <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: '#FEF3C7', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                            <Ionicons name="car-outline" size={22} color="#D97706" />
                         </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: responsiveFontSize(1.8), fontWeight: '600', color: '#1E293B', marginBottom: 2 }}>{t('drivingLicenseNumber')}</Text>
+                            <Text style={{ fontSize: responsiveFontSize(1.5), color: '#64748B' }}>{t('drivingLicenseDesc') || 'Valid Driving License'}</Text>
+                        </View>
+                        <Ionicons name="checkmark-circle" size={22} color="#10B981" />
                     </View>
 
-                    {/* Live Selfie Input (Simulated) */}
-                    <View style={{ marginBottom: 8 }}>
-                        <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600', marginBottom: 8 }}>{t('liveSelfie')}</Text>
-                        <TouchableOpacity onPress={_takeSelfie} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 14, paddingVertical: 14, borderStyle: 'dashed' }}>
-                            <Ionicons name="camera-outline" size={22} color="#64748B" style={{ marginRight: 12 }} />
-                            {selfie ? (
-                                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                                    <Image source={{ uri: selfie.path }} style={{ width: 36, height: 36, borderRadius: 18, marginRight: 10 }} />
-                                    <Text style={{ fontSize: responsiveFontSize(1.8), color: '#0F172A' }}>{t('selfieCaptured')}</Text>
-                                </View>
-                            ) : (
-                                <Text style={{ fontSize: responsiveFontSize(1.8), color: '#94A3B8' }}>{t('clickToTakeSelfie')}</Text>
-                            )}
-                            <View style={{ flex: 1 }} />
-                            {!selfie && <Ionicons name="cloud-upload-outline" size={20} color="#2563EB" />}
-                            {selfie && <Ionicons name="checkmark-circle" size={20} color="#16A34A" />}
-                        </TouchableOpacity>
+                    {/* Document 3: Live Selfie */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14 }}>
+                        <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: '#F0FDF4', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                            <Ionicons name="camera-outline" size={22} color="#16A34A" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: responsiveFontSize(1.8), fontWeight: '600', color: '#1E293B', marginBottom: 2 }}>{t('liveSelfie')}</Text>
+                            <Text style={{ fontSize: responsiveFontSize(1.5), color: '#64748B' }}>{t('liveSelfieDesc') || 'Real-time photo for face matching'}</Text>
+                        </View>
+                        <Ionicons name="checkmark-circle" size={22} color="#10B981" />
                     </View>
                 </View>
 

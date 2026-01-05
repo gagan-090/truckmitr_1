@@ -9,7 +9,11 @@ import {
     ScrollView,
     KeyboardAvoidingView,
     Platform,
+    Image,
+    Modal,
 } from 'react-native';
+import ImagePicker from 'react-native-image-crop-picker';
+import RNFetchBlob from 'react-native-blob-util';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useColor, useResponsiveScale, useStatusBarStyle } from '@truckmitr/src/app/hooks';
@@ -22,9 +26,10 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
-import { END_POINTS } from '@truckmitr/src/utils/config';
+import { BASE_URL, END_POINTS } from '@truckmitr/src/utils/config';
+import { STACKS } from '@truckmitr/src/stacks/stacks';
 import { useDispatch, useSelector } from 'react-redux';
-import { subscriptionModalAction } from '@truckmitr/src/redux/actions/user.action';
+import { subscriptionModalAction, userAction } from '@truckmitr/src/redux/actions/user.action';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
 import Animated, {
     useSharedValue,
@@ -34,6 +39,7 @@ import Animated, {
     FadeIn,
     FadeInDown,
     FadeInUp,
+    ZoomIn,
 } from 'react-native-reanimated';
 import { hitSlop } from '@truckmitr/src/app/functions';
 
@@ -188,7 +194,17 @@ interface VoterVerificationResponse {
     result?: any;
 }
 
-type TabType = 'DL' | 'PAN' | 'AADHAAR' | 'VOTER';
+// Face Match Verification Response
+interface FaceMatchResponse {
+    status: number;
+    message: string;
+    txn_id?: string;
+    similarity?: number;
+    threshold?: number;
+    verified?: boolean;
+}
+
+type TabType = 'DL' | 'PAN' | 'AADHAAR' | 'VOTER' | 'FACE';
 
 export default function DocumentVerification() {
     const route: any = useRoute();
@@ -200,17 +216,49 @@ export default function DocumentVerification() {
     const { responsiveHeight, responsiveWidth, responsiveFontSize } = useResponsiveScale();
     const navigation = useNavigation<NavigatorProp>();
 
-    const { user, isDriver } = useSelector((state: any) => state?.user);
+    const { user, isDriver, subscriptionDetails } = useSelector((state: any) => state?.user);
+
+    // Check if user has 499 (Trusted) subscription for ID verification access
+    const canAccessIdVerification = React.useMemo(() => {
+        if (!subscriptionDetails) return false;
+
+        // Handle both array and single object structures
+        const subs = Array.isArray(subscriptionDetails) ? subscriptionDetails : [subscriptionDetails];
+
+        for (const sub of subs) {
+            if (!sub) continue;
+
+            // Check amount (handle string or number)
+            const amount = parseFloat(sub.amount) || 0;
+
+            // Only allow 499+ plan for ID verification
+            if (Math.floor(amount) >= 499) return true;
+
+            // Also check plan name for trusted tier
+            const planName = String(sub.payment_type || sub.plan_name || sub.name || '').toLowerCase();
+            if (planName.includes('trusted') || planName.includes('premium')) return true;
+        }
+
+        return false;
+    }, [subscriptionDetails]);
 
     // Tab State
-    const [activeTab, setActiveTab] = useState<TabType>('DL');
+    const [activeTab, setActiveTab] = useState<TabType>(route.params?.initialTab || 'DL');
 
     // Form State
     const [dlNumber, setDlNumber] = useState('');
+    const [showSubscriptionPrompt, setShowSubscriptionPrompt] = useState(false);
+    const [govtIdNumber, setGovtIdNumber] = useState('');
+    const [idSelfie, setIdSelfie] = useState<any>(null);
     const [panNumber, setPanNumber] = useState('');
     const [aadhaarNumber, setAadhaarNumber] = useState('');
     const [voterIdNumber, setVoterIdNumber] = useState('');
     const [consentChecked, setConsentChecked] = useState(false);
+
+    // Face Verification State
+    const [faceImage1, setFaceImage1] = useState<any>(null);
+    const [faceImage2, setFaceImage2] = useState<any>(null);
+    const [faceThreshold, setFaceThreshold] = useState('80');
 
     // Loading & Result States
     const [isLoading, setIsLoading] = useState(false);
@@ -221,6 +269,7 @@ export default function DocumentVerification() {
     const [panResult, setPanResult] = useState<PANVerificationResponse | null>(null);
     const [aadhaarResult, setAadhaarResult] = useState<AadhaarVerificationResponse | null>(null);
     const [voterResult, setVoterResult] = useState<VoterVerificationResponse | null>(null);
+    const [faceResult, setFaceResult] = useState<FaceMatchResponse | null>(null);
 
     const [error, setError] = useState<string | null>(null);
 
@@ -254,34 +303,113 @@ export default function DocumentVerification() {
         setError(upgradeNeeded ? (t('upgradeForAccess') || 'Upgrade your plan for accessing this feature') : errorMsg);
     }, [isUpgradeRequired, t]);
 
-    // Auto-fill from user profile
+    // Auto-fill from user profile and fetch for Face Verification
     useEffect(() => {
-        // Auto-fill DL
-        const licenseNumber = user?.License_Number || user?.license_number || '';
-        if (licenseNumber && licenseNumber.trim()) {
-            setDlNumber(licenseNumber.trim().toUpperCase());
-        }
+        const fetchProfileData = async () => {
+            try {
+                setIsFetchingProfile(true);
+                // Always fetch profile to get the latest data including images
+                const response = await axiosInstance.get(END_POINTS.GET_PROFILE);
 
-        // Auto-fill PAN (if available in profile)
-        const pan = user?.pan || user?.PAN_Number || user?.pan_number || user?.Pan_Number || '';
-        if (pan && pan.trim()) {
-            setPanNumber(pan.trim().toUpperCase());
-        }
+                if (response?.data?.status) {
+                    // Dispatch the full response data (not just data.data) to match profile/index.tsx
+                    dispatch(userAction(response.data));
 
-        // Auto-fill Aadhaar
-        const aadhaar = user?.aadhaar_number || user?.Aadhaar_Number || user?.aadhaar || '';
-        if (aadhaar && aadhaar.trim()) {
-            setAadhaarNumber(aadhaar.trim());
-        }
+                    // Extract the user object for local use
+                    const profileData = response.data.data;
 
-        // Auto-fill Voter ID
-        const voter = user?.voter_id || user?.Voter_Id || user?.voter_id_number || '';
-        if (voter && voter.trim()) {
-            setVoterIdNumber(voter.trim().toUpperCase());
-        }
+                    // Auto-fill text fields
+                    const licenseNumber = profileData?.License_Number || profileData?.license_number || '';
+                    if (licenseNumber) setDlNumber(licenseNumber.trim().toUpperCase());
 
-        setIsFetchingProfile(false);
-    }, [user]);
+                    const pan = profileData?.pan || profileData?.PAN_Number || profileData?.pan_number || profileData?.Pan_Number || '';
+                    if (pan) setPanNumber(pan.trim().toUpperCase());
+
+                    const aadhaar = profileData?.aadhaar_number || profileData?.Aadhaar_Number || profileData?.aadhaar || '';
+                    if (aadhaar) setAadhaarNumber(aadhaar.trim());
+
+                    const voter = profileData?.voter_id || profileData?.Voter_Id || profileData?.voter_id_number || '';
+                    if (voter) setVoterIdNumber(voter.trim().toUpperCase());
+
+                    // Preload License Image for Face Verification
+                    // Check both API response and Redux user state for the license image
+                    const drivingLicense = profileData?.Driving_License || profileData?.driving_license ||
+                        user?.Driving_License || user?.driving_license || '';
+
+                    if (drivingLicense && !faceImage2) {
+                        // Construct full URL
+                        const licenseImgUrl = `${BASE_URL}public/${drivingLicense}`;
+                        console.log('Preloading driving license image from:', licenseImgUrl);
+
+                        try {
+                            // Fetch and convert to base64 for API usage
+                            const res = await RNFetchBlob.config({ fileCache: true }).fetch('GET', licenseImgUrl);
+                            const base64 = await res.base64();
+                            // Clean up the temp file
+                            res.flush();
+
+                            setFaceImage2({
+                                data: base64,
+                                path: licenseImgUrl, // Use full URL for display
+                                mime: 'image/jpeg'
+                            });
+                            console.log('Driving license image preloaded successfully');
+                        } catch (e) {
+                            console.warn('Error downloading license image for face verification', e);
+                        }
+                    }
+                } else {
+                    // API call failed or returned no data - try to use existing Redux user state
+                    const drivingLicense = user?.Driving_License || user?.driving_license || '';
+                    if (drivingLicense && !faceImage2) {
+                        const licenseImgUrl = `${BASE_URL}public/${drivingLicense}`;
+                        console.log('Preloading driving license from Redux user state:', licenseImgUrl);
+
+                        try {
+                            const res = await RNFetchBlob.config({ fileCache: true }).fetch('GET', licenseImgUrl);
+                            const base64 = await res.base64();
+                            res.flush();
+
+                            setFaceImage2({
+                                data: base64,
+                                path: licenseImgUrl,
+                                mime: 'image/jpeg'
+                            });
+                            console.log('Driving license image preloaded from Redux state');
+                        } catch (e) {
+                            console.warn('Error downloading license image from Redux state', e);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Profile fetch error', error);
+                // On API error, try to use existing Redux user state as fallback
+                const drivingLicense = user?.Driving_License || user?.driving_license || '';
+                if (drivingLicense && !faceImage2) {
+                    const licenseImgUrl = `${BASE_URL}public/${drivingLicense}`;
+                    console.log('Fallback: Preloading driving license from Redux user state:', licenseImgUrl);
+
+                    try {
+                        const res = await RNFetchBlob.config({ fileCache: true }).fetch('GET', licenseImgUrl);
+                        const base64 = await res.base64();
+                        res.flush();
+
+                        setFaceImage2({
+                            data: base64,
+                            path: licenseImgUrl,
+                            mime: 'image/jpeg'
+                        });
+                    } catch (e) {
+                        console.warn('Fallback: Error downloading license image', e);
+                    }
+                }
+            } finally {
+                setIsFetchingProfile(false);
+            }
+        };
+
+        fetchProfileData();
+    }, [user?.Driving_License]);
 
     // Check if DL is already verified on screen load
     useEffect(() => {
@@ -517,6 +645,97 @@ export default function DocumentVerification() {
         if (inputError) validateVoterId(cleanedValue);
     };
 
+    const handleTakeSelfie = async () => {
+        try {
+            const image = await ImagePicker.openCamera({
+                width: 300,
+                height: 400,
+                cropping: false,
+                useFrontCamera: true,
+                mediaType: 'photo'
+            });
+            setIdSelfie(image);
+        } catch (error) {
+            console.log('Camera Error:', error);
+        }
+    };
+
+    // Face Verification Handlers
+    const handleCaptureFaceImage1 = async () => {
+        try {
+            const image = await ImagePicker.openCamera({
+                width: 400,
+                height: 400,
+                cropping: false,
+                useFrontCamera: true,
+                mediaType: 'photo',
+                includeBase64: true,
+            });
+            setFaceImage1(image);
+        } catch (error) {
+            console.log('Camera Error (Image 1):', error);
+        }
+    };
+
+    const handleCaptureFaceImage2 = async () => {
+        try {
+            const image = await ImagePicker.openCamera({
+                width: 400,
+                height: 400,
+                cropping: false,
+                useFrontCamera: true,
+                mediaType: 'photo',
+                includeBase64: true,
+            });
+            setFaceImage2(image);
+        } catch (error) {
+            console.log('Camera Error (Image 2):', error);
+        }
+    };
+
+    const handlePickFaceImage1 = async () => {
+        try {
+            const image = await ImagePicker.openPicker({
+                width: 400,
+                height: 400,
+                cropping: false,
+                mediaType: 'photo',
+                includeBase64: true,
+            });
+            setFaceImage1(image);
+        } catch (error) {
+            console.log('Gallery Error (Image 1):', error);
+        }
+    };
+
+    const handlePickFaceImage2 = async () => {
+        try {
+            const image = await ImagePicker.openPicker({
+                width: 400,
+                height: 400,
+                cropping: false,
+                mediaType: 'photo',
+                includeBase64: true,
+            });
+            setFaceImage2(image);
+        } catch (error) {
+            console.log('Gallery Error (Image 2):', error);
+        }
+    };
+
+    const validateFaceVerification = (): boolean => {
+        if (!faceImage1) {
+            setInputError(t('sourceImageRequired') || 'Source face image is required');
+            return false;
+        }
+        if (!faceImage2) {
+            setInputError(t('targetImageRequired') || 'Target face image is required');
+            return false;
+        }
+        setInputError(null);
+        return true;
+    };
+
     // API Call
     const handleVerify = async () => {
         setError(null);
@@ -620,6 +839,38 @@ export default function DocumentVerification() {
             } finally {
                 setIsLoading(false);
             }
+        } else if (activeTab === 'FACE') {
+            if (!validateFaceVerification()) return;
+
+            try {
+                setIsLoading(true);
+
+                // Get base64 data from images
+                const image1Base64 = faceImage1?.data || faceImage1?.base64 || '';
+                const image2Base64 = faceImage2?.data || faceImage2?.base64 || '';
+
+                const payload = {
+                    image1: image1Base64,
+                    image2: image2Base64,
+                    threshold: parseInt(faceThreshold, 10) || 80,
+                };
+
+                const config = { headers: { 'Content-Type': 'application/json' } };
+                const response = await axiosInstance.post(END_POINTS.FACE_MATCH_VERIFY, payload, config);
+
+                if (response?.data?.status === 1) {
+                    setFaceResult(response.data);
+                    cardScale.value = 0;
+                } else {
+                    const apiError = response?.data?.message || t('faceVerificationFailed') || 'Face verification failed';
+                    processError(apiError);
+                }
+            } catch (err: any) {
+                const msg = err?.response?.data?.message || t('errorOccurred') || 'An error occurred';
+                processError(msg);
+            } finally {
+                setIsLoading(false);
+            }
         }
     };
 
@@ -635,7 +886,8 @@ export default function DocumentVerification() {
     const isSuccess = activeTab === 'DL' ? !!(dlResult?.status === 1) :
         activeTab === 'PAN' ? !!(panResult?.status === 1) :
             activeTab === 'AADHAAR' ? !!(aadhaarResult?.status === 1) :
-                !!(voterResult?.status === 1);
+                activeTab === 'VOTER' ? !!(voterResult?.status === 1) :
+                    activeTab === 'FACE' ? !!(faceResult?.status === 1) : false;
 
     const renderSuccessView = () => {
         if (activeTab === 'DL' && dlResult?.result) {
@@ -753,6 +1005,47 @@ export default function DocumentVerification() {
                     </Animated.View>
                 </View>
             );
+        } else if (activeTab === 'FACE' && faceResult) {
+            return (
+                <View>
+                    <Animated.View entering={FadeInUp.delay(300).duration(400)} style={styles.detailsCard}>
+                        <View style={styles.detailsHeader}>
+                            <MaterialCommunityIcons name="face-recognition" size={24} color={COLORS.primary} />
+                            <Text style={styles.detailsTitle}>{t('faceMatchDetails') || 'Face Match Details'}</Text>
+                        </View>
+                        <View style={styles.detailsGrid}>
+                            <DetailRow
+                                icon="shield-checkmark"
+                                label={t('matchStatus') || 'Match Status'}
+                                value={faceResult.verified ? (t('facesMatch') || 'Faces Match') : (t('facesDoNotMatch') || 'Faces Do Not Match')}
+                                isStatus
+                                statusType={faceResult.verified ? 'success' : 'warning'}
+                            />
+                            <DetailRow
+                                icon="analytics"
+                                label={t('similarity') || 'Similarity'}
+                                value={`${faceResult.similarity?.toFixed(1) || '0'}%`}
+                                highlight
+                            />
+                        </View>
+
+                        {/* Visual Result Indicator */}
+                        <View style={[styles.faceResultIndicator, { backgroundColor: faceResult.verified ? COLORS.successBg : COLORS.warningBg }]}>
+                            <Ionicons
+                                name={faceResult.verified ? "checkmark-circle" : "alert-circle"}
+                                size={24}
+                                color={faceResult.verified ? COLORS.success : COLORS.warning}
+                            />
+                            <Text style={[styles.faceResultText, { color: faceResult.verified ? COLORS.success : COLORS.warning }]}>
+                                {faceResult.verified
+                                    ? (t('faceVerificationPassed') || 'Face verification passed! The two images match.')
+                                    : (t('faceVerificationFailed') || 'Face verification failed. The images do not match sufficiently.')
+                                }
+                            </Text>
+                        </View>
+                    </Animated.View>
+                </View>
+            );
         }
         return null;
     };
@@ -770,13 +1063,18 @@ export default function DocumentVerification() {
 
     const renderTabs = () => (
         <View style={{ marginBottom: 16 }}>
-            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
-                <TabButton type='DL' label={t('drivingLicense') || 'Driving License'} icon='car-outline' />
-                <TabButton type='AADHAAR' label={t('aadhaarCard') || 'Aadhaar Card'} icon='finger-print' />
+            {/* Required Documents Title */}
+            <Text style={styles.requiredDocsTitle}>{t('requiredDocuments') || 'Required Documents'}</Text>
+
+            {/* 3x2 Grid of Rectangular Tab Buttons */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                <TabButton type='DL' label='DL' icon='car-outline' />
+                <TabButton type='AADHAAR' label='Aadhar' icon='finger-print' />
+                <TabButton type='PAN' label='PAN' icon='card-outline' />
             </View>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-                <TabButton type='PAN' label={t('panCard') || 'PAN Card'} icon='card-outline' />
-                <TabButton type='VOTER' label={t('voterId') || 'Voter ID'} icon='person-outline' />
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TabButton type='VOTER' label='Voter' icon='person-outline' />
+                <TabButton type='FACE' label={t('face') || 'Face'} icon='scan-outline' />
             </View>
         </View>
     );
@@ -793,10 +1091,10 @@ export default function DocumentVerification() {
             </View>
 
             {/* Content */}
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }} keyboardVerticalOffset={0}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }} keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}>
                 <ScrollView
                     ref={scrollViewRef}
-                    contentContainerStyle={styles.scrollContent}
+                    contentContainerStyle={[styles.scrollContent, { paddingBottom: 250 }]} // Extra padding for button visibility with keyboard
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                     bounces={true}
@@ -818,18 +1116,35 @@ export default function DocumentVerification() {
                     {/* Tabs */}
                     {renderTabs()}
 
+                    {/* Main Content Area - Hide for ID and FACE tabs (they navigate to ID Check Info screen) */}
                     {/* Main Content Area */}
                     {isSuccess ? (
                         <View>
                             {/* Success Card */}
                             <Animated.View entering={FadeInDown.delay(100).duration(400)} style={[styles.successCard, cardAnimatedStyle]}>
                                 <View style={styles.successIconContainer}>
-                                    <View style={styles.successIconBg}>
-                                        <Ionicons name="checkmark-circle" size={56} color={COLORS.success} />
+                                    <View style={[styles.successIconBg, activeTab === 'FACE' && faceResult && !faceResult.verified && { backgroundColor: COLORS.warningBg }]}>
+                                        <Ionicons
+                                            name={activeTab === 'FACE' && faceResult && !faceResult.verified ? "alert-circle" : "checkmark-circle"}
+                                            size={56}
+                                            color={activeTab === 'FACE' && faceResult && !faceResult.verified ? COLORS.warning : COLORS.success}
+                                        />
                                     </View>
                                 </View>
-                                <Text style={styles.successTitle}>{t('verificationSuccessful') || 'Verified Successfully!'}</Text>
-                                <Text style={styles.successSubtitle}>{t('verificationSuccessDesc') || `Your ${activeTab === 'DL' ? 'driving license' : 'PAN card'} has been verified`}</Text>
+                                <Text style={styles.successTitle}>
+                                    {activeTab === 'FACE'
+                                        ? (faceResult?.verified
+                                            ? (t('faceMatchSuccess') || 'Faces Match!')
+                                            : (t('faceMatchFailed') || 'Faces Do Not Match'))
+                                        : (t('verificationSuccessful') || 'Verified Successfully!')}
+                                </Text>
+                                <Text style={styles.successSubtitle}>
+                                    {activeTab === 'FACE'
+                                        ? (faceResult?.verified
+                                            ? (t('faceMatchSuccessDesc') || `Similarity: ${faceResult?.similarity?.toFixed(1)}% - Above threshold`)
+                                            : (t('faceMatchFailedDesc') || `Similarity: ${faceResult?.similarity?.toFixed(1)}% - Below threshold`))
+                                        : (t('verificationSuccessDesc') || `Your ${activeTab === 'DL' ? 'driving license' : 'PAN card'} has been verified`)}
+                                </Text>
                             </Animated.View>
 
                             {renderSuccessView()}
@@ -838,12 +1153,23 @@ export default function DocumentVerification() {
                                 onPress={() => {
                                     // Reset to allow verify other doc or update
                                     if (activeTab === 'DL') setDlResult(null);
-                                    else setPanResult(null);
+                                    else if (activeTab === 'PAN') setPanResult(null);
+                                    else if (activeTab === 'AADHAAR') setAadhaarResult(null);
+                                    else if (activeTab === 'VOTER') setVoterResult(null);
+                                    else if (activeTab === 'FACE') {
+                                        setFaceResult(null);
+                                        setFaceImage1(null);
+                                        setFaceImage2(null);
+                                    }
                                     setConsentChecked(false);
                                 }}
                                 style={styles.secondaryButton}
                             >
-                                <Text style={styles.secondaryButtonText}>{t('verifyAnother') || 'Verify Another Document'}</Text>
+                                <Text style={styles.secondaryButtonText}>
+                                    {activeTab === 'FACE'
+                                        ? (t('verifyAnotherFace') || 'Verify Another Face')
+                                        : (t('verifyAnother') || 'Verify Another Document')}
+                                </Text>
                             </TouchableOpacity>
                         </View>
                     ) : (
@@ -925,6 +1251,128 @@ export default function DocumentVerification() {
                                 </View>
                             )}
 
+                            {activeTab === 'FACE' && (
+                                canAccessIdVerification ? (
+                                    <View>
+                                        {/* Face Verification Header */}
+                                        <View style={styles.faceVerifyHeader}>
+                                            <MaterialCommunityIcons name="face-recognition" size={28} color={COLORS.primary} />
+                                            <View style={{ marginLeft: 12, flex: 1 }}>
+                                                <Text style={styles.faceVerifyTitle}>{t('faceVerification') || 'Face Verification'}</Text>
+                                                <Text style={styles.faceVerifySubtitle}>{t('faceVerifyDesc') || 'Compare two face images to verify identity match'}</Text>
+                                            </View>
+                                        </View>
+
+                                        {/* Source Face Image - Live Selfie Only */}
+                                        <View style={styles.inputGroup}>
+                                            <Text style={styles.inputLabel}>
+                                                <Ionicons name="camera" size={14} color={COLORS.textMuted} />  {t('liveSelfie') || 'Live Selfie'}
+                                            </Text>
+                                            <View style={styles.faceImageContainer}>
+                                                {faceImage1 ? (
+                                                    <View style={styles.faceImagePreviewWrapper}>
+                                                        <Image source={{ uri: faceImage1.path }} style={styles.faceImagePreview} />
+                                                        <TouchableOpacity
+                                                            onPress={() => setFaceImage1(null)}
+                                                            style={styles.faceImageRemoveBtn}
+                                                            activeOpacity={0.8}
+                                                        >
+                                                            <Ionicons name="close" size={14} color={COLORS.white} />
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                ) : (
+                                                    <View style={styles.faceImageActions}>
+                                                        <TouchableOpacity onPress={handleCaptureFaceImage1} style={[styles.faceImageActionBtn, { flex: 1, borderRightWidth: 0 }]}>
+                                                            <View style={styles.faceImageActionIconBg}>
+                                                                <Ionicons name="camera" size={24} color={COLORS.primary} />
+                                                            </View>
+                                                            <Text style={styles.faceImageActionText}>{t('takeSelfie') || 'Take Selfie'}</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        </View>
+
+                                        {/* Target Face Image - Preloaded License Image */}
+                                        <View style={styles.inputGroup}>
+                                            <Text style={styles.inputLabel}>
+                                                <Ionicons name="card" size={14} color={COLORS.textMuted} />  {t('licenseImage') || 'License Image (Preloaded)'}
+                                            </Text>
+                                            <View style={styles.faceImageContainer}>
+                                                {faceImage2 ? (
+                                                    <View style={styles.faceImagePreviewWrapper}>
+                                                        <Image source={{ uri: faceImage2.path }} style={styles.faceImagePreview} />
+                                                        {/* No remove button for preloaded image */}
+                                                    </View>
+                                                ) : (
+                                                    <View style={[styles.faceImageActions, { opacity: 0.6 }]}>
+                                                        <View style={styles.faceImageActionBtn}>
+                                                            {isFetchingProfile ? (
+                                                                <ActivityIndicator size="small" color={COLORS.primary} />
+                                                            ) : (
+                                                                <Ionicons name="image-outline" size={24} color={COLORS.textLight} />
+                                                            )}
+                                                            <Text style={[styles.faceImageActionText, { color: COLORS.textLight, marginTop: 4 }]}>
+                                                                {isFetchingProfile ? (t('loading') || 'Loading...') : (t('noLicenseImage') || 'No License Image Found')}
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        </View>
+
+                                        {/* Info Card */}
+                                        <View style={styles.faceInfoCard}>
+                                            <Ionicons name="information-circle" size={20} color={COLORS.primary} />
+                                            <Text style={styles.faceInfoText}>
+                                                {t('faceVerifyInfo') || 'Upload or capture two face images to compare. The system will analyze facial features and return a similarity score.'}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                ) : (
+                                    // Upgrade Prompt for users without 499 subscription
+                                    <Animated.View entering={FadeInDown.duration(500).springify()} style={{ alignItems: 'center', paddingVertical: 40, paddingHorizontal: 20 }}>
+                                        <Animated.View
+                                            entering={ZoomIn.delay(200).duration(400).springify()}
+                                            style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: '#FEF3C7', alignItems: 'center', justifyContent: 'center', marginBottom: 24, shadowColor: '#D97706', shadowOpacity: 0.3, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 8 }}
+                                        >
+                                            <MaterialCommunityIcons name="face-recognition" size={50} color="#D97706" />
+                                        </Animated.View>
+                                        <Animated.Text entering={FadeInDown.delay(300).duration(400)} style={{ fontSize: 22, fontWeight: '700', color: COLORS.text, textAlign: 'center', marginBottom: 12 }}>
+                                            {t('faceVerificationLocked') || 'Face Verification Locked'}
+                                        </Animated.Text>
+                                        <Animated.Text entering={FadeInDown.delay(400).duration(400)} style={{ fontSize: 15, color: COLORS.textMuted, textAlign: 'center', lineHeight: 24, marginBottom: 32, paddingHorizontal: 10 }}>
+                                            {t('faceVerificationUpgradeMessage') || 'Upgrade to the Trusted Driver plan (₹499/year) to unlock Face Verification and compare your selfie with your driving license photo.'}
+                                        </Animated.Text>
+                                        <Animated.View entering={FadeInUp.delay(500).duration(400).springify()} style={{ width: '100%' }}>
+                                            <TouchableOpacity
+                                                onPress={() => dispatch(subscriptionModalAction({ visible: true, minPrice: 499 }))}
+                                                activeOpacity={0.9}
+                                                style={{ width: '100%', borderRadius: 16, overflow: 'hidden', shadowColor: '#2563EB', shadowOpacity: 0.4, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 6 }}
+                                            >
+                                                <LinearGradient
+                                                    colors={['#1E3A8A', '#3B82F6', '#60A5FA']}
+                                                    start={{ x: 0, y: 0 }}
+                                                    end={{ x: 1, y: 0 }}
+                                                    style={{ paddingVertical: 18, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10 }}
+                                                >
+                                                    <MaterialCommunityIcons name="crown" size={22} color={COLORS.white} />
+                                                    <Text style={{ color: COLORS.white, fontSize: 17, fontWeight: '700' }}>
+                                                        {t('upgradeToTrusted') || 'Upgrade to Trusted Driver @ ₹499'}
+                                                    </Text>
+                                                </LinearGradient>
+                                            </TouchableOpacity>
+                                        </Animated.View>
+                                        <Animated.View entering={FadeIn.delay(600).duration(400)} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 20, backgroundColor: '#EFF6FF', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 }}>
+                                            <Ionicons name="shield-checkmark" size={18} color={COLORS.primary} />
+                                            <Text style={{ marginLeft: 8, fontSize: 13, color: COLORS.primary, fontWeight: '500' }}>
+                                                {t('trustedBenefits') || 'Includes Face Match, ID Check & Court Records'}
+                                            </Text>
+                                        </Animated.View>
+                                    </Animated.View>
+                                )
+                            )}
+
                             {inputError && <Text style={styles.errorText}>{inputError}</Text>}
 
                             {activeTab === 'DL' && (
@@ -986,6 +1434,43 @@ export default function DocumentVerification() {
                     <View style={{ height: 40 }} />
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            {/* Subscription Prompt Modal */}
+            <Modal
+                transparent
+                visible={showSubscriptionPrompt}
+                animationType="fade"
+                onRequestClose={() => setShowSubscriptionPrompt(false)}
+            >
+                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
+                    <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 24, alignItems: 'center' }}>
+                        <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: '#E0F2FE', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                            <MaterialCommunityIcons name="shield-crown" size={32} color={COLORS.primary} />
+                        </View>
+                        <Text style={{ fontSize: 20, fontWeight: '700', color: COLORS.text, marginBottom: 8, textAlign: 'center' }}>{t('unlockIdVerification') || 'Unlock ID Verification'}</Text>
+                        <Text style={{ fontSize: 14, color: COLORS.textMuted, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
+                            {t('idCheckPremiumFeature') || 'Advanced ID verification is a premium feature available with the Trusted Driver plan.'}
+                        </Text>
+
+                        <TouchableOpacity
+                            onPress={() => {
+                                setShowSubscriptionPrompt(false);
+                                dispatch(subscriptionModalAction({ visible: true, minPrice: 499 }));
+                            }}
+                            activeOpacity={0.9}
+                            style={{ width: '100%', borderRadius: 12, overflow: 'hidden' }}
+                        >
+                            <LinearGradient colors={['#1E3A8A', '#3B82F6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingVertical: 16, alignItems: 'center' }}>
+                                <Text style={{ color: COLORS.white, fontSize: 16, fontWeight: '700' }}>Subscribe @ ₹499/Year</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity onPress={() => setShowSubscriptionPrompt(false)} style={{ marginTop: 16, padding: 8 }}>
+                            <Text style={{ color: COLORS.textMuted, fontSize: 14, fontWeight: '500' }}>Maybe Later</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
 
             {/* Loading Overlay */}
             {isLoading && (
@@ -1106,4 +1591,221 @@ const styles = StyleSheet.create({
     loadingOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.8)', alignItems: 'center', justifyContent: 'center', zIndex: 100 },
     loadingCard: { backgroundColor: COLORS.white, padding: 24, borderRadius: 16, alignItems: 'center', shadowOpacity: 0.1, elevation: 5 },
     loadingText: { marginTop: 12, fontSize: 14, fontWeight: '600', color: COLORS.primary },
+
+    // Required Documents Section
+    requiredDocsSection: { marginBottom: 20 },
+    requiredDocsTitle: { fontSize: 18, fontWeight: '700', color: COLORS.text, marginBottom: 16 },
+
+    // Document Type Grid (3x2)
+    docTypeGrid: { marginBottom: 20 },
+    docTypeRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10, gap: 10 },
+    docTypeButton: {
+        flex: 1,
+        backgroundColor: COLORS.white,
+        borderRadius: 12,
+        paddingVertical: 16,
+        paddingHorizontal: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1.5,
+        borderColor: COLORS.border,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    docTypeIconContainer: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        backgroundColor: '#EFF6FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 8
+    },
+    docTypeLabel: { fontSize: 12, fontWeight: '600', color: COLORS.text, textAlign: 'center' },
+
+    // Placeholder Inputs Section
+    placeholderInputsSection: { marginTop: 8 },
+    placeholderInput: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.inputBg,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        paddingHorizontal: 16,
+        paddingVertical: 14
+    },
+    placeholderText: { fontSize: 14, color: COLORS.textLight },
+    selfieInputPlaceholder: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.inputBg,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        borderStyle: 'dashed',
+        paddingHorizontal: 16,
+        paddingVertical: 14
+    },
+
+    // Verification Process
+    verificationProcessCard: {
+        backgroundColor: COLORS.white,
+        borderRadius: 14,
+        padding: 16,
+        marginBottom: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 4,
+        elevation: 1,
+    },
+    verificationProcessTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: 16 },
+    processStepNumber: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: COLORS.primary,
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+    processStepNumberText: { fontSize: 14, fontWeight: '700', color: COLORS.white },
+    processStepLine: { width: 2, height: 24, backgroundColor: '#E0E7FF', marginTop: 4 },
+    processStepText: { fontSize: 14, color: COLORS.textMuted, flex: 1, paddingTop: 6 },
+
+    // ID Check Button with Glow Effect
+    idCheckButtonContainer: {
+        borderRadius: 14,
+        overflow: 'hidden',
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    idCheckButtonGlow: {
+        shadowColor: '#3B82F6',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6,
+        shadowRadius: 20,
+        elevation: 12,
+    },
+    idCheckButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 16
+    },
+    idCheckButtonText: { fontSize: 17, fontWeight: '700', color: COLORS.white },
+
+    // Face Verification Styles
+    faceVerifyHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.inputBg,
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 20,
+    },
+    faceVerifyTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },
+    faceVerifySubtitle: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
+
+    faceImageContainer: {
+        backgroundColor: COLORS.inputBg,
+        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor: COLORS.border,
+        borderStyle: 'dashed',
+        padding: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 140,
+    },
+    faceImagePreviewWrapper: {
+        position: 'relative',
+        alignItems: 'center',
+    },
+    faceImagePreview: {
+        width: 120,
+        height: 120,
+        borderRadius: 12,
+        borderWidth: 2,
+        borderColor: COLORS.primary,
+    },
+    faceImageRemoveBtn: {
+        position: 'absolute',
+        top: -8,
+        right: -8,
+        backgroundColor: COLORS.error,
+        borderRadius: 12,
+        width: 24,
+        height: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: COLORS.white,
+    },
+    faceImageActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+    },
+    faceImageActionBtn: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 8,
+    },
+    faceImageActionIconBg: {
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: '#EFF6FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 8,
+    },
+    faceImageActionText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: COLORS.primary,
+    },
+    faceImageDivider: {
+        width: 1,
+        height: 60,
+        backgroundColor: COLORS.border,
+        marginHorizontal: 16,
+    },
+    faceInfoCard: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        backgroundColor: '#EFF6FF',
+        borderRadius: 12,
+        padding: 14,
+        marginTop: 8,
+        gap: 10,
+    },
+    faceInfoText: {
+        flex: 1,
+        fontSize: 13,
+        color: COLORS.textMuted,
+        lineHeight: 19,
+    },
+    faceResultIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 10,
+        padding: 14,
+        marginTop: 16,
+        gap: 12,
+    },
+    faceResultText: {
+        flex: 1,
+        fontSize: 13,
+        fontWeight: '500',
+        lineHeight: 19,
+    },
 });

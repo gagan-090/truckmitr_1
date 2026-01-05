@@ -174,7 +174,7 @@ export default function LanguageMain() {
             <Space style={{ flex: 1 }} />
             <View style={{ backgroundColor: colors.royalBlue }}>
                 <Text style={{ color: colors.white, fontSize: responsiveFontSize(1.6), textAlign: 'center', margin: responsiveFontSize(1.5) }}>
-                    {`© 2025 TruckMitr Corporate Services Private Limited. \nAll Rights Reserved.`}
+                    {`© 2026 TruckMitr Corporate Services Private Limited. \nAll Rights Reserved.`}
                 </Text>
                 <Space height={safeAreaInsets.bottom} />
             </View>
