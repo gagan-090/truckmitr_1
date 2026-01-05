@@ -728,6 +728,24 @@ const Home = React.forwardRef((props, ref) => {
     const _navigateScheduledInterview = () => {
         navigation.navigate(STACKS.SCHEDULED_INTERVIEWS)
     }
+    const _navigateTMLoadMandal = () => {
+        navigation.navigate(STACKS.TM_LOAD_MANDAL)
+    }
+    const _navigateTransporterLoan = () => {
+        navigation.navigate(STACKS.TRANSPORTER_LOAN)
+    }
+    const _navigateSecondHandTruckMarketplace = () => {
+        navigation.navigate(STACKS.SECOND_HAND_TRUCK_MARKETPLACE)
+    }
+    const _navigateFleetManagementSolution = () => {
+        navigation.navigate(STACKS.FLEET_MANAGEMENT_SOLUTION)
+    }
+    const _navigateFuelDiscount = () => {
+        navigation.navigate(STACKS.FUEL_DISCOUNT)
+    }
+    const _navigateTruckInsurance = () => {
+        navigation.navigate(STACKS.TRUCK_INSURANCE)
+    }
     // const _navigateRcCheckResult = () => {
     //     navigation.navigate(STACKS.RC_CHECK_RESULT, { rcNumber: '' }) // Needs params usually
     // }
@@ -1513,21 +1531,21 @@ const Home = React.forwardRef((props, ref) => {
 
                     {/* Row 1: TM Load Mandal, Fuel Discount, Transporter Tailored Loan */}
                     <View style={{ flexDirection: 'row', paddingHorizontal: responsiveWidth(4), paddingVertical: responsiveWidth(3) }}>
-                        <TouchableOpacity onPress={() => showToast('Feature Coming Soon')} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
+                        <TouchableOpacity onPress={_navigateTMLoadMandal} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                 <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2271/2271113.png' }} />
                                 <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>TM Load Mandal</Text>
                             </View>
                         </TouchableOpacity>
                         <Space width={responsiveFontSize(1.5)} />
-                        <TouchableOpacity onPress={() => showToast('Feature Coming Soon')} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
+                        <TouchableOpacity onPress={_navigateFuelDiscount} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                 <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2311/2311324.png' }} />
                                 <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>Fuel Discount</Text>
                             </View>
                         </TouchableOpacity>
                         <Space width={responsiveFontSize(1.5)} />
-                        <TouchableOpacity onPress={() => showToast('Feature Coming Soon')} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
+                        <TouchableOpacity onPress={_navigateTransporterLoan} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                 <Text style={{ fontSize: responsiveFontSize(3), marginBottom: 5 }}>💰</Text>
                                 <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>Transporter Tailored Loan</Text>
@@ -1537,21 +1555,21 @@ const Home = React.forwardRef((props, ref) => {
 
                     {/* Row 2: Truck Insurance, Second Hand Truck, Fleet Management */}
                     <View style={{ flexDirection: 'row', paddingHorizontal: responsiveWidth(4), paddingBottom: responsiveWidth(3) }}>
-                        <TouchableOpacity onPress={() => showToast('Feature Coming Soon')} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
+                        <TouchableOpacity onPress={_navigateTruckInsurance} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                 <Text style={{ fontSize: responsiveFontSize(3), marginBottom: 5 }}>🛡️</Text>
                                 <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>Truck Insurance</Text>
                             </View>
                         </TouchableOpacity>
                         <Space width={responsiveFontSize(1.5)} />
-                        <TouchableOpacity onPress={() => showToast('Feature Coming Soon')} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
+                        <TouchableOpacity onPress={_navigateSecondHandTruckMarketplace} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                 <Text style={{ fontSize: responsiveFontSize(3), marginBottom: 5 }}>🚛</Text>
                                 <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>Second Hand Truck Marketplace</Text>
                             </View>
                         </TouchableOpacity>
                         <Space width={responsiveFontSize(1.5)} />
-                        <TouchableOpacity onPress={() => showToast('Feature Coming Soon')} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
+                        <TouchableOpacity onPress={_navigateFleetManagementSolution} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                 <Text style={{ fontSize: responsiveFontSize(3), marginBottom: 5 }}>📊</Text>
                                 <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>Fleet Management Solution</Text>
