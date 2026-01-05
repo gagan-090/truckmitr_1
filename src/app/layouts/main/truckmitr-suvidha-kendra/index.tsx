@@ -51,13 +51,13 @@ const TruckmitrSuvidhaKendra = () => {
             {/* Header */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: responsiveWidth(4), paddingTop: responsiveHeight(4), backgroundColor: colors.white, elevation: 2 }}>
                 <TouchableOpacity onPress={_goBack} style={{ padding: 5 }}>
-                    <Ionicons name="chevron-back" size={26} color={colors.royalBlue} />
+                    <Ionicons name="chevron-back" size={24} color={colors.royalBlue} />
                 </TouchableOpacity>
-                <Text style={{ fontSize: responsiveFontSize(2.6), fontWeight: 'bold', color: colors.royalBlue, textAlign: 'center' }}>
+                <Text style={{ fontSize: responsiveFontSize(2.4), fontWeight: 'bold', color: colors.royalBlue, textAlign: 'center' }}>
                     {t('truckMitrSuvidhaKendraTitle')}
                 </Text>
                 <TouchableOpacity onPress={_refreshPage} style={{ padding: 5 }}>
-                    <Ionicons name="refresh" size={24} color={colors.royalBlue} />
+                    <Ionicons name="refresh" size={22} color={colors.royalBlue} />
                 </TouchableOpacity>
             </View>
 

@@ -39,7 +39,7 @@ const SecondHandTruckMarketplace = () => {
                 <TouchableOpacity onPress={_goBack} style={{ padding: 5 }}>
                     <Ionicons name="chevron-back" size={24} color={colors.royalBlue} />
                 </TouchableOpacity>
-                <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: 'bold', color: colors.royalBlue, textAlign: 'center', flex: 1 }}>
+                <Text style={{ fontSize: responsiveFontSize(2.4), fontWeight: 'bold', color: colors.royalBlue, textAlign: 'center', flex: 1 }}>
                     {t('secondHandTruckTitle')}
                 </Text>
                 <View style={{ width: 34 }} />
