@@ -141,10 +141,10 @@ const getTierConfigs = (t: any): Record<TierType, TierConfig> => ({
 });
 
 // Helper function to get tier from payment_type
-// Now also accepts amount to detect legacy drivers (Rs 49/100 payment) and legacy transporters (Rs 99 payment)
+// Now also accepts amount to detect legacy drivers (Rs 49 payment) and legacy transporters (Rs 100/99 payment)
 const getTierFromPaymentType = (paymentType: string, amount?: number, role?: string): TierType => {
-  // Legacy driver detection: Rs 49, Rs 1, or Rs 100 payment for DRIVERS
-  if (role === 'driver' && (amount === 49 || amount === 49.00 || amount === 1 || amount === 1.00 || amount === 100 || amount === 100.00)) {
+  // Legacy driver detection: Rs 49 payment = Legacy Driver
+  if (amount === 49 || amount === 49.00 || amount === 1 || amount === 1.00) {
     return 'LEGACY';
   }
 
@@ -156,6 +156,11 @@ const getTierFromPaymentType = (paymentType: string, amount?: number, role?: str
   // Legacy transporter detection: Rs 99 payment for TRANSPORTERS
   if (role === 'transporter' && (amount === 99 || amount === 99.00)) {
     return 'LEGACY';
+  }
+
+  // Transporter Pro detection: Rs 499 payment
+  if (role === 'transporter' && (amount === 499 || amount === 499.00)) {
+    return 'TRANSPORTER PRO';
   }
 
   const normalizedType = paymentType?.toUpperCase().replace(/\s+/g, ' ').trim();
@@ -1051,7 +1056,7 @@ export default function Profile() {
                     else if (tier === 'TRUSTED') tierName = 'Trusted';
                     else if (tier === 'Standard') tierName = 'Standard';
                     else if (tier === 'LEGACY') tierName = 'Legacy';
-                    else if (tier === 'TRANSPORTER PRO') return 'Transporter Pro';
+                    else if (tier === 'TRANSPORTER PRO') tierName = 'Transporter Pro';
                     else tierName = capitalizeFirst((tier as string)?.toLowerCase() || '');
 
                     return `${tierName} ${capitalizeFirst(user?.role)}`;
@@ -1586,11 +1591,11 @@ onPress={()=>{
             onPress={_onPressShareApp}
           />
           <View style={[styles.divider, { backgroundColor: colors.blackOpacity(0.06) }]} />
-          <MenuItem
+          {/* <MenuItem
             icon={<Ionicons name="person-circle-outline" size={20} color={colors.royalBlue} />}
             title={t('shareMyProfile')}
             onPress={_onPressShareProfile}
-          />
+          /> */}
         </CardContainer>
 
         {/* Account Actions Section */}

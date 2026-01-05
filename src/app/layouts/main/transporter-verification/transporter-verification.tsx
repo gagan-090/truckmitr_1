@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Modal,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -62,6 +63,7 @@ const TransporterVerificationScreen = () => {
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
   const [startingVerification, setStartingVerification] = useState(false);
   const [paymentModal, setPaymentModal] = useState(false);
+  const [addDriverModal, setAddDriverModal] = useState(false);
   const [isExtended, setIsExtended] = useState(false);
   const { responsiveWidth, responsiveFontSize, responsiveHeight } = useResponsiveScale();
 
@@ -298,7 +300,7 @@ const TransporterVerificationScreen = () => {
               <ActivityIndicator color={colors.white} size="small" />
             ) : (
               <Text style={styles.startButtonText}>
-              {selectedDrivers.length < 10 ?  `${t('proceed')}     ${1180} x ${selectedDrivers.length} = ₹${selectedDrivers.length * 1180}` : `${t('proceed')}     ${826} x ${selectedDrivers.length} = ₹${selectedDrivers.length * 826}`}
+                {selectedDrivers.length < 10 ? `${t('proceed')}     ${1180} x ${selectedDrivers.length} = ₹${selectedDrivers.length * 1180}` : `${t('proceed')}     ${826} x ${selectedDrivers.length} = ₹${selectedDrivers.length * 826}`}
               </Text>
             )}
           </TouchableOpacity>
@@ -320,7 +322,7 @@ const TransporterVerificationScreen = () => {
           label={t('addDriver')}
           color={colors.white}
           extended={isExtended}
-          onPress={() => navigation.navigate(STACKS.ADD_DRIVER)}
+          onPress={() => setAddDriverModal(true)}
           visible={true}
           iconMode={'dynamic'}
           style={{
@@ -331,6 +333,92 @@ const TransporterVerificationScreen = () => {
           }}
         />
       }
+
+      {/* Add Driver Options Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={addDriverModal}
+        onRequestClose={() => setAddDriverModal(false)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}
+          activeOpacity={1}
+          onPress={() => setAddDriverModal(false)}
+        >
+          <View style={{ backgroundColor: colors.white, borderRadius: 16, padding: 20, width: responsiveWidth(85), maxWidth: 350 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: 'bold', color: colors.royalBlue }}>
+                {t('addDriver', 'Add Driver')}
+              </Text>
+              <TouchableOpacity onPress={() => setAddDriverModal(false)}>
+                <Ionicons name="close" size={24} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Single Driver Option */}
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                padding: 16,
+                backgroundColor: '#F8FAFC',
+                borderRadius: 12,
+                marginBottom: 12,
+                borderWidth: 1,
+                borderColor: '#E2E8F0'
+              }}
+              onPress={() => {
+                setAddDriverModal(false);
+                navigation.navigate(STACKS.ADD_SINGLE_DRIVER_INFO);
+              }}
+            >
+              <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                <FontAwesome6 name="user" size={20} color={colors.royalBlue} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: responsiveFontSize(1.8), fontWeight: '600', color: '#1E293B', marginBottom: 2 }}>
+                  {t('addSingleDriver', 'Add Single Driver')}
+                </Text>
+                <Text style={{ fontSize: responsiveFontSize(1.4), color: '#64748B' }}>
+                  {t('addOneDriverManually', 'Add one driver manually')}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+            </TouchableOpacity>
+
+            {/* Multiple Drivers Option */}
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                padding: 16,
+                backgroundColor: '#F8FAFC',
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: '#E2E8F0'
+              }}
+              onPress={() => {
+                setAddDriverModal(false);
+                navigation.navigate(STACKS.EXCEL_IMPORT);
+              }}
+            >
+              <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#F0FDF4', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                <FontAwesome6 name="users" size={20} color="#16A34A" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: responsiveFontSize(1.8), fontWeight: '600', color: '#1E293B', marginBottom: 2 }}>
+                  {t('addMultipleDrivers', 'Add Multiple Drivers')}
+                </Text>
+                <Text style={{ fontSize: responsiveFontSize(1.4), color: '#64748B' }}>
+                  {t('importFromExcel', 'Import from Excel file')}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };

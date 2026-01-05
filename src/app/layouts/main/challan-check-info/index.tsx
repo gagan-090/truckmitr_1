@@ -44,7 +44,8 @@ const ChallanCheckInfo = () => {
     const { shadow } = useShadow();
     const { t } = useTranslation();
 
-    const { subscriptionDetails } = useSelector((state: any) => state?.user);
+    const { subscriptionDetails, user } = useSelector((state: any) => state?.user);
+    const isTransporter = user?.role?.toLowerCase() === 'transporter';
 
     const checkSubscriptionStatus = () => {
         if (!subscriptionDetails) return false;
@@ -461,7 +462,9 @@ const ChallanCheckInfo = () => {
                         {t('whatIsChallanCheckDesc', 'Check pending traffic challans for your vehicle by entering the vehicle number.')}
                     </Text>
                     <Text style={{ fontSize: responsiveFontSize(1.5), color: '#64748B', fontStyle: 'italic', lineHeight: responsiveFontSize(2.2), textAlign: 'left' }}>
-                        {t('challanFeatureNote', 'This feature is available for drivers with an active TruckMitr subscription.')}
+                        {isTransporter
+                            ? (t('challanFeatureNoteTransporter') || 'This feature is available for transporters with an active TruckMitr subscription.')
+                            : (t('challanFeatureNote') || 'This feature is available for drivers with an active TruckMitr subscription.')}
                     </Text>
                 </View>
 

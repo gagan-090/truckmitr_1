@@ -119,6 +119,10 @@ export type NavigatorParams = {
     fleetManagementSolution: undefined
     fuelDiscount: undefined
     truckInsurance: undefined
+    convoy: undefined
+    paymentHistoryScreen: undefined
+    verifyDriversDocumentUploadByTransporter: undefined
+    addSingleDriverInfo: undefined
 };
 
 export const STACKS = {
@@ -251,4 +255,6 @@ export const STACKS = {
     FLEET_MANAGEMENT_SOLUTION: 'fleetManagementSolution',
     FUEL_DISCOUNT: 'fuelDiscount',
     TRUCK_INSURANCE: 'truckInsurance',
+    CONVOY: 'convoy',
+    ADD_SINGLE_DRIVER_INFO: 'addSingleDriverInfo',
 } as const;
