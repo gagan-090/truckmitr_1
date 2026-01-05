@@ -343,16 +343,58 @@ export default function ProfileEdit() {
                 }
             }
 
-            // Operational Segment (Handle Array or String)
-            if (!userEdit?.operational_segment) {
+            // Industry Segment (mapped from Operational_Segment in user data)
+            if (!userEdit?.industry_segment) {
                 const opSeg = user.Operational_Segment || user.operational_segment;
+                console.log('=== Industry Segment Mapping ===');
                 console.log('Operational Segment from User:', opSeg);
 
                 if (Array.isArray(opSeg)) {
-                    updates.operational_segment = opSeg.join(',');
-                    shouldUpdate = true;
+                    // Map display names to internal values
+                    const mapping: { [key: string]: string } = {
+                        'E-commerce': 'ecommerce',
+                        'White Goods': 'white_goods',
+                        'Livestock': 'livestock',
+                        'Perishable': 'perishable',
+                        'Oversized': 'oversized',
+                        'Fuel Tanker': 'fuel_tanker',
+                        'Automobile Carrier': 'automobile_carrier',
+                        'Construction': 'construction',
+                        'Refrigerator Vehicle': 'refrigerator',
+                        'Refrigerator': 'refrigerator',
+                        'Others': 'others'
+                    };
+                    
+                    const mappedValues = opSeg.map((item: string) => {
+                        const mappedValue = mapping[item] || item.toLowerCase().replace(/\s+/g, '_');
+                        console.log(`Mapping "${item}" -> "${mappedValue}"`);
+                        return mappedValue;
+                    }).filter(Boolean);
+                    
+                    if (mappedValues.length > 0) {
+                        console.log('Final mapped values:', mappedValues);
+                        console.log('Joined string:', mappedValues.join(','));
+                        updates.industry_segment = mappedValues.join(',');
+                        shouldUpdate = true;
+                    }
                 } else if (typeof opSeg === 'string') {
-                    updates.operational_segment = opSeg;
+                    // Handle single string value
+                    const mapping: { [key: string]: string } = {
+                        'E-commerce': 'ecommerce',
+                        'White Goods': 'white_goods',
+                        'Livestock': 'livestock',
+                        'Perishable': 'perishable',
+                        'Oversized': 'oversized',
+                        'Fuel Tanker': 'fuel_tanker',
+                        'Automobile Carrier': 'automobile_carrier',
+                        'Construction': 'construction',
+                        'Refrigerator Vehicle': 'refrigerator',
+                        'Refrigerator': 'refrigerator',
+                        'Others': 'others'
+                    };
+                    const mappedValue = mapping[opSeg] || opSeg.toLowerCase().replace(/\s+/g, '_');
+                    console.log(`Mapping single value "${opSeg}" -> "${mappedValue}"`);
+                    updates.industry_segment = mappedValue;
                     shouldUpdate = true;
                 }
             }
@@ -758,21 +800,12 @@ export default function ProfileEdit() {
             console.log('Cleaned Vehicle Types:', cleanVehicleTypes);
 
             if (cleanVehicleTypes.length > 0) {
-                if (userRole === 'driver') {
-                    // Driver: API expects array format with vehicle_type[]
-                    cleanVehicleTypes.forEach((vt: string) => {
-                        formData.append('vehicle_type[]', vt.trim());
-                    });
-                } else {
-                    // Transporter: API expects string format
-                    formData.append('vehicle_type', cleanVehicleTypes.join(','));
-                }
-            } else if (userRole === 'driver') {
-                // For driver with no vehicle selected, send empty array
-                // Don't append anything - let server handle validation
-            } else {
-                formData.append('vehicle_type', '');
+                // Both Driver and Transporter: API expects array format with vehicle_type[]
+                cleanVehicleTypes.forEach((vt: string) => {
+                    formData.append('vehicle_type[]', vt.trim());
+                });
             }
+            // If no vehicle types selected, don't append anything - let server handle validation
             formData.append('driving_experience', userEdit?.Driving_Experience || '');
             formData.append('preferred_location', userEdit?.Preferred_Location || '');
             formData.append('current_monthly_income', userEdit?.Current_Monthly_Income || '');
@@ -1309,17 +1342,14 @@ export default function ProfileEdit() {
             case 'avg_km_run':
                 return (<View style={styles.stepContent}><View style={styles.gridContainer}>{translatedAvgKmRanges.map(k => (<TouchableOpacity key={k.value} style={[styles.gridTile, userEdit?.avg_km_run === k.value && styles.gridTileSelected]} onPress={() => dispatch(userEditAction({ ...userEdit, avg_km_run: k.value }))}><Text style={[styles.gridTileText, userEdit?.avg_km_run === k.value && styles.gridTileTextSelected]}>{k.label}</Text></TouchableOpacity>))}</View></View>);
 
-            case 'operational_segment':
-                return (<View style={styles.stepContent}>{translatedOperationalSegments.map(s => { const selected = userEdit?.operational_segment?.split(',')?.includes(s.value); return (<TouchableOpacity key={s.value} style={[styles.radioBox, selected && styles.radioBoxSelected, { marginBottom: 10 }]} onPress={() => toggleMultiSelect('operational_segment', s.value)}><View style={[styles.radioCircle, selected && styles.radioCircleSelected]}>{selected && <View style={styles.radioDot} />}</View><Text style={[styles.radioText, selected && { color: colors.royalBlue }]}>{s.label}</Text></TouchableOpacity>); })}</View>);
-
             case 'transport_details':
                 return (
                     <View style={styles.stepContent}>
                         <Text style={styles.inputLabel}>{t('transportName') || 'Transport Name'} <Text style={styles.requiredAsterisk}>*</Text></Text>
                         <TextInput style={styles.textInput} placeholder={t('enterTransportName')} placeholderTextColor="#999" value={userEdit?.transport_name || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, transport_name: text }))} />
-                        <Space height={16} />
+                        {/* <Space height={16} />
                         <Text style={styles.inputLabel}>{t('referralCode') || 'Referral Code'}</Text>
-                        <TextInput style={styles.textInput} placeholder={t('enterReferralCode')} placeholderTextColor="#999" value={userEdit?.Referral_Code || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, Referral_Code: text }))} />
+                        <TextInput style={styles.textInput} placeholder={t('enterReferralCode')} placeholderTextColor="#999" value={userEdit?.Referral_Code || ''} onChangeText={(text) => dispatch(userEditAction({ ...userEdit, Referral_Code: text }))} /> */}
                     </View>
                 );
 

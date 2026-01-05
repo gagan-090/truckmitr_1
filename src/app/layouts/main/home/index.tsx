@@ -31,7 +31,6 @@ import moment from 'moment';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
 import LottieView from 'lottie-react-native';
 import { useTranslation } from 'react-i18next';
-import { TourGuideZone, } from 'rn-tourguide';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import WelcomeModal from '@truckmitr/src/app/components/welcome-modal';
 
@@ -802,8 +801,7 @@ const Home = React.forwardRef((props, ref) => {
     React.useImperativeHandle(ref, () => ({
         scrollToTop: (): Promise<void> => {
             return new Promise(async (resolve) => {
-                const value = await AsyncStorage.getItem('@stop_tour_guide');
-                if (isDriver && value !== 'STOP') {
+                if (isDriver) {
                     scrollViewRef.current?.scrollTo({ y: 200, animated: true });
                     setTimeout(() => resolve(), 200); // Wait for scroll animation
                 } else {
@@ -1112,7 +1110,7 @@ const Home = React.forwardRef((props, ref) => {
                 {/* Dashboard and Join WhatsApp - Row */}
                 <View style={{ flexDirection: 'row', paddingHorizontal: 14, marginTop: responsiveHeight(3), gap: 10 }}>
                     {/* Dashboard Card */}
-                    <TourGuideZone zone={1} text={t('hereYouCanSeeTheTotalNumberOfTrainingAndJobs')} borderRadius={16} style={{ flex: 1 }}>
+                    <View style={{ flex: 1 }}>
                         <TouchableOpacity
                             onPress={_navigateDashboard}
                             activeOpacity={.7}
@@ -1133,7 +1131,7 @@ const Home = React.forwardRef((props, ref) => {
                             </View>
                             <Feather name="chevron-right" size={18} color="#fff" />
                         </TouchableOpacity>
-                    </TourGuideZone>
+                    </View>
 
                     {/* Join WhatsApp Button */}
                     {whatsapp_link && <TouchableOpacity
@@ -1188,32 +1186,32 @@ const Home = React.forwardRef((props, ref) => {
 
                     {/* Jobs Row: Available Jobs, Applied Jobs, Jobs That Suit You */}
                     <View style={{ flexDirection: 'row', paddingHorizontal: responsiveWidth(4), paddingVertical: responsiveWidth(3) }}>
-                        <TourGuideZone zone={3} text={t('hereYouCanSeeAllTheJobsAndApply')} borderRadius={16} style={{ flex: 1 }}>
+                        <View style={{ flex: 1 }}>
                             <TouchableOpacity onPress={_navigateAvailableJobs} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                                 <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                     <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3281/3281289.png' }} />
                                     <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('allAvailableJob', 'All Available Jobs')}</Text>
                                 </View>
                             </TouchableOpacity>
-                        </TourGuideZone>
+                        </View>
                         <Space width={responsiveFontSize(1.5)} />
-                        <TourGuideZone zone={5} text={t('hereYouCanSeeTheListOfJobsYouHaveAppliedFor')} borderRadius={16} style={{ flex: 1 }}>
+                        <View style={{ flex: 1 }}>
                             <TouchableOpacity onPress={_navigateAppliedJobs} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                                 <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                     <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/11651/11651437.png' }} />
                                     <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('appliedJobs', 'Applied Jobs')}</Text>
                                 </View>
                             </TouchableOpacity>
-                        </TourGuideZone>
+                        </View>
                         <Space width={responsiveFontSize(1.5)} />
-                        <TourGuideZone zone={4} text={t('hereYouCanSeeJobsMatchingYourProfile')} borderRadius={16} style={{ flex: 1 }}>
+                        <View style={{ flex: 1 }}>
                             <TouchableOpacity onPress={_navigateSuitsJobs} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                                 <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                     <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2966/2966773.png' }} />
                                     <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('jobsThatSuitYou', 'Job That Suits You')}</Text>
                                 </View>
                             </TouchableOpacity>
-                        </TourGuideZone>
+                        </View>
                     </View>
 
                     {/* Group 2: Training & Certificate */}
@@ -1223,32 +1221,32 @@ const Home = React.forwardRef((props, ref) => {
                     </View>
                     {/* Training Row: Training Videos, Health & Hygiene, Quiz Result */}
                     <View style={{ flexDirection: 'row', paddingHorizontal: responsiveWidth(4), paddingVertical: responsiveWidth(3) }}>
-                        <TourGuideZone zone={2} text={t('hereYouCanWatchAllTheTrainingVideosAndAnswerTheQuiz')} borderRadius={16} style={{ flex: 1 }}>
+                        <View style={{ flex: 1 }}>
                             <TouchableOpacity onPress={_navigateTraning} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                                 <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                     <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/11825/11825158.png' }} />
                                     <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('trainingVideo', 'Training Video')}</Text>
                                 </View>
                             </TouchableOpacity>
-                        </TourGuideZone>
+                        </View>
                         <Space width={responsiveFontSize(1.5)} />
-                        <TourGuideZone zone={6} text={t('hereYouCanWatchTrainingVideosRelatedToHealthAndHygiene')} borderRadius={16} style={{ flex: 1 }}>
+                        <View style={{ flex: 1 }}>
                             <TouchableOpacity onPress={_navigateHealthHygiene} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                                 <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                     <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2382/2382461.png' }} />
                                     <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('healthHygieneVideo', 'Health & Hygiene Video')}</Text>
                                 </View>
                             </TouchableOpacity>
-                        </TourGuideZone>
+                        </View>
                         <Space width={responsiveFontSize(1.5)} />
-                        <TourGuideZone zone={7} text={t('hereYouCanSeeTheResultOfTheQuizYouAnswered')} borderRadius={16} style={{ flex: 1 }}>
+                        <View style={{ flex: 1 }}>
                             <TouchableOpacity onPress={_navigateQuizResult} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                                 <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                     <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/9913/9913576.png' }} />
                                     <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('quizResultCertificate', 'Quiz Result & Certificate')}</Text>
                                 </View>
                             </TouchableOpacity>
-                        </TourGuideZone>
+                        </View>
                     </View>
 
                     {/* Group 3: Get Verified */}
@@ -1258,14 +1256,14 @@ const Home = React.forwardRef((props, ref) => {
                     </View>
                     {/* Verified Row: ID Check, Court Check, Digital Address */}
                     <View style={{ flexDirection: 'row', paddingHorizontal: responsiveWidth(4), paddingVertical: responsiveWidth(3) }}>
-                        <TourGuideZone zone={9} text={t('driverCanVerifyHere')} borderRadius={16} style={{ flex: 1 }}>
+                        <View style={{ flex: 1 }}>
                             <TouchableOpacity onPress={_navigateIdCheck} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                                 <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                     <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/1077/1077063.png' }} />
                                     <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('getIdCheck', 'Get ID Check')}</Text>
                                 </View>
                             </TouchableOpacity>
-                        </TourGuideZone>
+                        </View>
                         <Space width={responsiveFontSize(1.5)} />
                         <TouchableOpacity onPress={_navigateCourtCheck} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
@@ -1289,14 +1287,14 @@ const Home = React.forwardRef((props, ref) => {
                     </View>
                     {/* Communication Row: Transporter Invitations, Video Interview */}
                     <View style={{ flexDirection: 'row', paddingHorizontal: responsiveWidth(4), paddingVertical: responsiveWidth(3) }}>
-                        <TourGuideZone zone={8} text={t('hereYouCanSeeTheInvitationOfTheTransporter')} borderRadius={16} style={{ flex: 1 }}>
+                        <View style={{ flex: 1 }}>
                             <TouchableOpacity onPress={_navigateJobInvitationsList} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                                 <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                     <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/6003/6003724.png' }} />
                                     <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('jobInviteByTransporter', 'Job Invite by Transporter')}</Text>
                                 </View>
                             </TouchableOpacity>
-                        </TourGuideZone>
+                        </View>
                         <Space width={responsiveFontSize(1.5)} />
                         <TouchableOpacity onPress={_navigateVideoInterviewInfo} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
@@ -1433,32 +1431,32 @@ const Home = React.forwardRef((props, ref) => {
                     </View>
                     {/* Row: Add Jobs, View Jobs, View Applications */}
                     <View style={{ flexDirection: 'row', paddingHorizontal: responsiveWidth(4), paddingVertical: responsiveWidth(3) }}>
-                        <TourGuideZone zone={1} text={t('hereYouCanPostDriverJobs')} borderRadius={16} style={{ flex: 1 }}>
+                        <View style={{ flex: 1 }}>
                             <TouchableOpacity onPress={_navigateAddJob} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                                 <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                     <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/11231/11231532.png' }} />
                                     <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t(`addJobs`)}</Text>
                                 </View>
                             </TouchableOpacity>
-                        </TourGuideZone>
+                        </View>
                         <Space width={responsiveFontSize(1.5)} />
-                        <TourGuideZone zone={2} text={t('hereYouCanSeeAllThePostedJobs')} borderRadius={16} style={{ flex: 1 }}>
+                        <View style={{ flex: 1 }}>
                             <TouchableOpacity onPress={_navigateViewJobs} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                                 <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                     <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2966/2966773.png' }} />
                                     <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t(`viewJobs`)}</Text>
                                 </View>
                             </TouchableOpacity>
-                        </TourGuideZone>
+                        </View>
                         <Space width={responsiveFontSize(1.5)} />
-                        <TourGuideZone zone={3} text={t('hereYouCanSeeTheListOfDriversWhoHaveAppliedForTheJobs')} borderRadius={16} style={{ flex: 1 }}>
+                        <View style={{ flex: 1 }}>
                             <TouchableOpacity onPress={_navigateAppliedJobsTransporter} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                                 <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                     <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/11651/11651437.png' }} />
                                     <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t(`viewApplications`)}</Text>
                                 </View>
                             </TouchableOpacity>
-                        </TourGuideZone>
+                        </View>
                     </View>
 
                     {/* Driver Management Section */}
@@ -1469,32 +1467,32 @@ const Home = React.forwardRef((props, ref) => {
 
                     {/* Row 1: Add Driver, Driver List, Verify Driver */}
                     <View style={{ flexDirection: 'row', paddingHorizontal: responsiveWidth(4), paddingVertical: responsiveWidth(3) }}>
-                        <TourGuideZone zone={5} text={t('hereYouCanAddTheDriversYouWantTrainingFor')} borderRadius={16} style={{ flex: 1 }}>
+                        <View style={{ flex: 1 }}>
                             <TouchableOpacity onPress={_navigateAddDriver} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                                 <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                     <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/6008/6008817.png' }} />
                                     <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t(`addDriver`)}</Text>
                                 </View>
                             </TouchableOpacity>
-                        </TourGuideZone>
+                        </View>
                         <Space width={responsiveFontSize(1.5)} />
-                        <TourGuideZone zone={6} text={t('hereYouCanSeeTheListOfDriversAddedForTraining')} borderRadius={16} style={{ flex: 1 }}>
+                        <View style={{ flex: 1 }}>
                             <TouchableOpacity onPress={_navigateDriverList} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                                 <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                     <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/6012/6012282.png' }} />
                                     <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t(`driverList`)}</Text>
                                 </View>
                             </TouchableOpacity>
-                        </TourGuideZone>
+                        </View>
                         <Space width={responsiveFontSize(1.5)} />
-                        <TourGuideZone zone={7} text={t('hereYouCanVerifyYourDrivers')} borderRadius={16} style={{ flex: 1 }}>
+                        <View style={{ flex: 1 }}>
                             <TouchableOpacity onPress={_navigateTranspoerterVerification} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                                 <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                     <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/837/837732.png' }} />
                                     <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t(`getYourDriverVerified`)}</Text>
                                 </View>
                             </TouchableOpacity>
-                        </TourGuideZone>
+                        </View>
                     </View>
 
 
