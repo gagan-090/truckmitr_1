@@ -483,321 +483,7 @@ export default function TransporterAppliedJob() {
     };
 
 
-    const DriverApplicationCard = ({ item }: any) => {
-        const driver = item?.driver_details;
-
-        // ❌ HARD STOP: no TM ID → no UI
-        if (!driver?.unique_id) {
-            return null;
-        }
-
-        const driverName = driver?.driver_name || driver?.name || 'Driver';
-        const tmId = driver.unique_id;
-        const rating = Number(driver?.rating) || 0;
-        const reviewCount = driver?.review_count || 0;
-        const driverType = driver?.driver_type || 'Driver';
-        const city = driver?.city || '—';
-        const state = driver?.states || driver?.state || '—';
-        const drivingExp = driver?.driving_exp || driver?.driving_experience || driver?.Driving_Experience || '—';
-        const licenseType = driver?.license_type || driver?.License_Type || '—';
-        const licenseNo = driver?.license_no || driver?.License_No || '';
-        const licenseExpiry = driver?.license_expiry || driver?.License_Expiry
-            ? moment(driver?.license_expiry || driver?.License_Expiry).format('DD MMM YYYY')
-            : '—';
-
-        const profileImage =
-            driver?.driver_picture
-                ? `${BASE_URL}${driver.driver_picture}`
-                : driver?.images
-                    ? `${BASE_URL}public/${driver.images}`
-                    : 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
-
-        const tag = getDriverTag(driver);
-
-        // Detail Row Component
-        const DetailRow = ({ label, value, icon }: { label: string; value: string; icon?: string }) => (
-            <View style={{ flex: 1, marginBottom: 10 }}>
-                <Text style={{ fontSize: responsiveFontSize(1.3), color: colors.blackOpacity(0.5), marginBottom: 2 }}>
-                    {label}
-                </Text>
-                <Text style={{ fontSize: responsiveFontSize(1.5), color: colors.black, fontWeight: '500' }} numberOfLines={1}>
-                    {value}
-                </Text>
-            </View>
-        );
-
-        return (
-            <View
-                style={{
-                    backgroundColor: colors.white,
-                    borderRadius: 16,
-                    padding: responsiveFontSize(1.8),
-                    marginBottom: responsiveFontSize(2),
-                    borderWidth: 1,
-                    borderColor: colors.blackOpacity(0.06),
-                    ...shadow,
-                }}
-            >
-                {/* HEADER ROW - Profile Photo, Name, Tag */}
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                    {/* Profile Photo */}
-                    <TouchableOpacity
-                        activeOpacity={0.8}
-                        onPress={() => openDriverProfileModal(item)}
-                        style={{ position: 'relative' }}
-                    >
-                        <Image
-                            source={{ uri: profileImage }}
-                            style={{
-                                height: 64,
-                                width: 64,
-                                borderRadius: 32,
-                                borderWidth: 2,
-                                borderColor: tag.color,
-                            }}
-                        />
-                        {/* Name Tag Badge on Profile */}
-                        <View style={{
-                            position: 'absolute',
-                            bottom: -4,
-                            alignSelf: 'center',
-                            backgroundColor: tag.color,
-                            paddingHorizontal: 8,
-                            paddingVertical: 2,
-                            borderRadius: 10,
-                        }}>
-                            <Text style={{ color: colors.white, fontSize: 9, fontWeight: '700' }}>
-                                {tag.label}
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
-
-                    {/* Name and Rating Info */}
-                    <View style={{ flex: 1, marginLeft: 14 }}>
-                        <Text style={{ fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.black }} numberOfLines={1}>
-                            {driverName}
-                        </Text>
-                        <Text style={{ fontSize: responsiveFontSize(1.4), color: colors.blackOpacity(0.6), marginTop: 2 }}>
-                            {tmId}
-                        </Text>
-
-                        {/* Rating Row */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12 }}>
-                                <FontAwesome name="star" size={12} color="#F59E0B" />
-                                <Text style={{ marginLeft: 4, fontSize: 12, fontWeight: '600', color: '#92400E' }}>
-                                    {rating.toFixed(1)}
-                                </Text>
-                                {reviewCount > 0 && (
-                                    <Text style={{ fontSize: 11, color: '#92400E', marginLeft: 2 }}>
-                                        ({reviewCount})
-                                    </Text>
-                                )}
-                            </View>
-                            <View style={{
-                                marginLeft: 8,
-                                backgroundColor: colors.blueOpacity(0.1),
-                                paddingHorizontal: 8,
-                                paddingVertical: 3,
-                                borderRadius: 12
-                            }}>
-                                <Text style={{ fontSize: 11, fontWeight: '500', color: colors.royalBlue }}>
-                                    {driverType}
-                                </Text>
-                            </View>
-                        </View>
-                    </View>
-                </View>
-
-                {/* DIVIDER */}
-                <View style={{ height: 1, backgroundColor: colors.blackOpacity(0.08), marginVertical: 14 }} />
-
-                {/* DETAILS GRID - 2 Column Layout */}
-                <View style={{ flexDirection: 'row' }}>
-                    <DetailRow label={t('city')} value={city} />
-                    <DetailRow label={t('state')} value={state} />
-                </View>
-                <View style={{ flexDirection: 'row' }}>
-                    <DetailRow label={t('drivingExperience') || 'Experience'} value={drivingExp} />
-                    <DetailRow label={t('licenseType') || 'License Type'} value={licenseType} />
-                </View>
-                <View style={{ flexDirection: 'row' }}>
-                    <DetailRow label={t('licenseNo') || 'License No.'} value={maskLicense(licenseNo)} />
-                    <DetailRow label={t('licenseExpiry') || 'License Expiry'} value={licenseExpiry} />
-                </View>
-
-                {/* ACTION BUTTONS */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
-                    {item?.current_status === 'Accepted' ? (
-                        item?.interview_at ? (
-                            (() => {
-                                const isTimeForInterview = moment().isSameOrAfter(moment(item?.interview_at));
-                                return (
-                                    <TouchableOpacity
-                                        activeOpacity={isTimeForInterview ? 0.8 : 1}
-                                        onPress={() => {
-                                            if (isTimeForInterview) {
-                                                setSelectedDriver(item);
-                                                setShowVideoInterviewModal(true);
-                                            }
-                                        }}
-                                        style={{ flex: 1 }}
-                                    >
-                                        <LinearGradient
-                                            colors={isTimeForInterview ? ['#8B5CF6', '#6D28D9'] : ['#1E5EFF', '#3B82F6']}
-                                            start={{ x: 0, y: 0 }}
-                                            end={{ x: 1, y: 0 }}
-                                            style={{
-                                                height: 48,
-                                                borderRadius: 12,
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                flexDirection: 'row',
-                                                paddingHorizontal: 12,
-                                            }}
-                                        >
-                                            <Ionicons name="videocam" size={18} color={colors.white} style={{ marginRight: 8 }} />
-                                            <View>
-                                                <Text style={{ color: colors.white, fontWeight: '600', fontSize: responsiveFontSize(1.3) }}>
-                                                    {isTimeForInterview
-                                                        ? (t('startInterview') || 'Start Interview')
-                                                        : (t('interviewScheduled') || 'Interview Scheduled')}
-                                                </Text>
-                                                <Text style={{ color: colors.white, fontWeight: '700', fontSize: responsiveFontSize(1.5) }}>
-                                                    {moment(item?.interview_at).format('DD MMM, hh:mm A')}
-                                                </Text>
-                                            </View>
-                                        </LinearGradient>
-                                    </TouchableOpacity>
-                                );
-                            })()
-                        ) : (
-                            <TouchableOpacity
-                                activeOpacity={1}
-                                style={{ flex: 1 }}
-                            >
-                                <LinearGradient
-                                    colors={['#10B981', '#059669']}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 0 }}
-                                    style={{
-                                        height: 44,
-                                        borderRadius: 12,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        flexDirection: 'row',
-                                        opacity: 0.9
-                                    }}
-                                >
-                                    <Ionicons name="checkmark-circle" size={18} color={colors.white} style={{ marginRight: 6 }} />
-                                    <Text style={{ color: colors.white, fontWeight: '600', fontSize: responsiveFontSize(1.6) }}>
-                                        {t('accepted')}
-                                    </Text>
-                                </LinearGradient>
-                            </TouchableOpacity>
-                        )
-                    ) : item?.current_status === 'Rejected' ? (
-                        <TouchableOpacity
-                            activeOpacity={1}
-                            style={{ flex: 1 }}
-                        >
-                            <LinearGradient
-                                colors={['#EF4444', '#DC2626']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={{
-                                    height: 44,
-                                    borderRadius: 12,
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    flexDirection: 'row',
-                                    opacity: 0.9
-                                }}
-                            >
-                                <Ionicons name="close-circle" size={18} color={colors.white} style={{ marginRight: 6 }} />
-                                <Text style={{ color: colors.white, fontWeight: '600', fontSize: responsiveFontSize(1.6) }}>
-                                    {t('rejected') || 'Rejected'}
-                                </Text>
-                            </LinearGradient>
-                        </TouchableOpacity>
-                    ) : (
-                        <>
-                            <TouchableOpacity
-                                onPress={() => setrejectJobId(item.application_id)}
-                                style={{ flex: 1, marginRight: 12 }}
-                            >
-                                <LinearGradient
-                                    colors={['#FF6B6B', '#E63946']}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 0 }}
-                                    style={{
-                                        height: 44,
-                                        borderRadius: 12,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        flexDirection: 'row',
-                                    }}
-                                >
-                                    <Ionicons name="close-circle" size={18} color={colors.white} style={{ marginRight: 6 }} />
-                                    <Text style={{ color: colors.white, fontWeight: '600', fontSize: responsiveFontSize(1.6) }}>
-                                        {t('reject')}
-                                    </Text>
-                                </LinearGradient>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                onPress={() => setacceptJobId(item.application_id)}
-                                style={{ flex: 1 }}
-                            >
-                                <LinearGradient
-                                    colors={['#10B981', '#059669']}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 0 }}
-                                    style={{
-                                        height: 44,
-                                        borderRadius: 12,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        flexDirection: 'row',
-                                    }}
-                                >
-                                    <Ionicons name="checkmark-circle" size={18} color={colors.white} style={{ marginRight: 6 }} />
-                                    <Text style={{ color: colors.white, fontWeight: '600', fontSize: responsiveFontSize(1.6) }}>
-                                        {t('accept')}
-                                    </Text>
-                                </LinearGradient>
-                            </TouchableOpacity>
-                        </>
-                    )}
-                </View>
-
-                {/* VIEW DRIVER DETAILS */}
-                <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => openDriverProfileModal(item)}
-                    style={{
-                        marginTop: 10,
-                        height: 44,
-                        borderRadius: 12,
-                        backgroundColor: colors.blueOpacity(0.08),
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexDirection: 'row',
-                        borderWidth: 1,
-                        borderColor: colors.blueOpacity(0.15),
-                    }}
-                >
-                    <Ionicons name="person-circle-outline" size={20} color={colors.royalBlue} style={{ marginRight: 8 }} />
-                    <Text style={{ color: colors.royalBlue, fontWeight: '600', fontSize: responsiveFontSize(1.6) }}>
-                        {t('viewDriverDetails')}
-                    </Text>
-                </TouchableOpacity>
-            </View>
-        );
-    };
-
-
-    // const DriverApplicationCard = ({ item, index = 0 }: any) => {
+    // const DriverApplicationCard = ({ item }: any) => {
     //     const driver = item?.driver_details;
 
     //     // ❌ HARD STOP: no TM ID → no UI
@@ -819,47 +505,14 @@ export default function TransporterAppliedJob() {
     //         ? moment(driver?.license_expiry || driver?.License_Expiry).format('DD MMM YYYY')
     //         : '—';
 
-    //     // Training status - check if training is fully completed
-    //     const trainingCompleted = driver?.training_completed || driver?.is_training_completed || driver?.training_status === 'completed' || false;
+    //     const profileImage =
+    //         driver?.driver_picture
+    //             ? `${BASE_URL}${driver.driver_picture}`
+    //             : driver?.images
+    //                 ? `${BASE_URL}public/${driver.images}`
+    //                 : 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
 
-    //     // Profile image - use UI Avatar if no image available
-    //     const profileImageUri = driver?.driver_picture
-    //         ? `${BASE_URL}${driver.driver_picture}`
-    //         : driver?.images
-    //             ? `${BASE_URL}public/${driver.images}`
-    //             : `https://ui-avatars.com/api/?name=${encodeURIComponent(driverName)}&background=0D8ABC&color=fff&size=128`;
-
-    //     // Debug log to see subscription data at both level
-    //     // 
-
-    //     console.log('Driver subscription data:', {
-    //         name: driverName,
-    //         // Check item level (application level)
-    //         item_subscription_amount: item?.subscription_amount,
-    //         item_amount: item?.amount,
-    //         item_plan_amount: item?.plan_amount,
-    //         item_payment_type: item?.payment_type,
-    //         item_subscription_plan_name: item?.subscription_plan_name,
-    //         // Check driver_details level
-    //         driver_subscription_amount: driver?.subscription_amount,
-    //         driver_amount: driver?.amount,
-    //         driver_payment_type: driver?.payment_type,
-    //         driver_subscription_plan_name: driver?.subscription_plan_name,
-    //     });
-
-    //     // Pass full item to check subscription at both levels
-    //     const tag = getDriverTag(item, index);
-
-    //     // Profile completion - use available data or fallback based on status
-    //     const profileCompletion = driver?.profile_completion ||
-    //         (tag.label === 'Trusted Driver' ? 100 :
-    //             tag.label === 'Verified Driver' ? 85 :
-    //                 tag.label === 'Job Ready Driver' ? 60 : 40);
-
-    //     // Circular Progress Constants
-    //     const radius = 21;
-    //     const circumference = 2 * Math.PI * radius;
-    //     const strokeDashoffset = circumference - (profileCompletion / 100) * circumference;
+    //     const tag = getDriverTag(driver);
 
     //     // Detail Row Component
     //     const DetailRow = ({ label, value, icon }: { label: string; value: string; icon?: string }) => (
@@ -874,233 +527,104 @@ export default function TransporterAppliedJob() {
     //     );
 
     //     return (
-    //         <View style={{
-    //             backgroundColor: colors.white,
-    //             borderRadius: 16,
-    //             padding: 12,
-    //             marginBottom: 16,
-    //             ...shadow,
-    //             shadowColor: colors.blackOpacity(0.1),
-    //             marginHorizontal: 2,
-    //         }}>
-    //             {/* Status Badge - Top Right */}
-    //             <View style={{
-    //                 position: 'absolute',
-    //                 top: 12,
-    //                 right: 12,
-    //                 backgroundColor: tag.color,
-    //                 borderRadius: 4,
-    //                 paddingHorizontal: 8,
-    //                 paddingVertical: 4,
-    //                 flexDirection: 'row',
-    //                 alignItems: 'center',
-    //                 zIndex: 1
-    //             }}>
-    //                 <MaterialIcons name="verified-user" size={10} color="#FFFFFF" style={{ marginRight: 4 }} />
-    //                 <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '700' }}>
-    //                     {tag.label}
-    //                 </Text>
-    //             </View>
-    //             {/* UPPER SECTION: Profile + Name + Ribbon Badge */}
+    //         <View
+    //             style={{
+    //                 backgroundColor: colors.white,
+    //                 borderRadius: 16,
+    //                 padding: responsiveFontSize(1.8),
+    //                 marginBottom: responsiveFontSize(2),
+    //                 borderWidth: 1,
+    //                 borderColor: colors.blackOpacity(0.06),
+    //                 ...shadow,
+    //             }}
+    //         >
+    //             {/* HEADER ROW - Profile Photo, Name, Tag */}
     //             <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-    //                 {/* Profile Image Column */}
-    //                 <View style={{ alignItems: 'center', marginRight: 6 }}>
-    //                     <TouchableOpacity
-    //                         activeOpacity={0.9}
-    //                         onPress={() => openDriverProfileModal(item)}
-    //                         style={{ alignItems: 'center', justifyContent: 'center', width: 48, height: 48 }}
-    //                     >
-    //                         {/* SVG Ring */}
-    //                         <View style={{ position: 'absolute' }}>
-    //                             <Svg width={48} height={48} viewBox="0 0 48 48">
-    //                                 <Circle cx="24" cy="24" r={radius} stroke="#E5E5E5" strokeWidth="2" fill="none" />
-    //                                 <Circle cx="24" cy="24" r={radius} stroke="#F5A623" strokeWidth="2" fill="none" strokeDasharray={`${circumference}`} strokeDashoffset={`${strokeDashoffset}`} strokeLinecap="round" rotation="-90" origin="24, 24" />
-    //                             </Svg>
-    //                         </View>
-
-    //                         <Image source={DEFAULT_MALE_PROFILE} style={{ height: 38, width: 38, borderRadius: 19, resizeMode: 'cover' }} />
-
-    //                         {/* Percentage Badge */}
-    //                         <View style={{ position: 'absolute', bottom: -3, backgroundColor: '#F5A623', borderRadius: 8, paddingHorizontal: 4, paddingVertical: 1, borderWidth: 1, borderColor: '#fff', zIndex: 10 }}>
-    //                             <Text style={{ fontSize: 8, color: '#fff', fontWeight: 'bold' }}>{profileCompletion}%</Text>
-    //                         </View>
-    //                     </TouchableOpacity>
-
-    //                     {/* Star Rating under profile */}
-    //                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-    //                         {[1, 2, 3, 4, 5].map((star) => (
-    //                             <FontAwesome key={star} name={star <= Math.round(rating) ? 'star' : 'star-o'} size={10} color="#F5A623" style={{ marginHorizontal: 0.5 }} />
-    //                         ))}
+    //                 {/* Profile Photo */}
+    //                 <TouchableOpacity
+    //                     activeOpacity={0.8}
+    //                     onPress={() => openDriverProfileModal(item)}
+    //                     style={{ position: 'relative' }}
+    //                 >
+    //                     <Image
+    //                         source={{ uri: profileImage }}
+    //                         style={{
+    //                             height: 64,
+    //                             width: 64,
+    //                             borderRadius: 32,
+    //                             borderWidth: 2,
+    //                             borderColor: tag.color,
+    //                         }}
+    //                     />
+    //                     {/* Name Tag Badge on Profile */}
+    //                     <View style={{
+    //                         position: 'absolute',
+    //                         bottom: -4,
+    //                         alignSelf: 'center',
+    //                         backgroundColor: tag.color,
+    //                         paddingHorizontal: 8,
+    //                         paddingVertical: 2,
+    //                         borderRadius: 10,
+    //                     }}>
+    //                         <Text style={{ color: colors.white, fontSize: 9, fontWeight: '700' }}>
+    //                             {tag.label}
+    //                         </Text>
     //                     </View>
-    //                 </View>
+    //                 </TouchableOpacity>
 
     //                 {/* Name and Rating Info */}
-    //                 <View style={{ flex: 1, marginLeft: 4 }}>
-    //                     {/* Name */}
-    //                     <Text style={{
-    //                         fontSize: 14,
-    //                         fontWeight: '600',
-    //                         color: '#222222',
-    //                     }} numberOfLines={1}>
+    //                 <View style={{ flex: 1, marginLeft: 14 }}>
+    //                     <Text style={{ fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.black }} numberOfLines={1}>
     //                         {driverName}
     //                     </Text>
-
-    //                     {/* TM ID */}
-    //                     <Text style={{ fontSize: 10, color: '#666666', marginTop: 0 }}>
+    //                     <Text style={{ fontSize: responsiveFontSize(1.4), color: colors.blackOpacity(0.6), marginTop: 2 }}>
     //                         {tmId}
     //                     </Text>
 
-    //                     {/* Training Row - Diamond if completed + Experience */}
-    //                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-    //                         {trainingCompleted ? (
-    //                             <>
-    //                                 <Text style={{ fontSize: 12 }}>💎</Text>
-    //                                 <Text style={{ marginLeft: 3, fontSize: 12, fontWeight: '600', color: '#7C3AED' }}>
-    //                                     Training Complete
+    //                     {/* Rating Row */}
+    //                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+    //                         <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12 }}>
+    //                             <FontAwesome name="star" size={12} color="#F59E0B" />
+    //                             <Text style={{ marginLeft: 4, fontSize: 12, fontWeight: '600', color: '#92400E' }}>
+    //                                 {rating.toFixed(1)}
+    //                             </Text>
+    //                             {reviewCount > 0 && (
+    //                                 <Text style={{ fontSize: 11, color: '#92400E', marginLeft: 2 }}>
+    //                                     ({reviewCount})
     //                                 </Text>
-    //                             </>
-    //                         ) : (
-    //                             <View style={{
-    //                                 flexDirection: 'row',
-    //                                 alignItems: 'center',
-    //                                 backgroundColor: '#E0F2FE',
-    //                                 paddingHorizontal: 8,
-    //                                 paddingVertical: 2,
-    //                                 borderRadius: 12
-    //                             }}>
-    //                                 <Text style={{ fontSize: 11 }}>💎</Text>
-    //                                 <Text style={{ marginLeft: 3, fontSize: 11, fontWeight: '600', color: '#0284C7' }}>
-    //                                     Diamond
-    //                                 </Text>
-    //                             </View>
-    //                         )}
-    //                         <Text style={{ marginHorizontal: 6, fontSize: 13, color: '#222222' }}>•</Text>
-    //                         <Text style={{ fontSize: 13, color: '#222222' }}>
-    //                             {drivingExp !== '—' ? `${drivingExp}+ yrs exp` : '8+ yrs exp'}
-    //                         </Text>
-    //                     </View>
-    //                 </View>
-    //             </View >
-
-    //             {/* DETAILS SECTION - Values only on separate lines */}
-    //             <View style={{ marginTop: 8 }}>
-    //                 {/* Location */}
-    //                 <Text style={{ fontSize: 13, color: '#222222', lineHeight: 18 }}>
-    //                     <Text style={{ fontWeight: '500' }}>Location: </Text>
-    //                     {city !== '—' ? city : ''} {city !== '—' && state !== '—' ? ', ' : ''} {state !== '—' ? state : 'N/A'}
-    //                 </Text>
-    //                 {/* License */}
-    //                 <Text style={{ fontSize: 13, color: '#222222', lineHeight: 18 }}>
-    //                     <Text style={{ fontWeight: '500' }}>License: </Text>
-    //                     {licenseType !== '—' ? licenseType : 'HMV'}
-    //                 </Text>
-    //                 {/* Number */}
-    //                 <Text style={{ fontSize: 13, color: '#222222', lineHeight: 18 }}>
-    //                     <Text style={{ fontWeight: '500' }}>License No.: </Text>
-    //                     {licenseNo ? maskLicense(licenseNo) : 'XXXXXX1234'}
-    //                 </Text>
-    //                 {/* Exp */}
-    //                 <Text style={{ fontSize: 13, color: '#222222', lineHeight: 18 }}>
-    //                     <Text style={{ fontWeight: '500' }}>License Exp: </Text>
-    //                     {licenseExpiry !== '—' ? licenseExpiry : '15 Jan 2035'}
-    //                 </Text>
-    //             </View>
-
-    //             {/* VERIFICATION + TRUST ROW - Combined for compact */}
-    //             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, flexWrap: 'wrap' }}>
-    //                 {/* Verification Icons */}
-    //                 {
-    //                     tag.label === 'Verified Driver' ? (
-    //                         <>
-    //                             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
-    //                                 <MaterialIcons name="check-circle" size={14} color="#1FA84F" />
-    //                                 <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>ID</Text>
-    //                             </View>
-    //                             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
-    //                                 <MaterialIcons name="check-circle" size={14} color="#1FA84F" />
-    //                                 <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Face</Text>
-    //                             </View>
-    //                             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
-    //                                 <MaterialIcons name="cancel" size={14} color="#EF4444" />
-    //                                 <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Court</Text>
-    //                             </View>
-    //                             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
-    //                                 <MaterialIcons name="cancel" size={14} color="#EF4444" />
-    //                                 <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Digital Address</Text>
-    //                             </View>
-    //                         </>
-    //                     ) : tag.label === 'Job Ready Driver' ? (
-    //                         <>
-    //                             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
-    //                                 <MaterialIcons name="cancel" size={14} color="#EF4444" />
-    //                                 <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>ID</Text>
-    //                             </View>
-    //                             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
-    //                                 <MaterialIcons name="cancel" size={14} color="#EF4444" />
-    //                                 <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Face</Text>
-    //                             </View>
-    //                             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
-    //                                 <MaterialIcons name="cancel" size={14} color="#EF4444" />
-    //                                 <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Court</Text>
-    //                             </View>
-    //                             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
-    //                                 <MaterialIcons name="cancel" size={14} color="#EF4444" />
-    //                                 <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Digital Address</Text>
-    //                             </View>
-    //                         </>
-    //                     ) : tag.label === 'Trusted Driver' ? (
-    //                         <>
-    //                             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
-    //                                 <MaterialIcons name="check-circle" size={14} color="#1FA84F" />
-    //                                 <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>ID</Text>
-    //                             </View>
-    //                             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
-    //                                 <MaterialIcons name="check-circle" size={14} color="#1FA84F" />
-    //                                 <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Face</Text>
-    //                             </View>
-    //                             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
-    //                                 <MaterialIcons name="check-circle" size={14} color="#1FA84F" />
-    //                                 <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Court</Text>
-    //                             </View>
-    //                             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
-    //                                 <MaterialIcons name="check-circle" size={14} color="#1FA84F" />
-    //                                 <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Digital Address</Text>
-    //                             </View>
-    //                         </>
-    //                     ) : (
-    //                         <>
-    //                             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
-    //                                 <MaterialIcons name="check-circle" size={14} color="#1FA84F" />
-    //                                 <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>ID</Text>
-    //                             </View>
-    //                             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
-    //                                 <MaterialIcons name="check-circle" size={14} color="#1FA84F" />
-    //                                 <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Face</Text>
-    //                             </View>
-    //                             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
-    //                                 <MaterialIcons name="check-circle" size={14} color="#1FA84F" />
-    //                                 <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Address</Text>
-    //                             </View>
-    //                         </>
-    //                     )
-    //                 }
-    //                 {/* Trust Badge - Hide for Verified and Job Ready Driver */}
-    //                 {
-    //                     tag.label !== 'Verified Driver' && tag.label !== 'Job Ready Driver' && (
-    //                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-    //                             <MaterialIcons name="verified-user" size={14} color="#2E7D32" />
-    //                             <Text style={{ marginLeft: 4, fontSize: 12, color: '#2E7D32' }}>
-    //                                 Fully verified
+    //                             )}
+    //                         </View>
+    //                         <View style={{
+    //                             marginLeft: 8,
+    //                             backgroundColor: colors.blueOpacity(0.1),
+    //                             paddingHorizontal: 8,
+    //                             paddingVertical: 3,
+    //                             borderRadius: 12
+    //                         }}>
+    //                             <Text style={{ fontSize: 11, fontWeight: '500', color: colors.royalBlue }}>
+    //                                 {driverType}
     //                             </Text>
     //                         </View>
-    //                     )
-    //                 }
-    //             </View >
+    //                     </View>
+    //                 </View>
+    //             </View>
 
     //             {/* DIVIDER */}
-    //             < View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />
+    //             <View style={{ height: 1, backgroundColor: colors.blackOpacity(0.08), marginVertical: 14 }} />
 
-
+    //             {/* DETAILS GRID - 2 Column Layout */}
+    //             <View style={{ flexDirection: 'row' }}>
+    //                 <DetailRow label={t('city')} value={city} />
+    //                 <DetailRow label={t('state')} value={state} />
+    //             </View>
+    //             <View style={{ flexDirection: 'row' }}>
+    //                 <DetailRow label={t('drivingExperience') || 'Experience'} value={drivingExp} />
+    //                 <DetailRow label={t('licenseType') || 'License Type'} value={licenseType} />
+    //             </View>
+    //             <View style={{ flexDirection: 'row' }}>
+    //                 <DetailRow label={t('licenseNo') || 'License No.'} value={maskLicense(licenseNo)} />
+    //                 <DetailRow label={t('licenseExpiry') || 'License Expiry'} value={licenseExpiry} />
+    //             </View>
 
     //             {/* ACTION BUTTONS */}
     //             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
@@ -1268,9 +792,485 @@ export default function TransporterAppliedJob() {
     //                     {t('viewDriverDetails')}
     //                 </Text>
     //             </TouchableOpacity>
-    //         </View >
+    //         </View>
     //     );
     // };
+
+
+    const DriverApplicationCard = ({ item, index = 0 }: any) => {
+        const driver = item?.driver_details;
+
+        // ❌ HARD STOP: no TM ID → no UI
+        if (!driver?.unique_id) {
+            return null;
+        }
+
+        const driverName = driver?.driver_name || driver?.name || 'Driver';
+        const tmId = driver.unique_id;
+        const rating = Number(driver?.rating) || 0;
+        const reviewCount = driver?.review_count || 0;
+        const driverType = driver?.driver_type || 'Driver';
+        const city = driver?.city || '—';
+        const state = driver?.states || driver?.state || '—';
+        const drivingExp = driver?.driving_exp || driver?.driving_experience || driver?.Driving_Experience || '—';
+        const licenseType = driver?.license_type || driver?.License_Type || '—';
+        const licenseNo = driver?.license_no || driver?.License_No || '';
+        const licenseExpiry = driver?.license_expiry || driver?.License_Expiry
+            ? moment(driver?.license_expiry || driver?.License_Expiry).format('DD MMM YYYY')
+            : '—';
+
+        // Training status - check if training is fully completed
+        const trainingCompleted = driver?.training_completed || driver?.is_training_completed || driver?.training_status === 'completed' || false;
+
+        // Profile image - use UI Avatar if no image available
+        const profileImageUri = driver?.driver_picture
+            ? `${BASE_URL}${driver.driver_picture}`
+            : driver?.images
+                ? `${BASE_URL}public/${driver.images}`
+                : `https://ui-avatars.com/api/?name=${encodeURIComponent(driverName)}&background=0D8ABC&color=fff&size=128`;
+
+        // Debug log to see subscription data at both level
+        // 
+
+        console.log('Driver subscription data:', {
+            name: driverName,
+            // Check item level (application level)
+            item_subscription_amount: item?.subscription_amount,
+            item_amount: item?.amount,
+            item_plan_amount: item?.plan_amount,
+            item_payment_type: item?.payment_type,
+            item_subscription_plan_name: item?.subscription_plan_name,
+            // Check driver_details level
+            driver_subscription_amount: driver?.subscription_amount,
+            driver_amount: driver?.amount,
+            driver_payment_type: driver?.payment_type,
+            driver_subscription_plan_name: driver?.subscription_plan_name,
+        });
+
+        // Pass full item to check subscription at both levels
+        const tag = getDriverTag(item, index);
+
+        // Profile completion - use available data or fallback based on status
+        const profileCompletion = driver?.profile_completion ||
+            (tag.label === 'Trusted Driver' ? 100 :
+                tag.label === 'Verified Driver' ? 85 :
+                    tag.label === 'Job Ready Driver' ? 60 : 40);
+
+        // Circular Progress Constants
+        const radius = 21;
+        const circumference = 2 * Math.PI * radius;
+        const strokeDashoffset = circumference - (profileCompletion / 100) * circumference;
+
+        // Detail Row Component
+        const DetailRow = ({ label, value, icon }: { label: string; value: string; icon?: string }) => (
+            <View style={{ flex: 1, marginBottom: 10 }}>
+                <Text style={{ fontSize: responsiveFontSize(1.3), color: colors.blackOpacity(0.5), marginBottom: 2 }}>
+                    {label}
+                </Text>
+                <Text style={{ fontSize: responsiveFontSize(1.5), color: colors.black, fontWeight: '500' }} numberOfLines={1}>
+                    {value}
+                </Text>
+            </View>
+        );
+
+        return (
+            <View style={{
+                backgroundColor: colors.white,
+                borderRadius: 16,
+                padding: 12,
+                marginBottom: 16,
+                ...shadow,
+                shadowColor: colors.blackOpacity(0.1),
+                marginHorizontal: 2,
+            }}>
+                {/* Status Badge - Top Right */}
+                <View style={{
+                    position: 'absolute',
+                    top: 12,
+                    right: 12,
+                    backgroundColor: tag.color,
+                    borderRadius: 4,
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    zIndex: 1
+                }}>
+                    <MaterialIcons name="verified-user" size={10} color="#FFFFFF" style={{ marginRight: 4 }} />
+                    <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '700' }}>
+                        {tag.label}
+                    </Text>
+                </View>
+                {/* UPPER SECTION: Profile + Name + Ribbon Badge */}
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                    {/* Profile Image Column */}
+                    <View style={{ alignItems: 'center', marginRight: 6 }}>
+                        <TouchableOpacity
+                            activeOpacity={0.9}
+                            onPress={() => openDriverProfileModal(item)}
+                            style={{ alignItems: 'center', justifyContent: 'center', width: 48, height: 48 }}
+                        >
+                            {/* SVG Ring */}
+                            <View style={{ position: 'absolute' }}>
+                                <Svg width={48} height={48} viewBox="0 0 48 48">
+                                    <Circle cx="24" cy="24" r={radius} stroke="#E5E5E5" strokeWidth="2" fill="none" />
+                                    <Circle cx="24" cy="24" r={radius} stroke="#F5A623" strokeWidth="2" fill="none" strokeDasharray={`${circumference}`} strokeDashoffset={`${strokeDashoffset}`} strokeLinecap="round" rotation="-90" origin="24, 24" />
+                                </Svg>
+                            </View>
+
+                            <Image source={DEFAULT_MALE_PROFILE} style={{ height: 38, width: 38, borderRadius: 19, resizeMode: 'cover' }} />
+
+                            {/* Percentage Badge */}
+                            <View style={{ position: 'absolute', bottom: -3, backgroundColor: '#F5A623', borderRadius: 8, paddingHorizontal: 4, paddingVertical: 1, borderWidth: 1, borderColor: '#fff', zIndex: 10 }}>
+                                <Text style={{ fontSize: 8, color: '#fff', fontWeight: 'bold' }}>{profileCompletion}%</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* Star Rating under profile */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <FontAwesome key={star} name={star <= Math.round(rating) ? 'star' : 'star-o'} size={10} color="#F5A623" style={{ marginHorizontal: 0.5 }} />
+                            ))}
+                        </View>
+                    </View>
+
+                    {/* Name and Rating Info */}
+                    <View style={{ flex: 1, marginLeft: 4 }}>
+                        {/* Name */}
+                        <Text style={{
+                            fontSize: 14,
+                            fontWeight: '600',
+                            color: '#222222',
+                        }} numberOfLines={1}>
+                            {driverName}
+                        </Text>
+
+                        {/* TM ID */}
+                        <Text style={{ fontSize: 10, color: '#666666', marginTop: 0 }}>
+                            {tmId}
+                        </Text>
+
+                        {/* Training Row - Diamond if completed + Experience */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                            {trainingCompleted ? (
+                                <>
+                                    <Text style={{ fontSize: 12 }}>💎</Text>
+                                    <Text style={{ marginLeft: 3, fontSize: 12, fontWeight: '600', color: '#7C3AED' }}>
+                                        Training Complete
+                                    </Text>
+                                </>
+                            ) : (
+                                <View style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    backgroundColor: '#E0F2FE',
+                                    paddingHorizontal: 8,
+                                    paddingVertical: 2,
+                                    borderRadius: 12
+                                }}>
+                                    <Text style={{ fontSize: 11 }}>💎</Text>
+                                    <Text style={{ marginLeft: 3, fontSize: 11, fontWeight: '600', color: '#0284C7' }}>
+                                        Diamond
+                                    </Text>
+                                </View>
+                            )}
+                            <Text style={{ marginHorizontal: 6, fontSize: 13, color: '#222222' }}>•</Text>
+                            <Text style={{ fontSize: 13, color: '#222222' }}>
+                                {drivingExp !== '—' ? `${drivingExp}+ yrs exp` : '8+ yrs exp'}
+                            </Text>
+                        </View>
+                    </View>
+                </View >
+
+                {/* DETAILS SECTION - Values only on separate lines */}
+                <View style={{ marginTop: 8 }}>
+                    {/* Location */}
+                    <Text style={{ fontSize: 13, color: '#222222', lineHeight: 18 }}>
+                        <Text style={{ fontWeight: '500' }}>Location: </Text>
+                        {city !== '—' ? city : ''} {city !== '—' && state !== '—' ? ', ' : ''} {state !== '—' ? state : 'N/A'}
+                    </Text>
+                    {/* License */}
+                    <Text style={{ fontSize: 13, color: '#222222', lineHeight: 18 }}>
+                        <Text style={{ fontWeight: '500' }}>License: </Text>
+                        {licenseType !== '—' ? licenseType : 'HMV'}
+                    </Text>
+                    {/* Number */}
+                    <Text style={{ fontSize: 13, color: '#222222', lineHeight: 18 }}>
+                        <Text style={{ fontWeight: '500' }}>License No.: </Text>
+                        {licenseNo ? maskLicense(licenseNo) : 'XXXXXX1234'}
+                    </Text>
+                    {/* Exp */}
+                    <Text style={{ fontSize: 13, color: '#222222', lineHeight: 18 }}>
+                        <Text style={{ fontWeight: '500' }}>License Exp: </Text>
+                        {licenseExpiry !== '—' ? licenseExpiry : '15 Jan 2035'}
+                    </Text>
+                </View>
+
+                {/* VERIFICATION + TRUST ROW - Combined for compact */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, flexWrap: 'wrap' }}>
+                    {/* Verification Icons */}
+                    {
+                        tag.label === 'Verified Driver' ? (
+                            <>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
+                                    <MaterialIcons name="check-circle" size={14} color="#1FA84F" />
+                                    <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>ID</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
+                                    <MaterialIcons name="check-circle" size={14} color="#1FA84F" />
+                                    <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Face</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
+                                    <MaterialIcons name="cancel" size={14} color="#EF4444" />
+                                    <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Court</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
+                                    <MaterialIcons name="cancel" size={14} color="#EF4444" />
+                                    <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Digital Address</Text>
+                                </View>
+                            </>
+                        ) : tag.label === 'Job Ready Driver' ? (
+                            <>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
+                                    <MaterialIcons name="cancel" size={14} color="#EF4444" />
+                                    <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>ID</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
+                                    <MaterialIcons name="cancel" size={14} color="#EF4444" />
+                                    <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Face</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
+                                    <MaterialIcons name="cancel" size={14} color="#EF4444" />
+                                    <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Court</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
+                                    <MaterialIcons name="cancel" size={14} color="#EF4444" />
+                                    <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Digital Address</Text>
+                                </View>
+                            </>
+                        ) : tag.label === 'Trusted Driver' ? (
+                            <>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
+                                    <MaterialIcons name="check-circle" size={14} color="#1FA84F" />
+                                    <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>ID</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
+                                    <MaterialIcons name="check-circle" size={14} color="#1FA84F" />
+                                    <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Face</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
+                                    <MaterialIcons name="check-circle" size={14} color="#1FA84F" />
+                                    <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Court</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
+                                    <MaterialIcons name="check-circle" size={14} color="#1FA84F" />
+                                    <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Digital Address</Text>
+                                </View>
+                            </>
+                        ) : (
+                            <>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
+                                    <MaterialIcons name="check-circle" size={14} color="#1FA84F" />
+                                    <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>ID</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
+                                    <MaterialIcons name="check-circle" size={14} color="#1FA84F" />
+                                    <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Face</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 14 }}>
+                                    <MaterialIcons name="check-circle" size={14} color="#1FA84F" />
+                                    <Text style={{ marginLeft: 3, fontSize: 12, color: '#222222' }}>Address</Text>
+                                </View>
+                            </>
+                        )
+                    }
+                    {/* Trust Badge - Hide for Verified and Job Ready Driver */}
+                    {
+                        tag.label !== 'Verified Driver' && tag.label !== 'Job Ready Driver' && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <MaterialIcons name="verified-user" size={14} color="#2E7D32" />
+                                <Text style={{ marginLeft: 4, fontSize: 12, color: '#2E7D32' }}>
+                                    Fully verified
+                                </Text>
+                            </View>
+                        )
+                    }
+                </View >
+
+                {/* DIVIDER */}
+                < View style={{ height: 1, backgroundColor: '#E5E5E5', marginVertical: 10 }} />
+
+
+
+                {/* ACTION BUTTONS */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+                    {item?.current_status === 'Accepted' ? (
+                        item?.interview_at ? (
+                            (() => {
+                                const isTimeForInterview = moment().isSameOrAfter(moment(item?.interview_at));
+                                return (
+                                    <TouchableOpacity
+                                        activeOpacity={isTimeForInterview ? 0.8 : 1}
+                                        onPress={() => {
+                                            if (isTimeForInterview) {
+                                                setSelectedDriver(item);
+                                                setShowVideoInterviewModal(true);
+                                            }
+                                        }}
+                                        style={{ flex: 1 }}
+                                    >
+                                        <LinearGradient
+                                            colors={isTimeForInterview ? ['#8B5CF6', '#6D28D9'] : ['#1E5EFF', '#3B82F6']}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 0 }}
+                                            style={{
+                                                height: 48,
+                                                borderRadius: 12,
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                flexDirection: 'row',
+                                                paddingHorizontal: 12,
+                                            }}
+                                        >
+                                            <Ionicons name="videocam" size={18} color={colors.white} style={{ marginRight: 8 }} />
+                                            <View>
+                                                <Text style={{ color: colors.white, fontWeight: '600', fontSize: responsiveFontSize(1.3) }}>
+                                                    {isTimeForInterview
+                                                        ? (t('startInterview') || 'Start Interview')
+                                                        : (t('interviewScheduled') || 'Interview Scheduled')}
+                                                </Text>
+                                                <Text style={{ color: colors.white, fontWeight: '700', fontSize: responsiveFontSize(1.5) }}>
+                                                    {moment(item?.interview_at).format('DD MMM, hh:mm A')}
+                                                </Text>
+                                            </View>
+                                        </LinearGradient>
+                                    </TouchableOpacity>
+                                );
+                            })()
+                        ) : (
+                            <TouchableOpacity
+                                activeOpacity={1}
+                                style={{ flex: 1 }}
+                            >
+                                <LinearGradient
+                                    colors={['#10B981', '#059669']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={{
+                                        height: 44,
+                                        borderRadius: 12,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexDirection: 'row',
+                                        opacity: 0.9
+                                    }}
+                                >
+                                    <Ionicons name="checkmark-circle" size={18} color={colors.white} style={{ marginRight: 6 }} />
+                                    <Text style={{ color: colors.white, fontWeight: '600', fontSize: responsiveFontSize(1.6) }}>
+                                        {t('accepted')}
+                                    </Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        )
+                    ) : item?.current_status === 'Rejected' ? (
+                        <TouchableOpacity
+                            activeOpacity={1}
+                            style={{ flex: 1 }}
+                        >
+                            <LinearGradient
+                                colors={['#EF4444', '#DC2626']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={{
+                                    height: 44,
+                                    borderRadius: 12,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexDirection: 'row',
+                                    opacity: 0.9
+                                }}
+                            >
+                                <Ionicons name="close-circle" size={18} color={colors.white} style={{ marginRight: 6 }} />
+                                <Text style={{ color: colors.white, fontWeight: '600', fontSize: responsiveFontSize(1.6) }}>
+                                    {t('rejected') || 'Rejected'}
+                                </Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    ) : (
+                        <>
+                            <TouchableOpacity
+                                onPress={() => setrejectJobId(item.application_id)}
+                                style={{ flex: 1, marginRight: 12 }}
+                            >
+                                <LinearGradient
+                                    colors={['#FF6B6B', '#E63946']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={{
+                                        height: 44,
+                                        borderRadius: 12,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexDirection: 'row',
+                                    }}
+                                >
+                                    <Ionicons name="close-circle" size={18} color={colors.white} style={{ marginRight: 6 }} />
+                                    <Text style={{ color: colors.white, fontWeight: '600', fontSize: responsiveFontSize(1.6) }}>
+                                        {t('reject')}
+                                    </Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                onPress={() => setacceptJobId(item.application_id)}
+                                style={{ flex: 1 }}
+                            >
+                                <LinearGradient
+                                    colors={['#10B981', '#059669']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={{
+                                        height: 44,
+                                        borderRadius: 12,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexDirection: 'row',
+                                    }}
+                                >
+                                    <Ionicons name="checkmark-circle" size={18} color={colors.white} style={{ marginRight: 6 }} />
+                                    <Text style={{ color: colors.white, fontWeight: '600', fontSize: responsiveFontSize(1.6) }}>
+                                        {t('accept')}
+                                    </Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </>
+                    )}
+                </View>
+
+                {/* VIEW DRIVER DETAILS */}
+                <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => openDriverProfileModal(item)}
+                    style={{
+                        marginTop: 10,
+                        height: 44,
+                        borderRadius: 12,
+                        backgroundColor: colors.blueOpacity(0.08),
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexDirection: 'row',
+                        borderWidth: 1,
+                        borderColor: colors.blueOpacity(0.15),
+                    }}
+                >
+                    <Ionicons name="person-circle-outline" size={20} color={colors.royalBlue} style={{ marginRight: 8 }} />
+                    <Text style={{ color: colors.royalBlue, fontWeight: '600', fontSize: responsiveFontSize(1.6) }}>
+                        {t('viewDriverDetails')}
+                    </Text>
+                </TouchableOpacity>
+            </View >
+        );
+    };
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.white }}>

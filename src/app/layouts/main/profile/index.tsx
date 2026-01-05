@@ -1563,11 +1563,11 @@ onPress={()=>{
             onPress={_onPressShareApp}
           />
           <View style={[styles.divider, { backgroundColor: colors.blackOpacity(0.06) }]} />
-          <MenuItem
+          {/* <MenuItem
             icon={<Ionicons name="person-circle-outline" size={20} color={colors.royalBlue} />}
             title={t('shareMyProfile')}
             onPress={_onPressShareProfile}
-          />
+          /> */}
         </CardContainer>
 
         {/* Account Actions Section */}

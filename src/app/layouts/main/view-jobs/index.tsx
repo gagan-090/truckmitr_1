@@ -327,7 +327,7 @@ export default function AvailableJob() {
                     : t('youHaventPostedAnyJobsYetPleaseAddJobNow')
                 }
             </Text>
-            {!search && (
+            {/* {!search && (
                 <TouchableOpacity
                     onPress={_navigateAddJob}
                     activeOpacity={0.8}
@@ -344,7 +344,7 @@ export default function AvailableJob() {
                         {t('addJob')}
                     </Text>
                 </TouchableOpacity>
-            )}
+            )} */}
         </View>
     );
 
