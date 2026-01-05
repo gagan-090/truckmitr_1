@@ -548,9 +548,16 @@ const Home = React.forwardRef((props, ref) => {
             let tier = '';
             // Try to deduce tier from payment_type or plan_name
             const type = (activeSub.payment_type || activeSub.plan_name || '').toUpperCase();
+            const amt = activeSub.amount ? parseFloat(activeSub.amount) : 0;
 
-            // Prioritize explicit name matching first
-            if (type.includes('TRUSTED')) tier = 'Trusted';
+            // Check for legacy subscriptions first (Rs 49 for drivers, Rs 100/99 for transporters)
+            if (amt === 49 || amt === 49.00) {
+                tier = 'Legacy';
+            } else if (amt === 100 || amt === 100.00 || amt === 99 || amt === 99.00) {
+                tier = 'Legacy';
+            }
+            // Prioritize explicit name matching
+            else if (type.includes('TRUSTED')) tier = 'Trusted';
             else if (type.includes('VERIFIED')) tier = 'Verified';
             else if (type.includes('JOB READY') || type.includes('JOBREADY')) tier = 'Job Ready';
             else if (type.includes('STANDARD')) tier = 'Standard';
@@ -558,7 +565,6 @@ const Home = React.forwardRef((props, ref) => {
 
             // Fallback to amount-based detection if name didn't match
             if (!tier && activeSub.amount) {
-                const amt = parseFloat(activeSub.amount);
                 if (amt >= 499) tier = 'Trusted';
                 else if (amt >= 199) tier = 'Verified';
                 else if (amt >= 99) tier = 'Job Ready';

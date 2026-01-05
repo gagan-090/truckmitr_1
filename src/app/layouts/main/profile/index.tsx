@@ -128,10 +128,15 @@ const getTierConfigs = (t: any): Record<TierType, TierConfig> => ({
 });
 
 // Helper function to get tier from payment_type
-// Now also accepts amount to detect legacy drivers (Rs 49 payment)
+// Now also accepts amount to detect legacy drivers (Rs 49 payment) and legacy transporters (Rs 100/99 payment)
 const getTierFromPaymentType = (paymentType: string, amount?: number): TierType => {
   // Legacy driver detection: Rs 49 payment = Legacy Driver
   if (amount === 49 || amount === 49.00) {
+    return 'LEGACY';
+  }
+
+  // Legacy transporter detection: Rs 100 or Rs 99 payment = Legacy Transporter
+  if (amount === 100 || amount === 100.00 || amount === 99 || amount === 99.00) {
     return 'LEGACY';
   }
 

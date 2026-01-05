@@ -111,11 +111,25 @@ const userReducer = (state = initialState, action: any) => {
                 return isLegacyAmount && isPaymentCaptured && isNotExpired;
             };
 
+            // Helper function to check if a transporter has premium subscription (Rs 100 or Rs 99 payment)
+            const isTransporterPremiumSubscription = (item: any): boolean => {
+                const amount = parseFloat(item.amount) || 0;
+                const isTransporterPremiumAmount = amount === 100 || amount === 100.00 || amount === 99 || amount === 99.00;
+                const isPaymentCaptured = item.payment_status === 'captured';
+                const isNotExpired = currentTimeInSeconds < item.end_at;
+                return isTransporterPremiumAmount && isPaymentCaptured && isNotExpired;
+            };
+
             // Helper function to check if a subscription is active
             const isActiveSubscription = (item: any): boolean => {
                 // First check for legacy driver (Rs 49 payment)
                 if (isLegacyDriverSubscription(item)) {
                     console.log('[userReducer] Legacy driver detected (Rs 49 subscription)');
+                    return true;
+                }
+                // Check for transporter premium subscription (Rs 100/99 payment)
+                if (isTransporterPremiumSubscription(item)) {
+                    console.log('[userReducer] Transporter premium subscription detected (Rs 100/99 subscription)');
                     return true;
                 }
                 // Standard subscription check

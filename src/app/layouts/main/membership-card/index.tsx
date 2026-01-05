@@ -28,7 +28,7 @@ const BACKGROUND_TRUSTED = require('@truckmitr/src/assets/membership-card/member
 const BACKGROUND_JOB_READY = require('@truckmitr/src/assets/membership-card/membershipcard3.png');   // Blue for Job Ready
 
 // Card configurations for each tier
-type TierType = 'JOB READY' | 'VERIFIED' | 'TRUSTED' | 'Standard';
+type TierType = 'JOB READY' | 'VERIFIED' | 'TRUSTED' | 'Standard' | 'LEGACY';
 
 interface TierConfig {
     background: any;
@@ -86,16 +86,39 @@ const TIER_CONFIGS: Record<TierType, TierConfig> = {
         ],
         categoryText: 'STANDARD MEMBER',
     },
+    'LEGACY': {
+        background: BACKGROUND_VERIFIED,
+        borderColors: ['#8B4513', '#CD853F', '#DEB887', '#CD853F', '#8B4513'],
+        chromeGradient: [
+            { offset: '0', color: '#DEB887' },
+            { offset: '0.25', color: '#CD853F' },
+            { offset: '0.5', color: '#8B4513' },
+            { offset: '0.75', color: '#CD853F' },
+            { offset: '1', color: '#DEB887' },
+        ],
+        categoryText: 'LEGACY MEMBER', // Will be overridden dynamically
+    },
 };
 
-// Helper function to get tier from payment_type
-const getTierFromPaymentType = (paymentType: string): TierType => {
+// Helper function to get tier from payment_type, now accepts amount and role for legacy detection
+const getTierFromPaymentType = (paymentType: string, amount?: number, role?: string): TierType => {
+    // Legacy driver detection: Rs 49 payment = Legacy Driver
+    if (amount === 49 || amount === 49.00) {
+        return 'LEGACY';
+    }
+
+    // Legacy transporter detection: Rs 100 or Rs 99 payment = Legacy Transporter
+    if (amount === 100 || amount === 100.00 || amount === 99 || amount === 99.00) {
+        return 'LEGACY';
+    }
+
     const normalizedType = paymentType?.toUpperCase().replace(/\s+/g, ' ').trim();
 
     if (normalizedType === 'TRUSTED') return 'TRUSTED';
     if (normalizedType === 'VERIFIED') return 'VERIFIED';
     if (normalizedType === 'JOB READY' || normalizedType === 'JOBREADY') return 'JOB READY';
     if (normalizedType === 'STANDARD') return 'Standard';
+    if (normalizedType === 'LEGACY') return 'LEGACY';
 
     // Default to JOB READY for any other type
     return 'JOB READY';
@@ -132,8 +155,15 @@ export default function MembershipCard() {
 
     // Subscription details
     const paymentType = subscriptionDetails?.payment_type || 'JOB READY';
-    const tier = getTierFromPaymentType(paymentType);
-    const tierConfig = TIER_CONFIGS[tier];
+    const amount = parseFloat(subscriptionDetails?.amount) || 0;
+    const userRole = user?.role || 'driver';
+    const tier = getTierFromPaymentType(paymentType, amount, userRole);
+
+    // Get tier config and dynamically set categoryText for LEGACY based on role
+    let tierConfig = { ...TIER_CONFIGS[tier] };
+    if (tier === 'LEGACY') {
+        tierConfig.categoryText = userRole === 'transporter' ? 'LEGACY TRANSPORTER' : 'LEGACY DRIVER';
+    }
 
     const startDate = subscriptionDetails?.start_at
         ? moment.unix(subscriptionDetails.start_at).format('DD/MM/YY')

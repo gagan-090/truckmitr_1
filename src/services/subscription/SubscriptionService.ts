@@ -309,8 +309,40 @@ class SubscriptionService {
     }
 
     /**
+     * Check if user is a transporter with premium subscription (paid Rs 100 or Rs 99)
+     * Transporters with this payment should have access to premium features
+     * They have empty subscription_id but payment_status is captured
+     * 
+     * @param subscriptionData - The subscription data object from API
+     * @returns Boolean indicating if this is a transporter premium subscription
+     */
+    isTransporterPremiumSubscription(subscriptionData: any): boolean {
+        if (!subscriptionData) return false;
+
+        // Parse amount - handle both string and number formats
+        const amount = parseFloat(subscriptionData.amount) || 0;
+
+        // Transporter premium criteria:
+        // - Amount is Rs 100 or Rs 99
+        // - Payment status is captured
+        // - Subscription is not expired
+        const isTransporterPremiumAmount = amount === 100 || amount === 100.00 || amount === 99 || amount === 99.00;
+        const isPaymentCaptured = subscriptionData.payment_status === 'captured';
+        const isNotExpired = Date.now() / 1000 < subscriptionData.end_at;
+
+        const isTransporterPremium = isTransporterPremiumAmount && isPaymentCaptured && isNotExpired;
+
+        if (isTransporterPremium) {
+            console.log('[SubscriptionService] Transporter premium subscription detected (Rs 100/99 subscription)');
+        }
+
+        return isTransporterPremium;
+    }
+
+    /**
      * Check if user has an active subscription from subscription details data
      * Includes legacy driver support (Rs 49 payment with captured status)
+     * Includes transporter premium support (Rs 100/99 payment with captured status)
      * 
      * @param subscriptionData - The subscription data object from API
      * @returns Boolean indicating if subscription is active
@@ -321,6 +353,12 @@ class SubscriptionService {
         // First check if this is a legacy driver (Rs 49 payment)
         // Legacy drivers have empty subscription_id but are still valid
         if (this.isLegacyDriverSubscription(subscriptionData)) {
+            return true;
+        }
+
+        // Check if this is a transporter with premium subscription (Rs 100/99 payment)
+        // Transporters with this payment should have access to premium features
+        if (this.isTransporterPremiumSubscription(subscriptionData)) {
             return true;
         }
 
