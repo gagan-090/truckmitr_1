@@ -131,7 +131,7 @@ const getTierConfigs = (t: any): Record<TierType, TierConfig> => ({
 // Now also accepts amount to detect legacy drivers (Rs 49 payment) and legacy transporters (Rs 100/99 payment)
 const getTierFromPaymentType = (paymentType: string, amount?: number): TierType => {
   // Legacy driver detection: Rs 49 payment = Legacy Driver
-  if (amount === 49 || amount === 49.00) {
+  if (amount === 49 || amount === 49.00 || amount === 1 || amount === 1.00) {
     return 'LEGACY';
   }
 
@@ -1102,8 +1102,8 @@ export default function Profile() {
           </>
         )}
 
-        {/* Dynamic Membership Card - Show when user has an active subscription */}
-        {(subscriptionDetails?.hasActiveSubscription || !subscriptionDetails?.showSubscriptionModel) && subscriptionDetails?.id && (() => {
+        {/* Dynamic Membership Card - Show when user has an active subscription (only for drivers) */}
+        {isDriver && (subscriptionDetails?.hasActiveSubscription || !subscriptionDetails?.showSubscriptionModel) && subscriptionDetails?.id && (() => {
           // Get tier configuration based on payment_type and amount (for legacy driver detection)
           const paymentType = subscriptionDetails?.payment_type || 'JOB READY';
           const amount = parseFloat(subscriptionDetails?.amount) || 0;
