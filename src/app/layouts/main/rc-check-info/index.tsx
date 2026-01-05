@@ -28,8 +28,9 @@ const RcCheckInfo = () => {
     const { responsiveWidth, responsiveFontSize, responsiveHeight } = useResponsiveScale();
     const { shadow } = useShadow();
 
-    // Get subscription details from Redux
-    const { subscriptionDetails } = useSelector((state: any) => state?.user) || {};
+    // Get subscription details and user from Redux
+    const { subscriptionDetails, user } = useSelector((state: any) => state?.user) || {};
+    const isTransporter = user?.role?.toLowerCase() === 'transporter';
 
     // Check if subscription is active (₹199 or ₹499 plan)
     const checkSubscriptionActive = () => {
@@ -241,7 +242,9 @@ const RcCheckInfo = () => {
                         {t('rcCheckDescription') || 'Check your vehicle RC details instantly by entering your vehicle number.'}
                     </Text>
                     <Text style={{ fontSize: responsiveFontSize(1.5), color: '#64748B', fontStyle: 'italic', lineHeight: 21 }}>
-                        {t('rcCheckAvailability') || 'This feature is available for drivers with an active TruckMitr subscription.'}
+                        {isTransporter
+                            ? (t('rcCheckAvailabilityTransporter') || 'This feature is available for transporters with an active TruckMitr subscription.')
+                            : (t('rcCheckAvailability') || 'This feature is available for drivers with an active TruckMitr subscription.')}
                     </Text>
                 </View>
 
@@ -272,10 +275,10 @@ const RcCheckInfo = () => {
                 <View style={{ backgroundColor: colors.white, borderRadius: 12, padding: responsiveWidth(4), marginBottom: responsiveHeight(2), ...shadow, shadowColor: 'rgba(0,0,0,0.06)' }}>
                     <Text style={{ fontSize: responsiveFontSize(1.9), fontWeight: '700', color: '#334155', marginBottom: 14 }}>{t('subscriptionRequirement') || 'Subscription Requirement'}</Text>
                     <Text style={{ fontSize: responsiveFontSize(1.6), color: '#475569', marginBottom: 12 }}>{t('rcCheckIncludedWith') || 'RC Check is included with:'}</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                    {!isTransporter && <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
                         <Ionicons name="checkmark-circle" size={22} color="#16A34A" style={{ marginRight: 10 }} />
                         <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600' }}>₹199 {t('plan') || 'Plan'}</Text>
-                    </View>
+                    </View>}
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
                         <Ionicons name="checkmark-circle" size={22} color="#16A34A" style={{ marginRight: 10 }} />
                         <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600' }}>₹499 {t('plan') || 'Plan'}</Text>

@@ -354,11 +354,11 @@ class SubscriptionService {
         // - Amount is Rs 499
         // - Payment status is captured
         // - Subscription is not expired
-        const isTransporterProAmount = amount === 499 || amount === 499.00;
+        const isTransporterPremiumAmount = amount === 100 || amount === 100.00 || amount === 99 || amount === 99.00 || amount === 499 || amount === 499.00;
         const isPaymentCaptured = subscriptionData.payment_status === 'captured';
         const isNotExpired = Date.now() / 1000 < subscriptionData.end_at;
 
-        const isTransporterPro = isTransporterProAmount && isPaymentCaptured && isNotExpired;
+        const isTransporterPro = isTransporterPremiumAmount && isPaymentCaptured && isNotExpired;
 
         if (isTransporterPro) {
             console.log('[SubscriptionService] Transporter Pro detected (Rs 499 subscription)');

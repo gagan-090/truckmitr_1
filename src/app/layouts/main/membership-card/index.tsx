@@ -98,7 +98,7 @@ const TIER_CONFIGS: Record<TierType, TierConfig> = {
         ],
         categoryText: 'LEGACY MEMBER', // Will be overridden dynamically
     },
-    'TRANSPORTER PRO': {
+        'TRANSPORTER PRO': {
         background: BACKGROUND_TRUSTED,
         borderColors: ['#A67C00', '#C9A23F', '#FFF6C8', '#C9A23F', '#A67C00'],
         chromeGradient: [
@@ -119,13 +119,13 @@ const getTierFromPaymentType = (paymentType: string, amount?: number, role?: str
         return 'LEGACY';
     }
 
-    // Transporter Pro detection: Rs 499 payment for transporters
+    // Transporter Pro detection: Rs 499 payment
     if (role === 'transporter' && (amount === 499 || amount === 499.00)) {
         return 'TRANSPORTER PRO';
     }
 
-    // Legacy transporter detection: Rs 99 payment for TRANSPORTERS
-    if (role === 'transporter' && (amount === 99 || amount === 99.00)) {
+    // Legacy transporter detection: Rs 100 or Rs 99 payment = Legacy Transporter
+    if (amount === 100 || amount === 100.00 || amount === 99 || amount === 99.00) {
         return 'LEGACY';
     }
 

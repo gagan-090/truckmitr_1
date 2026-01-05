@@ -87,6 +87,7 @@ const Home = React.forwardRef((props, ref) => {
     const [bannerIndex, setBannerIndex] = useState(0);
     const [isBannerPaused, setIsBannerPaused] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const [addDriverModal, setAddDriverModal] = useState(false);
 
     const [banners, setBanners] = useState<any[]>([
         {},
@@ -698,7 +699,7 @@ const Home = React.forwardRef((props, ref) => {
         navigation.navigate(STACKS.VIEW_JOBS)
     }
     const _navigateAddDriver = () => {
-        navigation.navigate(STACKS.ADD_DRIVER)
+        setAddDriverModal(true);
     }
     const _navigateAppliedJobsTransporter = () => {
         if (subscriptionDetails?.showSubscriptionModel && isTransporter) {
@@ -748,6 +749,10 @@ const Home = React.forwardRef((props, ref) => {
     }
     const _navigateTruckInsurance = () => {
         navigation.navigate(STACKS.TRUCK_INSURANCE)
+    }
+
+    const _navigateConvoy = () => {
+        navigation.navigate(STACKS.CONVOY)
     }
     // const _navigateRcCheckResult = () => {
     //     navigation.navigate(STACKS.RC_CHECK_RESULT, { rcNumber: '' }) // Needs params usually
@@ -961,8 +966,8 @@ const Home = React.forwardRef((props, ref) => {
                     </View>
                     {/*  */}
                     {/* Search Bar at bottom */}
-                    {isDriver && <TouchableOpacity onPress={_navigateSearch} activeOpacity={1} style={{ position: 'absolute', bottom: -responsiveHeight(1.5), width: responsiveWidth(92), flexDirection: 'row', height: responsiveHeight(6), alignSelf: 'center', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'space-between', borderColor: '#000', borderWidth: 1.5, borderRadius: 100, paddingHorizontal: responsiveWidth(3), ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.2) : colors.blackOpacity(.4), zIndex: 100, elevation: 10 }}>
-                        <Text style={{ fontSize: responsiveFontSize(1.6), color: colors.blackOpacity(.9), fontWeight: '500' }}>{t(`searchJobs`)}</Text>
+                    {(isDriver || isTransporter) && <TouchableOpacity onPress={_navigateSearch} activeOpacity={1} style={{ position: 'absolute', bottom: -responsiveHeight(1.5), width: responsiveWidth(92), flexDirection: 'row', height: responsiveHeight(6), alignSelf: 'center', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'space-between', borderColor: '#000', borderWidth: 1.5, borderRadius: 100, paddingHorizontal: responsiveWidth(3), ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.2) : colors.blackOpacity(.4), zIndex: 100, elevation: 10 }}>
+                        <Text style={{ fontSize: responsiveFontSize(1.6), color: colors.blackOpacity(.9), fontWeight: '500' }}>{isTransporter ? t('searchDrivers') : t('searchJobs')}</Text>
                         <Feather name={'search'} size={18} color={colors.royalBlueOpacity(1)} />
                     </TouchableOpacity>}
                 </View>
@@ -1373,7 +1378,7 @@ const Home = React.forwardRef((props, ref) => {
                         <Ionicons name="time-outline" size={20} color={colors.royalBlue} />
                         <Text style={{ marginLeft: 8, fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>{t('comingSoon')}</Text>
                     </View>
-                    {/* Coming Soon Row: Driver Ki Awaz, TruckMitr Driver Loan, TruckMitr Insurance */}
+                    {/* Coming Soon Row: Driver Ki Awaz, TruckMitr Driver Loan, TruckMitr Driver Welfare */}
                     <View style={{ flexDirection: 'row', paddingHorizontal: responsiveWidth(4), paddingVertical: responsiveWidth(3) }}>
                         <TouchableOpacity onPress={_navigateDriverKiAwazInfo} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
@@ -1419,6 +1424,20 @@ const Home = React.forwardRef((props, ref) => {
                                 <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('truckMitrSuvidhaKendra', 'TruckMitr Suvidha Kendra')}</Text>
                             </View>
                         </TouchableOpacity>
+                    </View>
+
+                    {/* Coming Soon Row: Convoy */}
+                    <View style={{ flexDirection: 'row', paddingHorizontal: responsiveWidth(4), paddingVertical: responsiveWidth(3) }}>
+                        <TouchableOpacity onPress={_navigateConvoy} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
+                            <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28), position: 'relative' }}>
+                                <Text style={{ fontSize: responsiveFontSize(4), marginBottom: 5 }}>🚛</Text>
+                                <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('convoyTitle')}</Text>
+                            </View>
+                        </TouchableOpacity>
+                        <Space width={responsiveFontSize(1.5)} />
+                        <View style={{ flex: 1 }} />
+                        <Space width={responsiveFontSize(1.5)} />
+                        <View style={{ flex: 1 }} />
                     </View>
 
                     <Space height={responsiveFontSize(4)} />
@@ -1495,6 +1514,30 @@ const Home = React.forwardRef((props, ref) => {
                         </View>
                     </View>
 
+
+                    {/* Vehicle Verification Section */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: responsiveWidth(4), marginBottom: 5, marginTop: 15 }}>
+                        <Ionicons name="car-outline" size={20} color={colors.royalBlue} />
+                        <Text style={{ marginLeft: 8, fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>{t('Vehicle Verification') || 'Vehicle Verification'}</Text>
+                    </View>
+                    {/* Vehicle Row: RC Check, Challan Check */}
+                    <View style={{ flexDirection: 'row', paddingHorizontal: responsiveWidth(4), paddingVertical: responsiveWidth(3) }}>
+                        <TouchableOpacity onPress={_navigateRcCheck} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
+                            <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
+                                <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5, marginTop: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3097/3097180.png' }} />
+                                <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('rcCheck', 'RC Check')}</Text>
+                            </View>
+                        </TouchableOpacity>
+                        <Space width={responsiveFontSize(1.5)} />
+                        <TouchableOpacity onPress={_navigateChallanCheck} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
+                            <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
+                                <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/1584/1584961.png' }} />
+                                <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('challanCheck', 'Challan Check')}</Text>
+                            </View>
+                        </TouchableOpacity>
+                        <Space width={responsiveFontSize(1.5)} />
+                        <View style={{ flex: 1 }} />
+                    </View>
 
                     {/* Communication Section */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: responsiveWidth(4), marginBottom: 5, marginTop: 15 }}>
@@ -1855,6 +1898,106 @@ const Home = React.forwardRef((props, ref) => {
                     </TouchableOpacity>
                 </Animated.View>
             )}
+
+            {/* Add Driver Options Modal */}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={addDriverModal}
+                onRequestClose={() => setAddDriverModal(false)}
+            >
+                <TouchableOpacity
+                    style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}
+                    activeOpacity={1}
+                    onPress={() => setAddDriverModal(false)}
+                >
+                    <View style={{ backgroundColor: colors.white, borderRadius: 16, padding: 20, width: responsiveWidth(85), maxWidth: 350 }}>
+                        <View style={{ alignItems: 'center', marginBottom: 16 }}>
+                            <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+                                <FontAwesome6 name="user-plus" size={28} color={colors.royalBlue} />
+                            </View>
+                            <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: '700', color: '#1E293B', marginBottom: 4 }}>
+                                {t('addDriver', 'Add Driver')}
+                            </Text>
+                            <Text style={{ fontSize: responsiveFontSize(1.5), color: '#64748B', textAlign: 'center' }}>
+                                {t('chooseHowToAddDriver', 'Choose how you want to add drivers')}
+                            </Text>
+                        </View>
+
+                        {/* Add Single Driver Option */}
+                        <TouchableOpacity
+                            style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                padding: 16,
+                                backgroundColor: '#F8FAFC',
+                                borderRadius: 12,
+                                marginBottom: 12,
+                                borderWidth: 1,
+                                borderColor: '#E2E8F0'
+                            }}
+                            onPress={() => {
+                                setAddDriverModal(false);
+                                navigation.navigate(STACKS.ADD_SINGLE_DRIVER_INFO);
+                            }}
+                        >
+                            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                                <FontAwesome6 name="user" size={20} color={colors.royalBlue} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: responsiveFontSize(1.8), fontWeight: '600', color: '#1E293B' }}>
+                                    {t('addSingleDriver', 'Add Single Driver')}
+                                </Text>
+                                <Text style={{ fontSize: responsiveFontSize(1.4), color: '#64748B' }}>
+                                    {t('addOneDriverManually', 'Add one driver manually')}
+                                </Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+                        </TouchableOpacity>
+
+                        {/* Add Multiple Drivers Option */}
+                        <TouchableOpacity
+                            style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                padding: 16,
+                                backgroundColor: '#F8FAFC',
+                                borderRadius: 12,
+                                marginBottom: 12,
+                                borderWidth: 1,
+                                borderColor: '#E2E8F0'
+                            }}
+                            onPress={() => {
+                                setAddDriverModal(false);
+                                navigation.navigate(STACKS.ADD_DRIVER);
+                            }}
+                        >
+                            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#F0FDF4', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                                <FontAwesome6 name="users" size={20} color="#16A34A" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: responsiveFontSize(1.8), fontWeight: '600', color: '#1E293B' }}>
+                                    {t('addMultipleDrivers', 'Add Multiple Drivers')}
+                                </Text>
+                                <Text style={{ fontSize: responsiveFontSize(1.4), color: '#64748B' }}>
+                                    {t('bulkAddDrivers', 'Bulk add drivers via Excel')}
+                                </Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+                        </TouchableOpacity>
+
+                        {/* Cancel Button */}
+                        <TouchableOpacity
+                            onPress={() => setAddDriverModal(false)}
+                            style={{ padding: 14, alignItems: 'center' }}
+                        >
+                            <Text style={{ fontSize: responsiveFontSize(1.7), color: '#64748B', fontWeight: '500' }}>
+                                {t('cancel', 'Cancel')}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </View >
     )
 })
