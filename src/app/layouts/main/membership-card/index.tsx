@@ -28,7 +28,7 @@ const BACKGROUND_TRUSTED = require('@truckmitr/src/assets/membership-card/member
 const BACKGROUND_JOB_READY = require('@truckmitr/src/assets/membership-card/membershipcard3.png');   // Blue for Job Ready
 
 // Card configurations for each tier
-type TierType = 'JOB READY' | 'VERIFIED' | 'TRUSTED' | 'Standard' | 'LEGACY';
+type TierType = 'JOB READY' | 'VERIFIED' | 'TRUSTED' | 'Standard' | 'LEGACY' | 'TRANSPORTER PRO';
 
 interface TierConfig {
     background: any;
@@ -98,6 +98,18 @@ const TIER_CONFIGS: Record<TierType, TierConfig> = {
         ],
         categoryText: 'LEGACY MEMBER', // Will be overridden dynamically
     },
+    'TRANSPORTER PRO': {
+        background: BACKGROUND_TRUSTED,
+        borderColors: ['#A67C00', '#C9A23F', '#FFF6C8', '#C9A23F', '#A67C00'],
+        chromeGradient: [
+            { offset: '0', color: '#FFF6C8' },
+            { offset: '0.25', color: '#C9A23F' },
+            { offset: '0.5', color: '#A67C00' },
+            { offset: '0.75', color: '#C9A23F' },
+            { offset: '1', color: '#FFF6C8' },
+        ],
+        categoryText: 'TRANSPORTER PRO',
+    },
 };
 
 // Helper function to get tier from payment_type, now accepts amount and role for legacy detection
@@ -105,6 +117,11 @@ const getTierFromPaymentType = (paymentType: string, amount?: number, role?: str
     // Legacy driver detection: Rs 49 payment = Legacy Driver
     if (amount === 49 || amount === 49.00) {
         return 'LEGACY';
+    }
+
+    // Transporter Pro detection: Rs 499 payment
+    if (role === 'transporter' && (amount === 499 || amount === 499.00)) {
+        return 'TRANSPORTER PRO';
     }
 
     // Legacy transporter detection: Rs 100 or Rs 99 payment = Legacy Transporter

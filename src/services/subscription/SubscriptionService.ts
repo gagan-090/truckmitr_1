@@ -326,7 +326,7 @@ class SubscriptionService {
         // - Amount is Rs 100 or Rs 99
         // - Payment status is captured
         // - Subscription is not expired
-        const isTransporterPremiumAmount = amount === 100 || amount === 100.00 || amount === 99 || amount === 99.00;
+        const isTransporterPremiumAmount = amount === 100 || amount === 100.00 || amount === 99 || amount === 99.00 || amount === 499 || amount === 499.00;
         const isPaymentCaptured = subscriptionData.payment_status === 'captured';
         const isNotExpired = Date.now() / 1000 < subscriptionData.end_at;
 

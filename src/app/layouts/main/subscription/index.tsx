@@ -430,76 +430,7 @@ const BulletPoint = ({ text, color }: { text: string; color: string }) => (
   </View>
 );
 
-// --- Transporter Subscription Colors ---
-const TRANSPORTER_COLORS = {
-  primary: '#1E3A5F', // Deep Navy Blue
-  secondary: '#2563EB', // Royal Blue
-  accent: '#F59E0B', // Gold/Amber
-  success: '#10B981', // Emerald Green
-  background: '#0F172A', // Dark Blue-Black
-  cardBg: '#1E293B', // Dark Slate
-  textPrimary: '#FFFFFF',
-  textSecondary: '#94A3B8',
-  border: '#334155',
-  gradient1: '#1E3A5F',
-  gradient2: '#2563EB',
-  gradient3: '#7C3AED', // Purple accent
-};
-
-// --- Transporter Feature Check Item ---
-const TransporterFeatureCheck = ({
-  icon,
-  title,
-  description,
-  responsiveFontSize
-}: {
-  icon: string;
-  title: string;
-  description: string;
-  responsiveFontSize: (s: number) => number;
-}) => (
-  <Animated.View
-    entering={FadeIn.duration(400)}
-    style={transporterStyles.featureItem}
-  >
-    <View style={transporterStyles.featureIconContainer}>
-      <Text style={transporterStyles.featureIcon}>{icon}</Text>
-    </View>
-    <View style={transporterStyles.featureTextContainer}>
-      <Text style={[transporterStyles.featureTitle, { fontSize: responsiveFontSize(1.6) }]}>
-        {title}
-      </Text>
-      <Text style={[transporterStyles.featureDescription, { fontSize: responsiveFontSize(1.3) }]}>
-        {description}
-      </Text>
-    </View>
-  </Animated.View>
-);
-
-// --- Transporter Benefit Item ---
-const TransporterBenefitItem = ({
-  text,
-  responsiveFontSize,
-  delay = 0
-}: {
-  text: string;
-  responsiveFontSize: (s: number) => number;
-  delay?: number;
-}) => (
-  <Animated.View
-    entering={FadeIn.delay(delay).duration(300)}
-    style={transporterStyles.benefitItem}
-  >
-    <View style={transporterStyles.checkCircle}>
-      <Ionicons name="checkmark" size={14} color={TRANSPORTER_COLORS.textPrimary} />
-    </View>
-    <Text style={[transporterStyles.benefitText, { fontSize: responsiveFontSize(1.4) }]}>
-      {text}
-    </Text>
-  </Animated.View>
-);
-
-// --- Transporter Subscription Modal Component ---
+// --- Transporter Subscription Modal Component (Clean White UI) ---
 const TransporterSubscriptionModal = ({
   visible,
   onClose,
@@ -523,40 +454,27 @@ const TransporterSubscriptionModal = ({
   onOpenConsent: () => void;
   t: (key: string) => string;
 }) => {
-  const translateY = useSharedValue(0);
-  const opacity = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-    opacity: opacity.value,
-  }));
-
-  const features = [
+  const benefits = [
     {
-      icon: '🔐',
+      icon: '✔',
       title: t('transporterFeatureVerifiedDrivers') || 'Verified Drivers',
-      description: t('transporterFeatureVerifiedDriversDesc') || 'Driving License, ID & Face verification. Court & address checks (where applicable). Hire with confidence before handing over your truck.',
+      desc: t('transporterFeatureVerifiedDriversDesc') || 'Driving License, ID & Face verification. Court & address checks (where applicable). Hire with confidence.',
     },
     {
-      icon: '📋',
+      icon: '✔',
       title: t('transporterFeatureSmartHiring') || 'Smart Driver Hiring',
-      description: t('transporterFeatureSmartHiringDesc') || 'View detailed driver profiles. Shortlist and hire faster. No brokers, no fake calls.',
+      desc: t('transporterFeatureSmartHiringDesc') || 'View detailed driver profiles. Shortlist and hire faster. No brokers, no fake calls.',
     },
     {
-      icon: '📞',
+      icon: '✔',
       title: t('transporterFeatureInAppCall') || 'In-App Call & Video Interview',
-      description: t('transporterFeatureInAppCallDesc') || 'Call or video interview drivers securely. Take hiring decisions instantly. All communication inside TruckMitr.',
+      desc: t('transporterFeatureInAppCallDesc') || 'Call or video interview drivers securely. Take hiring decisions instantly.',
     },
     {
-      icon: '🔓',
+      icon: '✔',
       title: t('transporterFeatureFullAccess') || 'Full Platform Access',
-      description: t('transporterFeatureFullAccessDesc') || 'Post driver jobs. Contact and manage drivers. Browse a large pool of ready-to-work drivers. Filter by experience, route, vehicle type & location.',
+      desc: t('transporterFeatureFullAccessDesc') || 'Post driver jobs. Contact and manage drivers. Browse a large pool of drivers.',
     },
-  ];
-
-  const finalBenefits = [
-    t('transporterBenefit1') || 'Hire faster, with less dependency on brokers',
-    t('transporterBenefit2') || 'Use all current & future features',
   ];
 
   return (
@@ -567,450 +485,323 @@ const TransporterSubscriptionModal = ({
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <StatusBar barStyle="light-content" backgroundColor={TRANSPORTER_COLORS.background} />
-      <LinearGradient
-        colors={[TRANSPORTER_COLORS.background, '#0F172A', '#1E293B']}
-        style={[transporterStyles.container, { paddingTop: safeAreaInsets.top }]}
-      >
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      <View style={[tStyles.container, { paddingTop: safeAreaInsets.top }]}>
         {/* Close Button */}
         <TouchableOpacity
           onPress={onClose}
-          style={transporterStyles.closeButton}
+          style={tStyles.closeButton}
           activeOpacity={0.7}
         >
-          <Ionicons name="close" size={24} color={TRANSPORTER_COLORS.textPrimary} />
+          <Ionicons name="close" size={24} color={COLORS.text} />
         </TouchableOpacity>
 
         <ScrollView
-          contentContainerStyle={[
-            transporterStyles.scrollContent,
-            { paddingBottom: safeAreaInsets.bottom + 120 }
-          ]}
+          contentContainerStyle={[tStyles.scrollContent, { paddingBottom: safeAreaInsets.bottom + 100 }]}
           showsVerticalScrollIndicator={false}
         >
-          {/* Hero Section */}
-          <Animated.View style={animatedStyle}>
-            <View style={transporterStyles.heroSection}>
-              {/* Truck Emoji Badge */}
-              <View style={transporterStyles.heroBadge}>
-                <Text style={transporterStyles.heroBadgeEmoji}>🚚</Text>
-              </View>
-
-              {/* Main Title */}
-              <Text style={[transporterStyles.heroTitle, { fontSize: responsiveFontSize(2.8) }]}>
-                TruckMitr{'\n'}Transporter Pro
-              </Text>
-
-              {/* Subtitle */}
-              <Text style={[transporterStyles.heroSubtitle, { fontSize: responsiveFontSize(1.8) }]}>
-                {t('transporterHeroSubtitle') || 'Hire Drivers Without Worry'}
-              </Text>
-
-              {/* Price Tag */}
-              <View style={transporterStyles.priceContainer}>
-                <LinearGradient
-                  colors={[TRANSPORTER_COLORS.accent, '#D97706']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={transporterStyles.priceTag}
-                >
-                  <Text style={[transporterStyles.priceSymbol, { fontSize: responsiveFontSize(2.2) }]}>₹</Text>
-                  <Text style={[transporterStyles.priceAmount, { fontSize: responsiveFontSize(4) }]}>499</Text>
-                  <Text style={[transporterStyles.priceDuration, { fontSize: responsiveFontSize(1.4) }]}> / {t('quarterly') || 'Quarterly'}</Text>
-                </LinearGradient>
-              </View>
-
-              {/* Tagline */}
-              <Text style={[transporterStyles.tagline, { fontSize: responsiveFontSize(1.35) }]}>
-                {t('transporterTagline') || 'One subscription that gives you verified drivers, secure hiring, and complete peace of mind.'}
-              </Text>
+          {/* Header */}
+          <View style={tStyles.header}>
+            <Text style={[tStyles.badge, { fontSize: responsiveFontSize(1.8) }]}>🚚 {t('transporterProBadge') || 'TRANSPORTER PRO'}</Text>
+            <Text style={[tStyles.title, { fontSize: responsiveFontSize(2.8) }]}>
+              {t('transporterHeroSubtitle') || 'Hire Drivers Without Worry'}
+            </Text>
+            <View style={tStyles.priceRow}>
+              <Text style={[tStyles.price, { fontSize: responsiveFontSize(4.2) }]}>₹499</Text>
+              <Text style={[tStyles.duration, { fontSize: responsiveFontSize(1.8) }]}> / {t('quarterly') || 'Quarterly'}</Text>
             </View>
-          </Animated.View>
+            <Text style={[tStyles.tagline, { fontSize: responsiveFontSize(1.6) }]}>
+              {t('transporterTagline') || 'One subscription that gives you verified drivers, secure hiring, and complete peace of mind.'}
+            </Text>
+          </View>
 
           {/* What You Get Section */}
-          <View style={transporterStyles.sectionContainer}>
-            <View style={transporterStyles.sectionHeader}>
-              <Text style={transporterStyles.sectionIcon}>🔐</Text>
-              <Text style={[transporterStyles.sectionTitle, { fontSize: responsiveFontSize(2) }]}>
-                {t('transporterWhatYouGet') || 'What You Get'}
-              </Text>
-            </View>
+          <View style={tStyles.section}>
+            <Text style={[tStyles.sectionTitle, { fontSize: responsiveFontSize(2.2) }]}>
+              🔐 {t('transporterWhatYouGet') || 'What You Get'}
+            </Text>
 
-            {features.map((feature, index) => (
-              <TransporterFeatureCheck
-                key={index}
-                icon={feature.icon}
-                title={feature.title}
-                description={feature.description}
-                responsiveFontSize={responsiveFontSize}
-              />
+            {benefits.map((item, index) => (
+              <View key={index} style={tStyles.benefitRow}>
+                <Text style={[tStyles.checkIcon, { fontSize: responsiveFontSize(1.8) }]}>{item.icon}</Text>
+                <View style={tStyles.benefitContent}>
+                  <Text style={[tStyles.benefitTitle, { fontSize: responsiveFontSize(1.8) }]}>{item.title}</Text>
+                  <Text style={[tStyles.benefitDesc, { fontSize: responsiveFontSize(1.5) }]}>{item.desc}</Text>
+                </View>
+              </View>
             ))}
           </View>
 
           {/* Additional Benefits */}
-          <View style={transporterStyles.benefitsSection}>
-            {finalBenefits.map((benefit, index) => (
-              <TransporterBenefitItem
-                key={index}
-                text={benefit}
-                responsiveFontSize={responsiveFontSize}
-                delay={index * 100}
-              />
-            ))}
+          <View style={tStyles.section}>
+            <View style={tStyles.benefitRow}>
+              <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
+              <Text style={[tStyles.simpleBenefit, { fontSize: responsiveFontSize(1.7) }]}>
+                {t('transporterBenefit1') || 'Hire faster, with less dependency on brokers'}
+              </Text>
+            </View>
+            <View style={tStyles.benefitRow}>
+              <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
+              <Text style={[tStyles.simpleBenefit, { fontSize: responsiveFontSize(1.7) }]}>
+                {t('transporterBenefit2') || 'Use all current & future features'}
+              </Text>
+            </View>
           </View>
 
-          {/* Trust Message */}
-          <View style={transporterStyles.trustSection}>
-            <Text style={transporterStyles.trustIcon}>💼</Text>
-            <Text style={[transporterStyles.trustTitle, { fontSize: responsiveFontSize(1.7) }]}>
-              {t('transporterTrustTitle') || 'Built for Transporters Who Value Safety'}
+          {/* Trust Section */}
+          <View style={tStyles.trustBox}>
+            <Text style={[tStyles.trustTitle, { fontSize: responsiveFontSize(1.8) }]}>
+              💼 {t('transporterTrustTitle') || 'Built for Transporters Who Value Safety'}
             </Text>
-            <Text style={[transporterStyles.trustDesc, { fontSize: responsiveFontSize(1.3) }]}>
+            <Text style={[tStyles.trustDesc, { fontSize: responsiveFontSize(1.5) }]}>
               {t('transporterTrustDesc') || 'Reduce risk. Save time. Build a trusted driver network.'}
             </Text>
           </View>
 
-          {/* Consent Checkbox */}
-          <View style={transporterStyles.consentContainer}>
-            <TouchableOpacity
-              onPress={onConsentToggle}
-              activeOpacity={0.7}
-              style={transporterStyles.checkboxTouchable}
-            >
-              <View style={[
-                transporterStyles.checkbox,
-                consentChecked && transporterStyles.checkboxChecked
-              ]}>
-                {consentChecked && (
-                  <Ionicons name="checkmark" size={16} color={TRANSPORTER_COLORS.textPrimary} />
-                )}
+          {/* Consent */}
+          <View style={tStyles.consentRow}>
+            <TouchableOpacity onPress={onConsentToggle} activeOpacity={0.7}>
+              <View style={[tStyles.checkbox, consentChecked && tStyles.checkboxChecked]}>
+                {consentChecked && <Ionicons name="checkmark" size={16} color={COLORS.white} />}
               </View>
             </TouchableOpacity>
-            <Text style={[transporterStyles.consentText, { fontSize: responsiveFontSize(1.2) }]}>
-              {t('subTransporterConsentText') || 'I agree to the '}
-              <Text
-                style={transporterStyles.consentLink}
-                onPress={onOpenConsent}
-              >
+            <Text style={[tStyles.consentText, { fontSize: responsiveFontSize(1.5) }]}>
+              {t('subTransporterConsentText') || 'I agree to the '}{' '}
+              <Text style={tStyles.consentLink} onPress={onOpenConsent}>
                 {t('subTermsAndConditions') || 'subscription terms and disclaimer'}
               </Text>
-              {t('subAuthorizePayments') || ' and authorize payments'}
+              {' '}{t('subAuthorizePayments') || 'and authorize payments'}
             </Text>
           </View>
         </ScrollView>
 
         {/* CTA Button */}
-        <View style={[transporterStyles.ctaContainer, { paddingBottom: safeAreaInsets.bottom + 16 }]}>
+        <View style={[tStyles.ctaContainer, { paddingBottom: safeAreaInsets.bottom + 16 }]}>
           <TouchableOpacity
             onPress={onSubscribe}
             activeOpacity={consentChecked ? 0.9 : 1}
             disabled={!consentChecked || isLoading}
-            style={[transporterStyles.ctaButton, { opacity: consentChecked ? 1 : 0.5 }]}
+            style={[tStyles.ctaButton, { opacity: consentChecked ? 1 : 0.5 }]}
           >
             <LinearGradient
-              colors={[TRANSPORTER_COLORS.secondary, TRANSPORTER_COLORS.gradient3]}
+              colors={[COLORS.trusted, '#60A5FA']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={transporterStyles.ctaGradient}
+              style={tStyles.ctaGradient}
             >
               {isLoading ? (
-                <ActivityIndicator size="small" color={TRANSPORTER_COLORS.textPrimary} />
+                <ActivityIndicator size="small" color={COLORS.white} />
               ) : (
-                <>
-                  <Text style={[transporterStyles.ctaText, { fontSize: responsiveFontSize(1.8) }]}>
-                    👉 {t('transporterSubscribeNow') || 'Subscribe Now'}
-                  </Text>
-                  <Text style={[transporterStyles.ctaSubtext, { fontSize: responsiveFontSize(1.2) }]}>
-                    {t('transporterRunFleet') || 'Run your fleet with confidence.'}
-                  </Text>
-                </>
+                <Text style={[tStyles.ctaText, { fontSize: responsiveFontSize(2.0) }]}>
+                  👉 {t('transporterSubscribeNow') || 'Subscribe Now'}
+                </Text>
               )}
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* Secure Payment Note */}
-          <View style={transporterStyles.secureNote}>
-            <Ionicons name="shield-checkmark" size={16} color={TRANSPORTER_COLORS.success} />
-            <Text style={[transporterStyles.secureText, { fontSize: responsiveFontSize(1.1) }]}>
+          <View style={tStyles.secureRow}>
+            <Ionicons name="shield-checkmark" size={18} color={COLORS.success} />
+            <Text style={[tStyles.secureText, { fontSize: responsiveFontSize(1.4) }]}>
               {t('subSecurePayment') || 'Secure payment powered by Razorpay'}
             </Text>
           </View>
         </View>
 
-        {/* Loading Overlay */}
         <LoadingOverlay visible={isLoading} t={t} />
-      </LinearGradient>
+      </View>
     </Modal>
   );
 };
 
-// --- Transporter Modal Styles ---
-const transporterStyles = StyleSheet.create({
+// --- Clean Transporter Modal Styles ---
+const tStyles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 60,
+    backgroundColor: COLORS.background,
   },
   closeButton: {
     position: 'absolute',
     top: 50,
     right: 20,
     zIndex: 10,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  heroSection: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  heroBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(245, 158, 11, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: TRANSPORTER_COLORS.accent,
-  },
-  heroBadgeEmoji: {
-    fontSize: 40,
-  },
-  heroTitle: {
-    fontWeight: '900',
-    color: TRANSPORTER_COLORS.textPrimary,
-    textAlign: 'center',
-    letterSpacing: -0.5,
-    lineHeight: 38,
-  },
-  heroSubtitle: {
-    fontWeight: '600',
-    color: TRANSPORTER_COLORS.accent,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  priceContainer: {
-    marginTop: 24,
-    marginBottom: 16,
-  },
-  priceTag: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 16,
-  },
-  priceSymbol: {
-    fontWeight: '700',
-    color: TRANSPORTER_COLORS.textPrimary,
-  },
-  priceAmount: {
-    fontWeight: '900',
-    color: TRANSPORTER_COLORS.textPrimary,
-    letterSpacing: -1,
-  },
-  priceDuration: {
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.9)',
-  },
-  tagline: {
-    color: TRANSPORTER_COLORS.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: 8,
-  },
-  sectionContainer: {
-    backgroundColor: TRANSPORTER_COLORS.cardBg,
+    width: 40,
+    height: 40,
     borderRadius: 20,
-    padding: 20,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: TRANSPORTER_COLORS.border,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  sectionIcon: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  sectionTitle: {
-    fontWeight: '800',
-    color: TRANSPORTER_COLORS.textPrimary,
-    letterSpacing: 0.3,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  featureIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: 'rgba(37, 99, 235, 0.2)',
+    backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  featureIcon: {
-    fontSize: 22,
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 60,
   },
-  featureTextContainer: {
-    flex: 1,
-  },
-  featureTitle: {
-    fontWeight: '700',
-    color: TRANSPORTER_COLORS.textPrimary,
-    marginBottom: 6,
-  },
-  featureDescription: {
-    color: TRANSPORTER_COLORS.textSecondary,
-    lineHeight: 20,
-  },
-  benefitsSection: {
+  header: {
+    alignItems: 'center',
     marginBottom: 24,
   },
-  benefitItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14,
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
-  },
-  checkCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: TRANSPORTER_COLORS.success,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-  },
-  benefitText: {
-    flex: 1,
-    fontWeight: '600',
-    color: TRANSPORTER_COLORS.textPrimary,
-    lineHeight: 20,
-  },
-  trustSection: {
-    alignItems: 'center',
-    backgroundColor: TRANSPORTER_COLORS.cardBg,
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: TRANSPORTER_COLORS.border,
-  },
-  trustIcon: {
-    fontSize: 36,
-    marginBottom: 12,
-  },
-  trustTitle: {
+  badge: {
+    color: COLORS.trusted,
     fontWeight: '800',
-    color: TRANSPORTER_COLORS.textPrimary,
-    textAlign: 'center',
+    letterSpacing: 1,
     marginBottom: 8,
   },
-  trustDesc: {
-    color: TRANSPORTER_COLORS.textSecondary,
+  title: {
+    fontWeight: '800',
+    color: COLORS.text,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 12,
+  },
+  price: {
+    fontWeight: '900',
+    color: COLORS.trusted,
+  },
+  duration: {
+    fontWeight: '600',
+    color: COLORS.textMuted,
+  },
+  tagline: {
+    color: COLORS.textMuted,
     textAlign: 'center',
     lineHeight: 20,
+    paddingHorizontal: 10,
   },
-  consentContainer: {
+  section: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  sectionTitle: {
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 16,
+  },
+  benefitRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+    gap: 12,
+  },
+  checkIcon: {
+    color: COLORS.success,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  benefitContent: {
+    flex: 1,
+  },
+  benefitTitle: {
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  benefitDesc: {
+    color: COLORS.textMuted,
+    lineHeight: 18,
+  },
+  simpleBenefit: {
+    flex: 1,
+    color: COLORS.text,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  trustBox: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    alignItems: 'center',
+  },
+  trustTitle: {
+    fontWeight: '700',
+    color: COLORS.text,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  trustDesc: {
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  consentRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: 16,
-    gap: 12,
-  },
-  checkboxTouchable: {
-    padding: 2,
+    gap: 10,
   },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
+    width: 22,
+    height: 22,
+    borderRadius: 6,
     borderWidth: 2,
-    borderColor: TRANSPORTER_COLORS.border,
+    borderColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: COLORS.white,
   },
   checkboxChecked: {
-    backgroundColor: TRANSPORTER_COLORS.secondary,
-    borderColor: TRANSPORTER_COLORS.secondary,
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   consentText: {
     flex: 1,
-    color: TRANSPORTER_COLORS.textSecondary,
-    lineHeight: 20,
+    color: COLORS.textMuted,
+    lineHeight: 18,
   },
   consentLink: {
-    color: TRANSPORTER_COLORS.secondary,
+    color: COLORS.primary,
     fontWeight: '600',
     textDecorationLine: 'underline',
   },
   ctaContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    backgroundColor: TRANSPORTER_COLORS.background,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    backgroundColor: COLORS.background,
     borderTopWidth: 1,
-    borderTopColor: TRANSPORTER_COLORS.border,
+    borderTopColor: COLORS.border,
   },
   ctaButton: {
     width: '100%',
-    shadowColor: TRANSPORTER_COLORS.secondary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 10,
-    borderRadius: 18,
+    borderRadius: 14,
+    shadowColor: COLORS.trusted,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   ctaGradient: {
-    paddingVertical: 18,
-    borderRadius: 18,
+    height: 52,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   ctaText: {
-    fontWeight: '800',
-    color: TRANSPORTER_COLORS.textPrimary,
-    letterSpacing: 0.5,
+    fontWeight: '700',
+    color: COLORS.white,
   },
-  ctaSubtext: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 4,
-  },
-  secureNote: {
+  secureRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 14,
-    gap: 8,
+    marginTop: 12,
+    gap: 6,
   },
   secureText: {
-    color: TRANSPORTER_COLORS.textSecondary,
+    color: COLORS.textMuted,
   },
 });
 

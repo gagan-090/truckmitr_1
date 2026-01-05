@@ -556,6 +556,9 @@ const Home = React.forwardRef((props, ref) => {
             } else if (amt === 100 || amt === 100.00 || amt === 99 || amt === 99.00) {
                 tier = 'Legacy';
             }
+            else if (user?.role === 'transporter' && (amt === 499 || amt === 499.00)) {
+                tier = 'Transporter Pro';
+            }
             // Prioritize explicit name matching
             else if (type.includes('TRUSTED')) tier = 'Trusted';
             else if (type.includes('VERIFIED')) tier = 'Verified';
@@ -576,6 +579,9 @@ const Home = React.forwardRef((props, ref) => {
             }
 
             if (tier) {
+                if (tier === 'Transporter Pro') {
+                    return 'Transporter Pro';
+                }
                 // Ensure we don't duplicate "Driver" e.g. "Trusted Driver Driver"
                 if (tier.toLowerCase().endsWith(' driver')) {
                     tier = tier.substring(0, tier.length - 7);
@@ -696,13 +702,11 @@ const Home = React.forwardRef((props, ref) => {
         navigation.navigate(STACKS.ADD_DRIVER)
     }
     const _navigateAppliedJobsTransporter = () => {
-        // if (subscriptionDetails?.showSubscriptionModel && isTransporter) {
-        //     !subscriptionModal && dispatch(subscriptionModalAction(true))
-        // } else {
-        //     navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
-        // }
-
-        navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
+        if (subscriptionDetails?.showSubscriptionModel && isTransporter) {
+            !subscriptionModal && dispatch(subscriptionModalAction(true))
+        } else {
+            navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)
+        }
     }
     const _navigateDriverList = () => {
         navigation.navigate(STACKS.DRIVER_LIST)
@@ -1369,7 +1373,7 @@ const Home = React.forwardRef((props, ref) => {
                     {/* Group 6: Coming Soon */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: responsiveWidth(4), marginBottom: 5, marginTop: 15 }}>
                         <Ionicons name="time-outline" size={20} color={colors.royalBlue} />
-                        <Text style={{ marginLeft: 8, fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>{t('Coming Soon') || 'Coming Soon'}</Text>
+                        <Text style={{ marginLeft: 8, fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>{t('comingSoon')}</Text>
                     </View>
                     {/* Coming Soon Row: Driver Ki Awaz, TruckMitr Driver Loan, TruckMitr Insurance */}
                     <View style={{ flexDirection: 'row', paddingHorizontal: responsiveWidth(4), paddingVertical: responsiveWidth(3) }}>
@@ -1526,7 +1530,7 @@ const Home = React.forwardRef((props, ref) => {
                     {/* Coming Soon Section */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: responsiveWidth(4), marginBottom: 5, marginTop: 15 }}>
                         <Ionicons name="time-outline" size={20} color={colors.royalBlue} />
-                        <Text style={{ marginLeft: 8, fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>{t('Coming Soon') || 'Coming Soon'}</Text>
+                        <Text style={{ marginLeft: 8, fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>{t('comingSoon')}</Text>
                     </View>
 
                     {/* Row 1: TM Load Mandal, Fuel Discount, Transporter Tailored Loan */}
@@ -1534,21 +1538,21 @@ const Home = React.forwardRef((props, ref) => {
                         <TouchableOpacity onPress={_navigateTMLoadMandal} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                 <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2271/2271113.png' }} />
-                                <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>TM Load Mandal</Text>
+                                <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('tmLoadMandalTitle')}</Text>
                             </View>
                         </TouchableOpacity>
                         <Space width={responsiveFontSize(1.5)} />
                         <TouchableOpacity onPress={_navigateFuelDiscount} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                 <Image style={{ height: responsiveFontSize(5), width: responsiveFontSize(5), marginBottom: 5 }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2311/2311324.png' }} />
-                                <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>Fuel Discount</Text>
+                                <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('fuelDiscountTitle')}</Text>
                             </View>
                         </TouchableOpacity>
                         <Space width={responsiveFontSize(1.5)} />
                         <TouchableOpacity onPress={_navigateTransporterLoan} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                 <Text style={{ fontSize: responsiveFontSize(3), marginBottom: 5 }}>💰</Text>
-                                <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>Transporter Tailored Loan</Text>
+                                <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('transporterLoanTitle')}</Text>
                             </View>
                         </TouchableOpacity>
                     </View>
@@ -1558,21 +1562,21 @@ const Home = React.forwardRef((props, ref) => {
                         <TouchableOpacity onPress={_navigateTruckInsurance} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                 <Text style={{ fontSize: responsiveFontSize(3), marginBottom: 5 }}>🛡️</Text>
-                                <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>Truck Insurance</Text>
+                                <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('truckInsuranceTitle')}</Text>
                             </View>
                         </TouchableOpacity>
                         <Space width={responsiveFontSize(1.5)} />
                         <TouchableOpacity onPress={_navigateSecondHandTruckMarketplace} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                 <Text style={{ fontSize: responsiveFontSize(3), marginBottom: 5 }}>🚛</Text>
-                                <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>Second Hand Truck Marketplace</Text>
+                                <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('secondHandTruckTitle')}</Text>
                             </View>
                         </TouchableOpacity>
                         <Space width={responsiveFontSize(1.5)} />
                         <TouchableOpacity onPress={_navigateFleetManagementSolution} activeOpacity={.7} style={{ flex: 1, backgroundColor: colors.white, ...shadow, shadowColor: isIOS() ? colors.blackOpacity(.16) : colors.blackOpacity(.3), borderRadius: 10 }}>
                             <View style={{ flex: 1, width: '100%', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: responsiveFontSize(0.5), borderRadius: 10, borderColor: colors.blackOpacity(.1), borderWidth: 1, minHeight: responsiveWidth(28) }}>
                                 <Text style={{ fontSize: responsiveFontSize(3), marginBottom: 5 }}>📊</Text>
-                                <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>Fleet Management Solution</Text>
+                                <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.4), fontWeight: '600', textAlign: 'center' }}>{t('fleetManagementTitle')}</Text>
                             </View>
                         </TouchableOpacity>
                     </View>
