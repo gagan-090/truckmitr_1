@@ -96,7 +96,7 @@ function TabBarTransporter({ state, descriptors, navigation }: { state: any, des
     const _start = async () => {
         const value = await AsyncStorage.getItem(`@stop_tour_guide_transporter`);
         if (value !== 'STOP_TRANSPORTER') {
-            start()
+            // start() // Disabled tour guide
         }
     }
 
@@ -182,11 +182,11 @@ function TabBarTransporter({ state, descriptors, navigation }: { state: any, des
                             onLongPress={onLongPress}
                             style={{ alignItems: 'center' }}>
                             {
-                                <TourGuideZone
-                                    zone={index + 7}
-                                    text={tourTitle[index]?.title}
-                                    shape='circle'
-                                    tooltipBottomOffset={50}>
+                                // <TourGuideZone
+                                //     zone={index + 7}
+                                //     text={tourTitle[index]?.title}
+                                //     shape='circle'
+                                //     tooltipBottomOffset={50}>
                                     <Animated.View style={[
                                         {
                                             height: responsiveHeight(7),
@@ -201,7 +201,7 @@ function TabBarTransporter({ state, descriptors, navigation }: { state: any, des
                                         </View>
                                         {isFocused && <Text numberOfLines={1} style={{ width: '100%', color: isFocused ? colors.white : colors.whiteOpacity(0.5), fontSize: responsiveFontSize(1.3), fontWeight: isFocused ? '600' : '400', textTransform: 'capitalize', marginTop: responsiveFontSize(.2), textAlign: 'center' }}>{getLabelText()}</Text>}
                                     </Animated.View>
-                                </TourGuideZone>
+                                // </TourGuideZone>
                             }
                         </TouchableOpacity>
                     </View>
@@ -282,7 +282,7 @@ function TabBarDriver({ state, descriptors, navigation, homeRef }: { state: any,
     const _start = async () => {
         const value = await AsyncStorage.getItem(`@stop_tour_guide`);
         if (value !== 'STOP') {
-            start()
+            // start() // Disabled tour guide
         }
     }
     useEffect(() => {
@@ -315,7 +315,7 @@ function TabBarDriver({ state, descriptors, navigation, homeRef }: { state: any,
             stop(); // stop current tour
             await homeRef.current.scrollToTop();
             if (canStart) {
-                start(5); // restart at step 5
+                // start(5); // Disabled restart tour
             }
         }
     };
@@ -382,11 +382,12 @@ function TabBarDriver({ state, descriptors, navigation, homeRef }: { state: any,
                             onLongPress={onLongPress}
                             style={{ alignItems: 'center' }}>
 
-                            {<TourGuideZone
-                                zone={index + 8}
-                                text={tourTitle[index]?.title}
-                                shape='circle'
-                                tooltipBottomOffset={50}>
+                            {
+                                // <TourGuideZone
+                                // zone={index + 8}
+                                // text={tourTitle[index]?.title}
+                                // shape='circle'
+                                // tooltipBottomOffset={50}>
                                 <Animated.View style={[
                                     {
                                         height: responsiveHeight(7),
@@ -401,7 +402,7 @@ function TabBarDriver({ state, descriptors, navigation, homeRef }: { state: any,
                                     </View>
                                     {isFocused && <Text numberOfLines={1} style={{ width: '100%', color: isFocused ? colors.white : colors.whiteOpacity(0.5), fontSize: responsiveFontSize(1.3), fontWeight: isFocused ? '600' : '400', textTransform: 'capitalize', marginTop: responsiveFontSize(.2), textAlign: 'center' }}>{getLabelText()}</Text>}
                                 </Animated.View>
-                            </TourGuideZone>
+                            // </TourGuideZone>
                             }
                         </TouchableOpacity>
                     </View>

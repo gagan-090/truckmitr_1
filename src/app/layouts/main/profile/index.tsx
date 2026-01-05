@@ -1004,7 +1004,7 @@ export default function Profile() {
                 fontSize: responsiveFontSize(1.5),
               }
             ]}>
-              {`ID: ${user?.unique_id || ''}`}
+              {`${user?.unique_id || ''}`}
             </Text>
 
             {/* Role Badge */}
