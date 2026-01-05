@@ -362,7 +362,7 @@ export default function AvailableJob() {
                     <Ionicons name={'chevron-back'} size={22} color={colors.royalBlue} />
                 </TouchableOpacity>
                 <Text style={[styles.headerTitle, { color: colors.black, fontSize: responsiveFontSize(2.2) }]}>
-                    {t('jobsList')}
+                    {t('jobsList')} ({jobList.length})
                 </Text>
                 <View style={{ width: responsiveFontSize(4) }} />
             </View>
