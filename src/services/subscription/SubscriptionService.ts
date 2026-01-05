@@ -278,9 +278,9 @@ class SubscriptionService {
     }
 
     /**
-     * Check if user is a legacy driver (paid Rs 49)
+     * Check if user is a legacy driver (paid Rs 49 or Rs 100)
      * Legacy drivers have empty subscription_id but payment_status is captured
-     * They should be treated as having an active subscription (Legendary Driver)
+     * They should be treated as having an active subscription (Legacy Driver)
      * 
      * @param subscriptionData - The subscription data object from API
      * @returns Boolean indicating if this is a legacy driver subscription
@@ -292,57 +292,86 @@ class SubscriptionService {
         const amount = parseFloat(subscriptionData.amount) || 0;
 
         // Legacy driver criteria:
-        // - Amount is Rs 49
+        // - Amount is Rs 49 or Rs 100 (for DRIVERS)
         // - Payment status is captured
         // - Subscription is not expired
-        const isLegacyAmount = amount === 49 || amount === 49.00;
+        const isLegacyAmount = amount === 49 || amount === 49.00 || amount === 100 || amount === 100.00;
         const isPaymentCaptured = subscriptionData.payment_status === 'captured';
         const isNotExpired = Date.now() / 1000 < subscriptionData.end_at;
 
         const isLegacy = isLegacyAmount && isPaymentCaptured && isNotExpired;
 
         if (isLegacy) {
-            console.log('[SubscriptionService] Legacy driver detected (Rs 49 subscription)');
+            console.log('[SubscriptionService] Legacy driver detected (Rs 49/100 subscription)');
         }
 
         return isLegacy;
     }
 
     /**
-     * Check if user is a transporter with premium subscription (paid Rs 100 or Rs 99)
-     * Transporters with this payment should have access to premium features
-     * They have empty subscription_id but payment_status is captured
+     * Check if user is a legacy transporter (paid Rs 99)
+     * Legacy transporters have payment_status as captured
      * 
      * @param subscriptionData - The subscription data object from API
-     * @returns Boolean indicating if this is a transporter premium subscription
+     * @returns Boolean indicating if this is a legacy transporter subscription
      */
-    isTransporterPremiumSubscription(subscriptionData: any): boolean {
+    isLegacyTransporterSubscription(subscriptionData: any): boolean {
         if (!subscriptionData) return false;
 
         // Parse amount - handle both string and number formats
         const amount = parseFloat(subscriptionData.amount) || 0;
 
-        // Transporter premium criteria:
-        // - Amount is Rs 100 or Rs 99
+        // Legacy transporter criteria:
+        // - Amount is Rs 99 (for TRANSPORTERS)
         // - Payment status is captured
         // - Subscription is not expired
-        const isTransporterPremiumAmount = amount === 100 || amount === 100.00 || amount === 99 || amount === 99.00 || amount === 499 || amount === 499.00;
+        const isLegacyAmount = amount === 99 || amount === 99.00;
         const isPaymentCaptured = subscriptionData.payment_status === 'captured';
         const isNotExpired = Date.now() / 1000 < subscriptionData.end_at;
 
-        const isTransporterPremium = isTransporterPremiumAmount && isPaymentCaptured && isNotExpired;
+        const isLegacy = isLegacyAmount && isPaymentCaptured && isNotExpired;
 
-        if (isTransporterPremium) {
-            console.log('[SubscriptionService] Transporter premium subscription detected (Rs 100/99 subscription)');
+        if (isLegacy) {
+            console.log('[SubscriptionService] Legacy transporter detected (Rs 99 subscription)');
         }
 
-        return isTransporterPremium;
+        return isLegacy;
+    }
+
+    /**
+     * Check if user is a transporter pro (paid Rs 499)
+     * 
+     * @param subscriptionData - The subscription data object from API
+     * @returns Boolean indicating if this is a transporter pro subscription
+     */
+    isTransporterProSubscription(subscriptionData: any): boolean {
+        if (!subscriptionData) return false;
+
+        // Parse amount - handle both string and number formats
+        const amount = parseFloat(subscriptionData.amount) || 0;
+
+        // Transporter Pro criteria:
+        // - Amount is Rs 499
+        // - Payment status is captured
+        // - Subscription is not expired
+        const isTransporterProAmount = amount === 499 || amount === 499.00;
+        const isPaymentCaptured = subscriptionData.payment_status === 'captured';
+        const isNotExpired = Date.now() / 1000 < subscriptionData.end_at;
+
+        const isTransporterPro = isTransporterProAmount && isPaymentCaptured && isNotExpired;
+
+        if (isTransporterPro) {
+            console.log('[SubscriptionService] Transporter Pro detected (Rs 499 subscription)');
+        }
+
+        return isTransporterPro;
     }
 
     /**
      * Check if user has an active subscription from subscription details data
-     * Includes legacy driver support (Rs 49 payment with captured status)
-     * Includes transporter premium support (Rs 100/99 payment with captured status)
+     * Includes legacy driver support (Rs 49/100 payment with captured status)
+     * Includes legacy transporter support (Rs 99 payment with captured status)
+     * Includes transporter pro support (Rs 499 payment with captured status)
      * 
      * @param subscriptionData - The subscription data object from API
      * @returns Boolean indicating if subscription is active
@@ -350,15 +379,18 @@ class SubscriptionService {
     hasActiveSubscription(subscriptionData: any): boolean {
         if (!subscriptionData) return false;
 
-        // First check if this is a legacy driver (Rs 49 payment)
-        // Legacy drivers have empty subscription_id but are still valid
+        // Check if this is a legacy driver (Rs 49 or Rs 100 payment)
         if (this.isLegacyDriverSubscription(subscriptionData)) {
             return true;
         }
 
-        // Check if this is a transporter with premium subscription (Rs 100/99 payment)
-        // Transporters with this payment should have access to premium features
-        if (this.isTransporterPremiumSubscription(subscriptionData)) {
+        // Check if this is a legacy transporter (Rs 99 payment)
+        if (this.isLegacyTransporterSubscription(subscriptionData)) {
+            return true;
+        }
+
+        // Check if this is a transporter pro (Rs 499 payment)
+        if (this.isTransporterProSubscription(subscriptionData)) {
             return true;
         }
 

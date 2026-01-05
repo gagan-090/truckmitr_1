@@ -114,22 +114,22 @@ const TIER_CONFIGS: Record<TierType, TierConfig> = {
 
 // Helper function to get tier from payment_type, now accepts amount and role for legacy detection
 const getTierFromPaymentType = (paymentType: string, amount?: number, role?: string): TierType => {
-    // Legacy driver detection: Rs 49 payment = Legacy Driver
-    if (amount === 49 || amount === 49.00) {
+    // Legacy driver detection: Rs 49 or Rs 100 payment for DRIVERS
+    if (role === 'driver' && (amount === 49 || amount === 49.00 || amount === 100 || amount === 100.00)) {
         return 'LEGACY';
     }
 
-    // Transporter Pro detection: Rs 499 payment
+    // Transporter Pro detection: Rs 499 payment for transporters
     if (role === 'transporter' && (amount === 499 || amount === 499.00)) {
         return 'TRANSPORTER PRO';
     }
 
-    // Legacy transporter detection: Rs 100 or Rs 99 payment = Legacy Transporter
-    if (amount === 100 || amount === 100.00 || amount === 99 || amount === 99.00) {
+    // Legacy transporter detection: Rs 99 payment for TRANSPORTERS
+    if (role === 'transporter' && (amount === 99 || amount === 99.00)) {
         return 'LEGACY';
     }
 
-    const normalizedType = paymentType?.toUpperCase().replace(/\s+/g, ' ').trim();
+    const normalizedType = paymentType?.toUpperCase().replace(/\\s+/g, ' ').trim();
 
     if (normalizedType === 'TRUSTED') return 'TRUSTED';
     if (normalizedType === 'VERIFIED') return 'VERIFIED';
