@@ -1954,7 +1954,6 @@
   "submitAndPay": "जमा करें और भुगतान करें",
   "drivingLicense": "लाइसेंस",
   "govtId": "सरकारी फोटो आईडी (आधार / वोटर आईडी / पैन)",
-<<<<<<< HEAD
   "sectionJobs": "नौकरियाँ",
   "sectionTrainingCertificate": "प्रशिक्षण और प्रमाण पत्र",
   "sectionCommunication": "संचार",
@@ -1962,8 +1961,7 @@
   "healthHygieneVideoCard": "स्वास्थ्य और स्वच्छता\nवीडियो",
   "transporterInvitationsCard": "ट्रांसपोर्टर\nनिमंत्रण",
   "callJobManager": "जॉब मैनेजर को कॉल करें",
-  "videoInterviewInvitationCard": "वीडियो साक्षात्कार\nनिमंत्रण"
-=======
+  "videoInterviewInvitationCard": "वीडियो साक्षात्कार\nनिमंत्रण",
   "tripIncentive": "यात्रा प्रोत्साहन",
   "selectTripIncentiveHint": "चुनें कि क्या यात्रा प्रोत्साहन प्रदान किया जाएगा",
   "tripIncentiveHintDetail": "क्या आप ड्राइवर को यात्रा प्रोत्साहन प्रदान करेंगे?",
@@ -2006,5 +2004,4 @@
   "old_runningDescription": "पुराना लेकिन चलने वाला",
   "road_ready": "रोड रेडी बनाया गया",
   "road_readyDescription": "जॉइन करने के बाद रोड रेडी बनाया गया"
->>>>>>> truckmitr/sourabh_new4
 }
