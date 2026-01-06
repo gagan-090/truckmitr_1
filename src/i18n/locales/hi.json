@@ -121,9 +121,12 @@
   "healthHygiene": "स्वास्थ्य और स्वच्छता",
   "appliedJobs": "आवेदित नौकरियां",
   "viewApplications": "आवेदन देखें",
+  "Training&Certificate": "प्रशिक्षण & साक्षरता",
   "driver": "ड्राइवर",
+  "Jos": "नौकरियां",
   "hi": "नमस्ते",
   "searchJobs": "नौकरी खोजें",
+  "getVerified": "सत्यापित करें",
   "dashboard": "डैशबोर्ड",
   "availableJobs": "उपलब्ध नौकरियां",
   "jobsThatSuitsYou": "आपके लिए उपयुक्त नौकरियां",
@@ -1934,5 +1937,13 @@
   "dl": "वैध ड्राइविंग लाइसेंस",
   "submitAndPay": "जमा करें और भुगतान करें",
   "drivingLicense": "लाइसेंस",
-  "govtId": "सरकारी फोटो आईडी (आधार / वोटर आईडी / पैन)"
+  "govtId": "सरकारी फोटो आईडी (आधार / वोटर आईडी / पैन)",
+  "sectionJobs": "नौकरियाँ",
+  "sectionTrainingCertificate": "प्रशिक्षण और प्रमाण पत्र",
+  "sectionCommunication": "संचार",
+  "allAvailableJobs": "सभी उपलब्ध नौकरियाँ",
+  "healthHygieneVideoCard": "स्वास्थ्य और स्वच्छता\nवीडियो",
+  "transporterInvitationsCard": "ट्रांसपोर्टर\nनिमंत्रण",
+  "callJobManager": "जॉब मैनेजर को कॉल करें",
+  "videoInterviewInvitationCard": "वीडियो साक्षात्कार\nनिमंत्रण"
 }

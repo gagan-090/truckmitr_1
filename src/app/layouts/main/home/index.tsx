@@ -33,6 +33,7 @@ import LottieView from 'lottie-react-native';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import WelcomeModal from '@truckmitr/src/app/components/welcome-modal';
+import { getUserBadgeText } from '@truckmitr/src/utils/global';
 
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 
@@ -929,7 +930,7 @@ const Home = React.forwardRef((props, ref) => {
                             <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(1.6), fontFamily: 'Inter-Bold', fontWeight: 'bold', marginTop: 0 }}>{`${user?.unique_id || ''}`}</Text>
 
                             <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(1.4), fontFamily: 'Inter-Bold', fontWeight: 'bold', marginTop: 0 }}>
-                                {getActivePlanName()}
+                                {getUserBadgeText({ user, subscriptionDetails, isDriver })}
                             </Text>
 
                         </View>
@@ -1209,7 +1210,7 @@ const Home = React.forwardRef((props, ref) => {
                     {/* Group 1: Jobs */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: responsiveWidth(4), marginBottom: 5 }}>
                         <Ionicons name="briefcase-outline" size={20} color={colors.royalBlue} />
-                        <Text style={{ marginLeft: 8, fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>{t('Jobs') || 'Jobs'}</Text>
+                        <Text style={{ marginLeft: 8, fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>{t('Jos')}</Text>
                     </View>
 
                     {/* Jobs Row: Available Jobs, Applied Jobs, Jobs That Suit You */}
@@ -1245,7 +1246,7 @@ const Home = React.forwardRef((props, ref) => {
                     {/* Group 2: Training & Certificate */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: responsiveWidth(4), marginBottom: 5, marginTop: 15 }}>
                         <Ionicons name="school-outline" size={20} color={colors.royalBlue} />
-                        <Text style={{ marginLeft: 8, fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>{t('Training & Certificate') || 'Training & Certificate'}</Text>
+                        <Text style={{ marginLeft: 8, fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>{t('Training&Certificate') || 'Training & Certificate'}</Text>
                     </View>
                     {/* Training Row: Training Videos, Health & Hygiene, Quiz Result */}
                     <View style={{ flexDirection: 'row', paddingHorizontal: responsiveWidth(4), paddingVertical: responsiveWidth(3) }}>
@@ -1280,7 +1281,7 @@ const Home = React.forwardRef((props, ref) => {
                     {/* Group 3: Get Verified */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: responsiveWidth(4), marginBottom: 5, marginTop: 15 }}>
                         <Ionicons name="shield-checkmark-outline" size={20} color={colors.royalBlue} />
-                        <Text style={{ marginLeft: 8, fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>{t('Get Verified') || 'Get Verified'}</Text>
+                        <Text style={{ marginLeft: 8, fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>{t('getVerified') || 'Get Verified'}</Text>
                     </View>
                     {/* Verified Row: ID Check, Court Check, Digital Address */}
                     <View style={{ flexDirection: 'row', paddingHorizontal: responsiveWidth(4), paddingVertical: responsiveWidth(3) }}>

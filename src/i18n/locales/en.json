@@ -145,10 +145,13 @@
   "training": "Training",
   "job": "Job",
   "jobs": "Jobs",
+  "Jos": "Jobs",
   "healthHygiene": "Health & Hygiene",
   "appliedJobs": "Applied Jobs",
   "viewApplications": "View Applications",
+  "Training&Certificate": "Training & Certificate",
   "drivers": "Drivers",
+  "getVerified": "Get Verified",
   "hi": "Hi",
   "searchJobs": "Search Jobs",
   "dashboard": "Dashboard",
@@ -2053,5 +2056,13 @@
   "convoyComingSoonDrivers": "Coming Soon for Drivers",
   "convoyComingSoonDesc": "TruckMitr is bringing Convoy to help drivers connect, support each other, and travel with confidence.",
   "convoyFooterTagline": "📢 Convoy – Saath chalenge, safe rahenge",
-  "convoyFooterSub": "🔔 Launching soon. Stay tuned with TruckMitr."
+  "convoyFooterSub": "🔔 Launching soon. Stay tuned with TruckMitr.",
+  "sectionJobs": "Jobs",
+  "sectionTrainingCertificate": "Training & Certificate",
+  "sectionCommunication": "Communication",
+  "allAvailableJobs": "All Available Jobs",
+  "healthHygieneVideoCard": "Health & Hygiene\nVideo",
+  "transporterInvitationsCard": "Transporter\nInvitations",
+  "callJobManager": "Call Job Manager",
+  "videoInterviewInvitationCard": "Video Interview\nInvitation"
 }

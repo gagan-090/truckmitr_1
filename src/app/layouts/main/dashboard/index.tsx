@@ -1,5 +1,3 @@
-
-
 import { Image, StyleSheet, Text, TouchableOpacity, View, ScrollView, Animated, TouchableWithoutFeedback } from 'react-native'
 import React, { useEffect, useRef } from 'react'
 import { useColor, useResponsiveScale, useShadow, useStatusBarStyle } from '@truckmitr/src/app/hooks';
@@ -252,10 +250,15 @@ export default function Dashboard() {
             if (tier === 'VERIFIED') return t('cardVerifiedDriver') || 'Verified Driver';
 
             if (tier === 'LEGACY') return t('cardLegacyDriver') || 'Legacy Driver';
-            if (tier === 'JOB READY') return t('cardJobReadyDriver') || 'Job Ready Driver';
-            return t('cardJobReadyDriver') || 'Job Ready Driver';
+
+            if (tier === 'JOB READY') return t('cardJobReady') || 'Job Ready Driver';
+
+            return t('cardJobReady') || 'Job Ready Driver';
+
         }
-        return t('cardJobReadyDriver') || 'Job Ready Driver';
+
+        return t('cardJobReady') || 'Job Ready Driver';
+
     };
 
     const driverBadgeText = getDriverBadgeText();
@@ -283,7 +286,7 @@ export default function Dashboard() {
                             <Text style={{ fontSize: responsiveFontSize(2.3), color: colors.royalBlue, fontFamily: 'Inter-Bold', fontWeight: 'bold' }}>{`, ${user?.name || ''} 👋`}</Text>
                         </View>
                         <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(1.6), fontFamily: 'Inter-Bold', fontWeight: 'bold', marginTop: 2 }}>{`${user?.unique_id || ''}`}</Text>
-                        <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(1.4), fontFamily: 'Inter-Bold', fontWeight: 'bold', marginTop: 2 }}>{driverBadgeText}</Text>
+                        <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(1.4), fontFamily: 'Inter-Bold', fontWeight: 'bold', marginTop: 2 }}>{getUserBadgeText({ user, subscriptionDetails, isDriver })}</Text>
                     </View>
 
                     {/* Right: Profile Avatar with Progress Ring */}
@@ -411,13 +414,13 @@ export default function Dashboard() {
                     {/* SECTION: JOBS */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginTop: 24, marginBottom: 12 }}>
                         <Ionicons name="briefcase-outline" size={20} color={colors.royalBlue} style={{ marginRight: 8 }} />
-                        <Text style={{ fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>Jobs</Text>
+                        <Text style={{ fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>{t('sectionJobs')}</Text>
                     </View>
 
                     {/* Row 1: Jobs Section - 3 Items */}
                     <View style={{ flexDirection: 'row', paddingHorizontal: 16, marginBottom: 14 }}>
                         <DashboardCard
-                            title="All Available Jobs"
+                            title={t('allAvailableJobs')}
                             subtitle=""
                             count={dashboard?.total_availablejobs}
                             icon="https://cdn-icons-png.flaticon.com/512/3281/3281289.png"
@@ -465,7 +468,7 @@ export default function Dashboard() {
                     {/* SECTION: TRAINING & CERTIFICATE */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginTop: 24, marginBottom: 12 }}>
                         <Ionicons name="school-outline" size={20} color={colors.royalBlue} style={{ marginRight: 8 }} />
-                        <Text style={{ fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>Training & Certificate</Text>
+                        <Text style={{ fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>{t('sectionTrainingCertificate')}</Text>
                     </View>
 
                     {/* Row 1: Training Section - 3 Items */}
@@ -482,7 +485,7 @@ export default function Dashboard() {
                         />
                         <Space width={responsiveFontSize(1.5)} />
                         <DashboardCard
-                            title={`Health & Hygiene\nVideo`}
+                            title={t('healthHygieneVideoCard')}
                             subtitle=""
                             count={dashboard?.total_health_hygiene}
                             icon="https://cdn-icons-png.flaticon.com/512/2382/2382461.png"
@@ -509,13 +512,13 @@ export default function Dashboard() {
                     {/* SECTION: COMMUNICATION */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginTop: 24, marginBottom: 12 }}>
                         <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.royalBlue} style={{ marginRight: 8 }} />
-                        <Text style={{ fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>Communication</Text>
+                        <Text style={{ fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>{t('sectionCommunication')}</Text>
                     </View>
 
                     {/* Row 1: Communication Section - 3 Items */}
                     <View style={{ flexDirection: 'row', paddingHorizontal: 16, marginBottom: 24 }}>
                         <DashboardCard
-                            title={`Transporter\nInvitations`}
+                            title={t('transporterInvitationsCard')}
                             subtitle=""
                             count={dashboard?.total_invites ?? 0}
                             icon="https://cdn-icons-png.flaticon.com/512/6003/6003724.png"
@@ -526,7 +529,7 @@ export default function Dashboard() {
                         />
                         <Space width={responsiveFontSize(1.5)} />
                         <DashboardCard
-                            title={`Video Interview\nInvitation`}
+                            title={t('videoInterviewInvitationCard')}
                             subtitle=""
                             count={interviewsCount ?? 0}
                             icon="https://cdn-icons-png.flaticon.com/512/1256/1256650.png"
@@ -537,7 +540,7 @@ export default function Dashboard() {
                         />
                         <Space width={responsiveFontSize(1.5)} />
                         <DashboardCard
-                            title={t('callJobManager', 'Call Job Manager')}
+                            title={t('callJobManager')}
                             subtitle=""
                             count={0}
                             icon="https://cdn-icons-png.flaticon.com/512/724/724664.png"

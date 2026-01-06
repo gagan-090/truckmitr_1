@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { subscriptionModalAction } from '@truckmitr/src/redux/actions/user.action';
 import Verification from '@truckmitr/src/app/layouts/main/verification/verification-screen';
 
+
 const Tab = createBottomTabNavigator();
 
 function TabBarTransporter({ state, descriptors, navigation }: { state: any, descriptors: any, navigation: any }) {

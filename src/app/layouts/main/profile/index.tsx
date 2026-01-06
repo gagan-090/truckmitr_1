@@ -35,7 +35,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { BASE_URL, END_POINTS } from '@truckmitr/src/utils/config';
 import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
-import { getUserBadgeText } from '@truckmitr/src/utils/global';
+import { getUserBadgeText, shouldShowMembershipCard, getMembershipCardConfig, getUserTier } from '@truckmitr/src/utils/global';
 import { useTranslation } from 'react-i18next';
 import moment from 'moment';
 import analytics from '@react-native-firebase/analytics';
@@ -43,9 +43,6 @@ import { AppEventsLogger } from 'react-native-fbsdk-next';
 import RNFetchBlob from 'react-native-blob-util';
 import LinearGradient from 'react-native-linear-gradient';
 import { ImageBackground } from 'react-native';
-import { openOverlayPermission } from '@truckmitr/src/utils/permissions/appearOnTopPermission';
-import { ZegoSendCallInvitationButton } from '@zegocloud/zego-uikit-prebuilt-call-rn';
-import { startVideoCall } from '@truckmitr/src/utils/zegoService';
 import ViewShot from 'react-native-view-shot';
 import RNShare from 'react-native-share';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -540,7 +537,7 @@ export default function Profile() {
   const { t } = useTranslation();
   const dispatch = useDispatch()
   useStatusBarStyle('dark-content')
-  const { user, isDriver, isTransporter, profileCompletion, subscriptionDetails, rank, star_rating, subscriptionModal } = useSelector((state: any) => { return state?.user }) || {};
+  const { user, isDriver, isTransporter, profileCompletion, subscriptionDetails, rank, star_rating, subscriptionModal, su } = useSelector((state: any) => { return state?.user }) || {};
   const colors = useColor();
   const safeAreaInsets = useSafeAreaInsets();
   const { shadow } = useShadow()
@@ -1181,29 +1178,21 @@ export default function Profile() {
           </>
         )}
 
-        {/* Dynamic Membership Card - Show when user has an active subscription (drivers and transporters) */}
-        {/* Dynamic Membership Card - Show when user has an active subscription (drivers and transporters) */}
-        {((rawSub) => {
-          // Normalize subscriptionDetails (handle array vs object)
-          // Shadowing is now safe because 'subscriptionDetails' comes from the argument 'rawSub'
-          const subscriptionDetails = Array.isArray(rawSub) ? rawSub[0] : rawSub;
+        {/* Dynamic Membership Card - Show based on utility function logic */}
+        {/* 
+          Future: To enable transporter cards, just update shouldShowMembershipCard 
+          in userBadge.ts to return true for transporters 
+        */}
+        {shouldShowMembershipCard({ user, subscriptionDetails, isDriver }) && (() => {
+          // Get tier and card configuration using utility functions
+          const tier = getUserTier({ user, subscriptionDetails, isDriver });
+          const cardConfig = getMembershipCardConfig({ user, subscriptionDetails, isDriver });
 
-          if (!(isDriver || isTransporter)) return null;
-          if (!subscriptionDetails) return null;
+          if (!cardConfig) return null;
 
-          // Robust check for active subscription (matching Membership Card logic)
-          const isActive = subscriptionDetails?.hasActiveSubscription ||
-            (subscriptionDetails?.subscription_id && subscriptionDetails?.payment_status === 'captured') ||
-            (subscriptionDetails?.payment_status === 'captured') ||
-            (subscriptionDetails?.status === 'active') ||
-            !subscriptionDetails?.showSubscriptionModel;
-
-          if (!isActive) return null;
-
-          // Get tier configuration based on payment_type and amount (for legacy driver detection)
+          // Get tier configuration for existing card styling (backward compatibility)
           const paymentType = subscriptionDetails?.payment_type || 'JOB READY';
           const amount = parseFloat(subscriptionDetails?.amount) || 0;
-          const tier = getTierFromPaymentType(paymentType, amount, user?.role);
           const tierConfig = getTierConfigs(t)[tier];
 
           // User data
@@ -1530,7 +1519,7 @@ export default function Profile() {
               </View>
             </>
           );
-        })(subscriptionDetails)}
+        })()}
 
         {/* Account Section */}
         <SectionHeader title={t('account')} />
