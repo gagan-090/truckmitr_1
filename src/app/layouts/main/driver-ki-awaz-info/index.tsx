@@ -18,13 +18,15 @@ const DriverKiAwazInfo = () => {
     return (
         <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
             {/* Header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', padding: responsiveWidth(4), paddingTop: responsiveHeight(6), backgroundColor: colors.white, elevation: 4 }}>
-                <TouchableOpacity onPress={_goBack} style={{ padding: 5, marginRight: 10 }}>
+            {/* Header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: responsiveWidth(4), paddingTop: responsiveHeight(4), backgroundColor: colors.white, elevation: 4 }}>
+                <TouchableOpacity onPress={_goBack} style={{ padding: 5 }}>
                     <Ionicons name="chevron-back" size={24} color={colors.royalBlue} />
                 </TouchableOpacity>
-                <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: 'bold', color: colors.royalBlue, flex: 1, textAlign: 'left' }}>
+                <Text style={{ fontSize: responsiveFontSize(2.4), fontWeight: 'bold', color: colors.royalBlue, textAlign: 'center' }}>
                     {t('driverKiAwazTitle', 'Driver Ki Awaz')}
                 </Text>
+                <View style={{ width: 34 }} />
             </View>
 
             <ScrollView contentContainerStyle={{ padding: responsiveWidth(4), paddingBottom: responsiveHeight(4) }} showsVerticalScrollIndicator={false}>

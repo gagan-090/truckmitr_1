@@ -15,6 +15,7 @@ import { useSelector } from 'react-redux';
 import moment from 'moment';
 import { BASE_URL } from '@truckmitr/src/utils/config';
 import { useTranslation } from 'react-i18next';
+import { getUserTier, getUserBadgeText } from '@truckmitr/src/utils/global';
 
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 
@@ -98,7 +99,7 @@ const TIER_CONFIGS: Record<TierType, TierConfig> = {
         ],
         categoryText: 'LEGACY MEMBER', // Will be overridden dynamically
     },
-        'TRANSPORTER PRO': {
+    'TRANSPORTER PRO': {
         background: BACKGROUND_TRUSTED,
         borderColors: ['#A67C00', '#C9A23F', '#FFF6C8', '#C9A23F', '#A67C00'],
         chromeGradient: [
@@ -110,35 +111,6 @@ const TIER_CONFIGS: Record<TierType, TierConfig> = {
         ],
         categoryText: 'TRANSPORTER PRO',
     },
-};
-
-// Helper function to get tier from payment_type, now accepts amount and role for legacy detection
-const getTierFromPaymentType = (paymentType: string, amount?: number, role?: string): TierType => {
-    // Legacy driver detection: Rs 49 or Rs 100 payment for DRIVERS
-    if (role === 'driver' && (amount === 49 || amount === 49.00 || amount === 100 || amount === 100.00)) {
-        return 'LEGACY';
-    }
-
-    // Transporter Pro detection: Rs 499 payment
-    if (role === 'transporter' && (amount === 499 || amount === 499.00)) {
-        return 'TRANSPORTER PRO';
-    }
-
-    // Legacy transporter detection: Rs 100 or Rs 99 payment = Legacy Transporter
-    if (amount === 100 || amount === 100.00 || amount === 99 || amount === 99.00) {
-        return 'LEGACY';
-    }
-
-    const normalizedType = paymentType?.toUpperCase().replace(/\\s+/g, ' ').trim();
-
-    if (normalizedType === 'TRUSTED') return 'TRUSTED';
-    if (normalizedType === 'VERIFIED') return 'VERIFIED';
-    if (normalizedType === 'JOB READY' || normalizedType === 'JOBREADY') return 'JOB READY';
-    if (normalizedType === 'STANDARD') return 'Standard';
-    if (normalizedType === 'LEGACY') return 'LEGACY';
-
-    // Default to JOB READY for any other type
-    return 'JOB READY';
 };
 
 export default function MembershipCard() {
@@ -170,16 +142,17 @@ export default function MembershipCard() {
     const licenseType = user?.Type_of_License || 'HMV';
     const profileImage = user?.images ? { uri: `${BASE_URL}public/${user?.images}` } : PROFILE_PLACEHOLDER;
 
-    // Subscription details
-    const paymentType = subscriptionDetails?.payment_type || 'JOB READY';
-    const amount = parseFloat(subscriptionDetails?.amount) || 0;
+    // Subscription details - Using utility function for consistency
+    // This ensures same logic as dashboard, profile, and other components
     const userRole = user?.role || 'driver';
-    const tier = getTierFromPaymentType(paymentType, amount, userRole);
+    const isDriver = userRole === 'driver';
+    const tier = getUserTier({ user, subscriptionDetails, isDriver });
+    const badgeText = getUserBadgeText({ user, subscriptionDetails, isDriver });
 
     // Get tier config and dynamically set categoryText for LEGACY based on role
     let tierConfig = { ...TIER_CONFIGS[tier] };
     if (tier === 'LEGACY') {
-        tierConfig.categoryText = userRole === 'transporter' ? 'LEGACY TRANSPORTER' : 'LEGACY DRIVER';
+        tierConfig.categoryText = userRole === 'transporter' ? (t('cardLegacyTransporter') || 'LEGACY TRANSPORTER') : (t('cardLegacyDriver') || 'LEGACY DRIVER');
     }
 
     const startDate = subscriptionDetails?.start_at

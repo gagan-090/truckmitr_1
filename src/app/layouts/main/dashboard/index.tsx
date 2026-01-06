@@ -82,7 +82,7 @@ interface DashboardCardProps {
     responsiveFontSize: (f: number) => number;
 }
 
-const DashboardCard = ({ title, subtitle, count, icon, onPress, badge, badgeColor, colors, shadow, responsiveFontSize }: DashboardCardProps) => {
+const DashboardCard = ({ title, count, icon, onPress, badge, badgeColor, colors, shadow, responsiveFontSize }: DashboardCardProps) => {
     const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const onPressIn = () => {
@@ -100,39 +100,42 @@ const DashboardCard = ({ title, subtitle, count, icon, onPress, badge, badgeColo
     };
 
     return (
-        <TouchableWithoutFeedback onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut}>
-            <Animated.View style={{
-                width: '48%',
-                backgroundColor: colors.white,
-                borderRadius: 14,
-                padding: 12,
-                ...shadow,
-                shadowColor: colors.blackOpacity(.08),
-                elevation: 2,
-                borderWidth: 1,
-                borderColor: colors.blackOpacity(0.1),
-                transform: [{ scale: scaleAnim }]
-            }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <View style={{ height: responsiveFontSize(4.5), width: responsiveFontSize(4.5), backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.blackOpacity(0.05) }}>
-                        <Image style={{ height: responsiveFontSize(2.8), width: responsiveFontSize(2.8) }} source={{ uri: icon }} />
+        <View style={{ flex: 1 }}>
+            <TouchableWithoutFeedback onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut}>
+                <Animated.View style={{
+                    flex: 1,
+                    backgroundColor: colors.white,
+                    borderRadius: 14,
+                    paddingVertical: responsiveFontSize(1.5),
+                    paddingHorizontal: responsiveFontSize(0.5),
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: responsiveFontSize(14),
+                    ...shadow,
+                    shadowColor: colors.blackOpacity(.08),
+                    elevation: 2,
+                    borderWidth: 1,
+                    borderColor: colors.blackOpacity(0.1),
+                    transform: [{ scale: scaleAnim }]
+                }}>
+                    <View style={{ height: responsiveFontSize(4), width: responsiveFontSize(4), backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', borderRadius: 12, marginBottom: 5 }}>
+                        <Image style={{ height: responsiveFontSize(3.5), width: responsiveFontSize(3.5) }} source={{ uri: icon }} />
                     </View>
-                    <Text style={{ color: colors.black, fontSize: responsiveFontSize(2), fontWeight: '700' }}>{`${count ?? 0}`}</Text>
-                </View>
 
-                {badge && (
-                    <View style={{ position: 'absolute', bottom: 6, right: 6, backgroundColor: 'white', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 20, flexDirection: 'row', alignItems: 'center', borderColor: badgeColor || 'red', borderWidth: 1, ...shadow, elevation: 1 }}>
-                        <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: badgeColor || 'red', marginRight: 3 }} />
-                        <Text style={{ color: badgeColor || 'red', fontSize: 8, fontWeight: '700' }}>{badge}</Text>
-                    </View>
-                )}
+                    {count !== undefined && count !== null && (
+                        <Text style={{ color: colors.black, fontSize: responsiveFontSize(2), fontWeight: '700', marginBottom: 2 }}>{`${count}`}</Text>
+                    )}
 
-                <View style={{ marginTop: 10 }}>
-                    <Text style={{ color: '#001F3F', fontSize: responsiveFontSize(1.5), fontWeight: '600' }}>{title}</Text>
-                    <Text style={{ color: colors.blackOpacity(.45), fontSize: responsiveFontSize(1.1), fontWeight: '400', marginTop: 2 }} numberOfLines={1}>{subtitle}</Text>
-                </View>
-            </Animated.View>
-        </TouchableWithoutFeedback>
+                    {badge && (
+                        <View style={{ position: 'absolute', top: 5, right: 5, backgroundColor: badgeColor || 'red', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4 }}>
+                            <Text style={{ color: 'white', fontSize: 8, fontWeight: '700' }}>{badge}</Text>
+                        </View>
+                    )}
+
+                    <Text style={{ color: '#001F3F', fontSize: responsiveFontSize(1.3), fontWeight: '600', textAlign: 'center' }} numberOfLines={2}>{title}</Text>
+                </Animated.View>
+            </TouchableWithoutFeedback>
+        </View>
     );
 };
 
@@ -249,72 +252,80 @@ export default function Dashboard() {
         <ScrollView style={{ flex: 1, backgroundColor: colors.white }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 50 }}>
             <Space height={safeAreaInsets.top} />
             {/* Navigation Header */}
-            <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center', padding: responsiveWidth(3) }}>
+            <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center', paddingHorizontal: responsiveWidth(3), paddingTop: responsiveWidth(2), paddingBottom: 0 }}>
                 <TouchableOpacity hitSlop={hitSlop(10)} onPress={_goback} style={{ height: responsiveFontSize(4), width: responsiveFontSize(4), alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white, borderRadius: 100, zIndex: 100, ...shadow }}>
                     <Ionicons name={'chevron-back'} size={24} color={colors.royalBlue} />
                 </TouchableOpacity>
                 <Text style={{ width: responsiveWidth(100), fontSize: responsiveFontSize(2.2), color: colors.royalBlue, fontWeight: 'bold', textAlign: 'center', position: 'absolute', zIndex: 1 }}>{t(`dashboard`)}</Text>
             </View>
+
             {/* Simple Header - Profile Left, Info Right */}
             {isDriver ? (
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: responsiveWidth(3), paddingTop: 0 }}>
-                    {/* Left: Hi, Name, TM ID, Job Ready Driver */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: responsiveWidth(5), paddingBottom: responsiveWidth(3), paddingTop: 0, alignItems: 'flex-start', marginTop: responsiveHeight(1) }}>
+                    {/* Left: Hi, Name, TM ID, Driver Badge */}
                     <View>
-                        <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(2.2), fontFamily: 'Inter-Bold', fontWeight: 'bold', letterSpacing: 0.5 }}>{`${t(`hi`)}, ${user?.name || ''} 👋`}</Text>
-                        <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(1.6), fontFamily: 'Inter-Bold', fontWeight: 'bold', marginTop: -3 }}>{`${user?.unique_id || ''}`}</Text>
-                        <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(1.4), fontFamily: 'Inter-Bold', fontWeight: 'bold', marginTop: -3 }}>{driverBadgeText}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text style={{ fontSize: responsiveFontSize(2.3), color: colors.royalBlue, fontFamily: 'Inter-Bold', fontWeight: 'bold' }}>{t(`hi`)}</Text>
+                            <Text style={{ fontSize: responsiveFontSize(2.3), color: colors.royalBlue, fontFamily: 'Inter-Bold', fontWeight: 'bold' }}>{`, ${user?.name || ''} 👋`}</Text>
+                        </View>
+                        <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(1.6), fontFamily: 'Inter-Bold', fontWeight: 'bold', marginTop: 2 }}>{`${user?.unique_id || ''}`}</Text>
+                        <Text style={{ color: colors.royalBlue, fontSize: responsiveFontSize(1.4), fontFamily: 'Inter-Bold', fontWeight: 'bold', marginTop: 2 }}>{getUserBadgeText({ user, subscriptionDetails, isDriver })}</Text>
                     </View>
 
-                    {/* Right: Profile Avatar with Progress Ring, Stars, N/A */}
-                    <TouchableOpacity onPress={() => navigation.navigate(STACKS.PROFILE)} activeOpacity={.7} style={{ alignItems: 'center' }}>
-                        <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-                            <Svg width={size} height={size} style={{ position: "absolute", top: 0, left: 0 }}>
-                                {/* Background Circle */}
-                                <Circle
-                                    cx={size / 2}
-                                    cy={size / 2}
-                                    r={radius}
-                                    stroke={colors.blackOpacity(.07)}
-                                    strokeWidth={strokeWidth}
-                                    fill="none"
-                                />
-                                {/* Progress Circle */}
-                                <Circle
-                                    cx={size / 2}
-                                    cy={size / 2}
-                                    r={radius}
-                                    stroke="#FFD700"
-                                    strokeWidth={strokeWidth}
-                                    fill="none"
-                                    strokeDasharray={circumference}
-                                    strokeDashoffset={progressOffset}
-                                    strokeLinecap="round"
-                                    rotation="90"
-                                    origin={`${size / 2}, ${size / 2}`}
-                                />
-                            </Svg>
-                            <Image style={{ height: size - strokeWidth, width: size - strokeWidth, borderRadius: 100, backgroundColor: colors.white }} source={{ uri: user?.images ? `${BASE_URL}public/${user?.images}` : `https://cdn-icons-png.flaticon.com/512/3177/3177440.png` }} />
-                            <View style={{ backgroundColor: colors.whiteOpacity(1), paddingHorizontal: responsiveFontSize(1.8), paddingVertical: responsiveFontSize(.24), borderRadius: 100, position: 'absolute', bottom: -10, ...shadow }}>
-                                <Text style={{ fontSize: responsiveFontSize(1.0), color: 'green', fontWeight: '700' }}>{`${profileCompletion}%`}</Text>
+                    {/* Right: Profile Avatar with Progress Ring */}
+                    <View style={{ alignItems: 'center' }}>
+                        <TouchableOpacity onPress={() => navigation.navigate(STACKS.PROFILE)} activeOpacity={.7} style={{ alignItems: 'center', justifyContent: 'center' }}>
+                            <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+                                <Svg width={size} height={size} style={{ position: "absolute", top: 0, left: 0 }}>
+                                    {/* Background Circle */}
+                                    <Circle
+                                        cx={size / 2}
+                                        cy={size / 2}
+                                        r={radius}
+                                        stroke={colors.blackOpacity(.07)}
+                                        strokeWidth={strokeWidth}
+                                        fill="none"
+                                    />
+                                    {/* Progress Circle */}
+                                    <Circle
+                                        cx={size / 2}
+                                        cy={size / 2}
+                                        r={radius}
+                                        stroke="#FFD700"
+                                        strokeWidth={strokeWidth}
+                                        fill="none"
+                                        strokeDasharray={circumference}
+                                        strokeDashoffset={progressOffset}
+                                        strokeLinecap="round"
+                                        rotation="90"
+                                        origin={`${size / 2}, ${size / 2}`}
+                                    />
+                                </Svg>
+                                <Image style={{ height: size - strokeWidth, width: size - strokeWidth, borderRadius: 100, backgroundColor: colors.white }} source={{ uri: user?.images ? `${BASE_URL}public/${user?.images}` : `https://cdn-icons-png.flaticon.com/512/3177/3177440.png` }} />
+                                <View style={{ backgroundColor: colors.whiteOpacity(1), paddingHorizontal: responsiveFontSize(1.8), paddingVertical: responsiveFontSize(.24), borderRadius: 100, position: 'absolute', bottom: -10, ...shadow }}>
+                                    <Text style={{ fontSize: responsiveFontSize(1.0), color: 'green', fontWeight: '700' }}>{`${profileCompletion}%`}</Text>
+                                </View>
                             </View>
-                        </View>
+                        </TouchableOpacity>
+
+                        {/* Stars & Rank */}
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: responsiveFontSize(1.5), gap: 2 }}>
-                            {[1, 2, 3, 4, 5].map((curr) => (
+                            {Array.from({ length: 5 }).map((_, i) => (
                                 <FontAwesome
-                                    key={curr}
-                                    name="star"
+                                    key={i}
+                                    name={i < (star_rating || 0) ? "star" : "star-o"}
                                     size={responsiveFontSize(1.6)}
-                                    color={curr <= (star_rating || 5) ? "#FFD700" : "#D3D3D3"}
+                                    color={i < (star_rating || 0) ? "#FFD700" : "#D3D3D3"}
                                 />
                             ))}
                         </View>
                         <View style={{ marginTop: 2, backgroundColor: colors.white, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
                             <Text style={{ fontSize: responsiveFontSize(1.2), color: colors.royalBlue, fontFamily: 'Inter-Bold', textAlign: 'center' }}>💎 {rank || 'N/A'}</Text>
                         </View>
-                    </TouchableOpacity>
+                    </View>
                 </View>
             ) : (
-                <View style={{ flexDirection: 'row', padding: responsiveWidth(5), alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', paddingHorizontal: responsiveWidth(5), paddingBottom: responsiveWidth(5), paddingTop: 0, alignItems: 'center' }}>
                     {/* Left: Profile Avatar with Progress Ring */}
                     <View style={{ alignItems: 'center' }}>
                         <TouchableOpacity onPress={() => navigation.navigate(STACKS.PROFILE)} activeOpacity={1} style={{ alignItems: 'center', justifyContent: 'center' }}>
@@ -385,27 +396,39 @@ export default function Dashboard() {
                 <>
                     {/* SECTION: JOBS */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginTop: 24, marginBottom: 12 }}>
-                        <Ionicons name="briefcase-outline" size={16} color="#001F3F" style={{ marginRight: 8 }} />
-                        <Text style={{ fontSize: responsiveFontSize(1.3), fontWeight: '600', color: '#001F3F', letterSpacing: 1.5 }}>JOBS</Text>
+                        <Ionicons name="briefcase-outline" size={20} color={colors.royalBlue} style={{ marginRight: 8 }} />
+                        <Text style={{ fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>Jobs</Text>
                     </View>
 
-                    {/* Row 1: Available Jobs & Jobs That Suit You */}
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 14 }}>
+                    {/* Row 1: Jobs Section - 3 Items */}
+                    <View style={{ flexDirection: 'row', paddingHorizontal: 16, marginBottom: 14 }}>
                         <DashboardCard
                             title="All Available Jobs"
-                            subtitle={t(`Discover & Apply`)}
+                            subtitle=""
                             count={dashboard?.total_availablejobs}
                             icon="https://cdn-icons-png.flaticon.com/512/3281/3281289.png"
                             onPress={() => _navigateBottomScreen(STACKS.JOB)}
-                            badge="New"
-                            badgeColor="#22C55E"
+                            // badge="New"
+                            // badgeColor="#22C55E"
                             colors={colors}
                             shadow={shadow}
                             responsiveFontSize={responsiveFontSize}
                         />
+                        <Space width={responsiveFontSize(1.5)} />
+                        <DashboardCard
+                            title={t(`appliedJobs`)}
+                            subtitle=""
+                            count={dashboard?.total_applyjobs}
+                            icon="https://cdn-icons-png.flaticon.com/512/11651/11651437.png"
+                            onPress={() => navigation.navigate(STACKS.APPLIED_JOB)}
+                            colors={colors}
+                            shadow={shadow}
+                            responsiveFontSize={responsiveFontSize}
+                        />
+                        <Space width={responsiveFontSize(1.5)} />
                         <DashboardCard
                             title={t(`jobsThatSuitsYou`)}
-                            subtitle={t(`Matches for you`)}
+                            subtitle=""
                             count={suitsJobCount !== null ? suitsJobCount : dashboard?.jobs_that_suit_you}
                             icon="https://cdn-icons-png.flaticon.com/512/2966/2966773.png"
                             onPress={() => {
@@ -425,31 +448,17 @@ export default function Dashboard() {
                         />
                     </View>
 
-                    {/* Row 2: Applied Jobs */}
-                    <View style={{ flexDirection: 'row', paddingHorizontal: 16 }}>
-                        <DashboardCard
-                            title={t(`appliedJobs`)}
-                            subtitle={t(`Track Status`)}
-                            count={dashboard?.total_applyjobs}
-                            icon="https://cdn-icons-png.flaticon.com/512/11651/11651437.png"
-                            onPress={() => navigation.navigate(STACKS.APPLIED_JOB)}
-                            colors={colors}
-                            shadow={shadow}
-                            responsiveFontSize={responsiveFontSize}
-                        />
-                    </View>
-
                     {/* SECTION: TRAINING & CERTIFICATE */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginTop: 24, marginBottom: 12 }}>
-                        <Ionicons name="school-outline" size={16} color="#001F3F" style={{ marginRight: 8 }} />
-                        <Text style={{ fontSize: responsiveFontSize(1.3), fontWeight: '600', color: '#001F3F', letterSpacing: 1.5 }}>TRAINING & CERTIFICATE</Text>
+                        <Ionicons name="school-outline" size={20} color={colors.royalBlue} style={{ marginRight: 8 }} />
+                        <Text style={{ fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>Training & Certificate</Text>
                     </View>
 
-                    {/* Row 1: Training Videos & Health & Hygiene */}
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16 }}>
+                    {/* Row 1: Training Section - 3 Items */}
+                    <View style={{ flexDirection: 'row', paddingHorizontal: 16 }}>
                         <DashboardCard
                             title={t(`trainingVideos`)}
-                            subtitle={t(`Learn & Grow`)}
+                            subtitle=""
                             count={dashboard?.total_videos}
                             icon="https://cdn-icons-png.flaticon.com/512/11825/11825158.png"
                             onPress={() => _navigateBottomScreen(STACKS.TRAINING)}
@@ -457,25 +466,23 @@ export default function Dashboard() {
                             shadow={shadow}
                             responsiveFontSize={responsiveFontSize}
                         />
+                        <Space width={responsiveFontSize(1.5)} />
                         <DashboardCard
                             title={`Health & Hygiene\nVideo`}
-                            subtitle={t(`Stay Healthy`)}
+                            subtitle=""
                             count={dashboard?.total_health_hygiene}
                             icon="https://cdn-icons-png.flaticon.com/512/2382/2382461.png"
                             onPress={() => _navigateBottomScreen(STACKS.HEALTH_HYGIENE)}
-                            badge="Pending"
-                            badgeColor="#EAB308"
+                            // badge="Pending"
+                            // badgeColor="#EAB308"
                             colors={colors}
                             shadow={shadow}
                             responsiveFontSize={responsiveFontSize}
                         />
-                    </View>
-
-                    {/* Row 2: Quizzes */}
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: 14 }}>
+                        <Space width={responsiveFontSize(1.5)} />
                         <DashboardCard
                             title={t(`quizzes`)}
-                            subtitle={t(`Test Skills`)}
+                            subtitle=""
                             count={dashboard?.total_quizzes}
                             icon="https://cdn-icons-png.flaticon.com/512/9913/9913576.png"
                             onPress={_navigateToQuizTrainingScreen}
@@ -487,29 +494,40 @@ export default function Dashboard() {
 
                     {/* SECTION: COMMUNICATION */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginTop: 24, marginBottom: 12 }}>
-                        <Ionicons name="chatbubble-ellipses-outline" size={16} color="#001F3F" style={{ marginRight: 8 }} />
-                        <Text style={{ fontSize: responsiveFontSize(1.3), fontWeight: '600', color: '#001F3F', letterSpacing: 1.5 }}>COMMUNICATION</Text>
+                        <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.royalBlue} style={{ marginRight: 8 }} />
+                        <Text style={{ fontSize: responsiveFontSize(2), fontWeight: '700', color: colors.royalBlue }}>Communication</Text>
                     </View>
 
-                    {/* Row 1: Transporter Invitations & Video Interview */}
+                    {/* Row 1: Communication Section - 3 Items */}
                     <View style={{ flexDirection: 'row', paddingHorizontal: 16, marginBottom: 24 }}>
                         <DashboardCard
                             title={`Transporter\nInvitations`}
-                            subtitle={t('viewInvites', 'View invites')}
-                            count={dashboard?.total_invites} // Assuming field exists or 0
+                            subtitle=""
+                            count={dashboard?.total_invites ?? 0}
                             icon="https://cdn-icons-png.flaticon.com/512/6003/6003724.png"
-                            onPress={() => _navigateBottomScreen(STACKS.DRIVERINVITES)}
+                            onPress={() => navigation.navigate(STACKS.JOB_INVITATIONS_LIST)}
                             colors={colors}
                             shadow={shadow}
                             responsiveFontSize={responsiveFontSize}
                         />
-                        <Space width={14} />
+                        <Space width={responsiveFontSize(1.5)} />
                         <DashboardCard
                             title={`Video Interview\nInvitation`}
-                            subtitle={t('scheduleInterview', 'Schedule interview')}
-                            count={dashboard?.total_video_interviews} // Assumed field or 0
+                            subtitle=""
+                            count={dashboard?.total_video_interviews ?? 0}
                             icon="https://cdn-icons-png.flaticon.com/512/1256/1256650.png"
-                            onPress={() => _navigateBottomScreen(STACKS.DRIVERINVITES)}
+                            onPress={() => navigation.navigate(STACKS.VIDEO_INTERVIEW_INFO)}
+                            colors={colors}
+                            shadow={shadow}
+                            responsiveFontSize={responsiveFontSize}
+                        />
+                        <Space width={responsiveFontSize(1.5)} />
+                        <DashboardCard
+                            title={t('callJobManager', 'Call Job Manager')}
+                            subtitle=""
+                            count={0}
+                            icon="https://cdn-icons-png.flaticon.com/512/724/724664.png"
+                            onPress={() => navigation.navigate(STACKS.CALL_JOB_MANAGER_INFO)}
                             colors={colors}
                             shadow={shadow}
                             responsiveFontSize={responsiveFontSize}

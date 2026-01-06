@@ -11,6 +11,7 @@ import {
     Platform,
     Image,
     Modal,
+    Alert,
 } from 'react-native';
 import WebView from 'react-native-webview';
 import ImagePicker from 'react-native-image-crop-picker';
@@ -264,6 +265,7 @@ export default function DocumentVerification() {
     const [digiLockerUrl, setDigiLockerUrl] = useState<string | null>(null);
     const [showDigiLockerModal, setShowDigiLockerModal] = useState(false);
     const [aadhaarConsentChecked, setAadhaarConsentChecked] = useState(false);
+    const [digiLockerVerified, setDigiLockerVerified] = useState(false);
 
     // Face Verification State
     const [faceImage1, setFaceImage1] = useState<any>(null);
@@ -313,6 +315,29 @@ export default function DocumentVerification() {
         setError(upgradeNeeded ? (t('upgradeForAccess') || 'Upgrade your plan for accessing this feature') : errorMsg);
     }, [isUpgradeRequired, t]);
 
+    // Immediate initialization from Redux user state (before API fetch completes)
+    useEffect(() => {
+        if (user) {
+            // Pre-fill Aadhaar from Redux user state (profile-edit saves as Aadhar_Number)
+            const existingAadhaar = user?.Aadhar_Number || user?.aadhaar_number || user?.Aadhaar_Number || user?.aadhaar || '';
+            if (existingAadhaar && !aadhaarNumber) {
+                setAadhaarNumber(existingAadhaar.trim());
+            }
+
+            // Pre-fill PAN
+            const existingPan = user?.pan || user?.PAN_Number || user?.pan_number || '';
+            if (existingPan && !panNumber) {
+                setPanNumber(existingPan.trim().toUpperCase());
+            }
+
+            // Pre-fill DL
+            const existingDl = user?.License_Number || user?.license_number || '';
+            if (existingDl && !dlNumber) {
+                setDlNumber(existingDl.trim().toUpperCase());
+            }
+        }
+    }, [user]);
+
     // Auto-fill from user profile and fetch for Face Verification
     useEffect(() => {
         const fetchProfileData = async () => {
@@ -332,13 +357,19 @@ export default function DocumentVerification() {
                     const licenseNumber = profileData?.License_Number || profileData?.license_number || '';
                     if (licenseNumber) setDlNumber(licenseNumber.trim().toUpperCase());
 
-                    const pan = profileData?.pan || profileData?.PAN_Number || profileData?.pan_number || profileData?.Pan_Number || '';
+                    const pan = profileData?.pan || profileData?.PAN_Number || profileData?.pan_number || profileData?.Pan_Number ||
+                        user?.pan || user?.PAN_Number || user?.pan_number || '';
                     if (pan) setPanNumber(pan.trim().toUpperCase());
 
-                    const aadhaar = profileData?.aadhaar_number || profileData?.Aadhaar_Number || profileData?.aadhaar || profileData?.Aadhar_Number || '';
+                    // Check both profileData (from API) and user (from Redux) for Aadhaar
+                    // profile-edit saves as Aadhar_Number (single 'a')
+                    const aadhaar = profileData?.aadhaar_number || profileData?.Aadhaar_Number || profileData?.aadhaar ||
+                        profileData?.Aadhar_Number || user?.Aadhar_Number || user?.aadhaar_number ||
+                        user?.Aadhaar_Number || user?.aadhaar || '';
                     if (aadhaar) setAadhaarNumber(aadhaar.trim());
 
-                    const voter = profileData?.voter_id || profileData?.Voter_Id || profileData?.voter_id_number || '';
+                    const voter = profileData?.voter_id || profileData?.Voter_Id || profileData?.voter_id_number ||
+                        user?.voter_id || user?.Voter_Id || '';
                     if (voter) setVoterIdNumber(voter.trim().toUpperCase());
 
                     // Preload License Image for Face Verification
@@ -1521,30 +1552,46 @@ export default function DocumentVerification() {
                 visible={showDigiLockerModal}
                 animationType="slide"
                 presentationStyle="fullScreen"
-                onRequestClose={() => setShowDigiLockerModal(false)}
+                onRequestClose={() => {
+                    // Show confirmation when trying to close with back button
+                    Alert.alert(
+                        t('cancelVerification') || 'Cancel Verification?',
+                        t('cancelVerificationMessage') || 'You have not completed Aadhaar verification. Are you sure you want to cancel?',
+                        [
+                            { text: t('no') || 'No', style: 'cancel' },
+                            {
+                                text: t('yes') || 'Yes',
+                                style: 'destructive',
+                                onPress: () => {
+                                    setShowDigiLockerModal(false);
+                                    setDigiLockerUrl(null);
+                                    setDigiLockerVerified(false);
+                                }
+                            }
+                        ]
+                    );
+                }}
             >
                 <View style={styles.digiLockerModalContainer}>
-                    {/* Modal Header */}
-                    <View style={[styles.digiLockerHeader, { paddingTop: safeAreaInsets.top }]}>
-                        <TouchableOpacity
-                            style={styles.digiLockerCloseBtn}
-                            onPress={() => {
-                                setShowDigiLockerModal(false);
-                                setDigiLockerUrl(null);
-                            }}
-                            hitSlop={hitSlop()}
-                        >
-                            <Ionicons name="close" size={24} color={COLORS.text} />
-                        </TouchableOpacity>
+                    {/* Modal Header - No close button until verification is complete */}
+                    <View style={[styles.digiLockerHeader, { paddingTop: safeAreaInsets.top, justifyContent: 'center' }]}>
                         <Text style={styles.digiLockerTitle}>{t('digiLockerVerification') || 'DigiLocker Verification'}</Text>
-                        <View style={{ width: 32 }} />
                     </View>
 
-                    {/* WebView */}
+                    {/* Info Banner */}
+                    <View style={styles.digiLockerInfoBanner}>
+                        <Ionicons name="information-circle" size={20} color={COLORS.primary} />
+                        <Text style={styles.digiLockerInfoText}>
+                            {t('completeVerificationToClose') || 'Please complete OTP verification to continue'}
+                        </Text>
+                    </View>
+
+                    {/* WebView with incognito mode to clear session on each use */}
                     {digiLockerUrl && (
                         <WebView
                             source={{ uri: digiLockerUrl }}
                             style={{ flex: 1 }}
+                            incognito={true}
                             startInLoadingState={true}
                             renderLoading={() => (
                                 <View style={styles.webViewLoading}>
@@ -1559,7 +1606,8 @@ export default function DocumentVerification() {
                                 if (navState.url.startsWith('https://secure.befisc.com') ||
                                     navState.url.includes('truckmitr.com/callback') ||
                                     navState.url.includes('success=true')) {
-                                    // Close modal after successful verification
+                                    // Mark as verified and close modal after successful verification
+                                    setDigiLockerVerified(true);
                                     setTimeout(() => {
                                         setShowDigiLockerModal(false);
                                         setDigiLockerUrl(null);
@@ -1947,6 +1995,22 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: COLORS.text,
+    },
+    digiLockerInfoBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFF4E5', // Light orange background for warning/info
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: '#FFE0B2',
+    },
+    digiLockerInfoText: {
+        flex: 1,
+        marginLeft: 8,
+        fontSize: 12,
+        color: '#E65100', // Darker orange text
+        fontWeight: '500',
     },
     webViewLoading: {
         position: 'absolute',

@@ -39,15 +39,15 @@ const TruckmitrDhaba = () => {
     return (
         <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
             {/* Header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: responsiveWidth(4), paddingTop: responsiveHeight(6), paddingBottom: responsiveHeight(2), backgroundColor: colors.white, elevation: 2 }}>
-                <TouchableOpacity onPress={_goBack} style={{ padding: 8 }}>
-                    <Ionicons name="chevron-back" size={28} color={colors.royalBlue} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: responsiveWidth(4), paddingTop: responsiveHeight(4), backgroundColor: colors.white, elevation: 2 }}>
+                <TouchableOpacity onPress={_goBack} style={{ padding: 5 }}>
+                    <Ionicons name="chevron-back" size={24} color={colors.royalBlue} />
                 </TouchableOpacity>
-                <Text style={{ fontSize: responsiveFontSize(2.8), fontWeight: 'bold', color: colors.royalBlue, textAlign: 'center' }}>
+                <Text style={{ fontSize: responsiveFontSize(2.4), fontWeight: 'bold', color: colors.royalBlue, textAlign: 'center' }}>
                     {t('truckMitrDhabaTitle')}
                 </Text>
-                <TouchableOpacity onPress={_refreshPage} style={{ padding: 8 }}>
-                    <Ionicons name="refresh" size={26} color={colors.royalBlue} />
+                <TouchableOpacity onPress={_refreshPage} style={{ padding: 5 }}>
+                    <Ionicons name="refresh" size={22} color={colors.royalBlue} />
                 </TouchableOpacity>
             </View>
 

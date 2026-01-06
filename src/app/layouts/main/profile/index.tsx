@@ -35,7 +35,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { BASE_URL, END_POINTS } from '@truckmitr/src/utils/config';
 import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
-import { getUserBadgeText } from '@truckmitr/src/utils/global';
+import { getUserBadgeText, shouldShowMembershipCard, getMembershipCardConfig, getUserTier } from '@truckmitr/src/utils/global';
 import { useTranslation } from 'react-i18next';
 import moment from 'moment';
 import analytics from '@react-native-firebase/analytics';
@@ -43,9 +43,6 @@ import { AppEventsLogger } from 'react-native-fbsdk-next';
 import RNFetchBlob from 'react-native-blob-util';
 import LinearGradient from 'react-native-linear-gradient';
 import { ImageBackground } from 'react-native';
-import { openOverlayPermission } from '@truckmitr/src/utils/permissions/appearOnTopPermission';
-import { ZegoSendCallInvitationButton } from '@zegocloud/zego-uikit-prebuilt-call-rn';
-import { startVideoCall } from '@truckmitr/src/utils/zegoService';
 import ViewShot from 'react-native-view-shot';
 import RNShare from 'react-native-share';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -57,7 +54,7 @@ const BACKGROUND_TRUSTED = require('@truckmitr/src/assets/membership-card/member
 const BACKGROUND_JOB_READY = require('@truckmitr/src/assets/membership-card/membershipcard3.png');
 
 // Card tier configurations
-type TierType = 'JOB READY' | 'VERIFIED' | 'TRUSTED' | 'Standard' | 'LEGACY' | 'TRANSPORTER PRO';
+type TierType = 'JOB READY' | 'VERIFIED' | 'TRUSTED' | 'Standard' | 'LEGACY' | 'TRANSPORTER PRO' | 'LEGACY TRANSPORTER';
 
 interface TierConfig {
   background: any;
@@ -139,6 +136,18 @@ const getTierConfigs = (t: any): Record<TierType, TierConfig> => ({
     ],
     categoryText: 'TRANSPORTER PRO',
   },
+  'LEGACY TRANSPORTER': {
+    background: BACKGROUND_VERIFIED,
+    borderColors: ['#8B4513', '#CD853F', '#DEB887', '#CD853F', '#8B4513'],
+    chromeGradient: [
+      { offset: '0', color: '#DEB887' },
+      { offset: '0.25', color: '#CD853F' },
+      { offset: '0.5', color: '#8B4513' },
+      { offset: '0.75', color: '#CD853F' },
+      { offset: '1', color: '#DEB887' },
+    ],
+    categoryText: t('cardLegacyTransporter'),
+  },
 });
 
 // Helper function to get tier from payment_type
@@ -154,14 +163,9 @@ const getTierFromPaymentType = (paymentType: string, amount?: number, role?: str
     return 'TRANSPORTER PRO';
   }
 
-  // Legacy transporter detection: Rs 99 payment for TRANSPORTERS
-  if (role === 'transporter' && (amount === 99 || amount === 99.00)) {
-    return 'LEGACY';
-  }
-
-  // Transporter Pro detection: Rs 499 payment
-  if (role === 'transporter' && (amount === 499 || amount === 499.00)) {
-    return 'TRANSPORTER PRO';
+  // Legacy transporter detection: Rs 99 or Rs 100 payment for TRANSPORTERS
+  if (role === 'transporter' && (amount === 99 || amount === 99.00 || amount === 100 || amount === 100.00)) {
+    return 'LEGACY TRANSPORTER';
   }
 
   const normalizedType = paymentType?.toUpperCase().replace(/\s+/g, ' ').trim();
@@ -1173,12 +1177,21 @@ export default function Profile() {
           </>
         )}
 
-        {/* Dynamic Membership Card - Show when user has an active subscription (only for drivers) */}
-        {isDriver && (subscriptionDetails?.hasActiveSubscription || !subscriptionDetails?.showSubscriptionModel) && subscriptionDetails?.id && (() => {
-          // Get tier configuration based on payment_type and amount (for legacy driver detection)
+        {/* Dynamic Membership Card - Show based on utility function logic */}
+        {/* 
+          Future: To enable transporter cards, just update shouldShowMembershipCard 
+          in userBadge.ts to return true for transporters 
+        */}
+        {shouldShowMembershipCard({ user, subscriptionDetails, isDriver }) && (() => {
+          // Get tier and card configuration using utility functions
+          const tier = getUserTier({ user, subscriptionDetails, isDriver });
+          const cardConfig = getMembershipCardConfig({ user, subscriptionDetails, isDriver });
+          
+          if (!cardConfig) return null;
+          
+          // Get tier configuration for existing card styling (backward compatibility)
           const paymentType = subscriptionDetails?.payment_type || 'JOB READY';
           const amount = parseFloat(subscriptionDetails?.amount) || 0;
-          const tier = getTierFromPaymentType(paymentType, amount);
           const tierConfig = getTierConfigs(t)[tier];
 
           // User data
