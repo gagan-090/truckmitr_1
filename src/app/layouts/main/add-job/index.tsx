@@ -68,14 +68,22 @@ type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorP
 const JOB_STEPS = [
     { id: 'job_title', title: 'jobTitle', subtitle: 'enterJobTitleHint', field: 'job_title', required: true, icon: 'briefcase-outline' },
     { id: 'job_location', title: 'jobLocation', subtitle: 'selectJobLocationHint', field: 'job_location', required: true, icon: 'location-outline' },
+    { id: 'route', title: 'route', subtitle: 'enterRouteHint', field: null, required: false, icon: 'map-outline' },
     { id: 'vehicle_type', title: 'vehicleType', subtitle: 'selectVehicleTypeHint', field: 'vehicle_type', required: true, icon: 'car-outline' },
     { id: 'experience', title: 'experienceInYears', subtitle: 'selectExperienceHint', field: 'Required_Experience', required: true, icon: 'time-outline' },
-    { id: 'salary_range', title: 'salaryRange', subtitle: 'selectSalaryRangeHint', field: 'Salary_Range', required: true, icon: 'cash-outline' },
     { id: 'license_type', title: 'typeOfLicense', subtitle: 'selectLicenseTypeHint', field: 'Type_of_License', required: true, icon: 'card-outline' },
     { id: 'preferred_skills', title: 'preferredSkills', subtitle: 'selectPreferredSkillsHint', field: 'Preferred_Skills', required: true, icon: 'construct-outline' },
-    { id: 'deadline', title: 'applicationDeadline', subtitle: 'selectDeadlineHint', field: 'Application_Deadline', required: true, icon: 'calendar-outline' },
+    { id: 'salary_range', title: 'fixedSalary', subtitle: 'selectSalaryRangeHint', field: 'Salary_Range', required: true, icon: 'cash-outline' },
+    { id: 'esi_pf', title: 'esiPf', subtitle: 'selectEsiPfHint', field: 'esi_pf_provided', required: true, icon: 'shield-checkmark-outline' },
+    { id: 'food_allowance', title: 'foodAllowance', subtitle: 'selectFoodAllowanceHint', field: 'food_allowance_provided', required: true, icon: 'restaurant-outline' },
+    { id: 'trip_incentive', title: 'tripIncentive', subtitle: 'selectTripIncentiveHint', field: null, required: false, icon: 'gift-outline' },
+    { id: 'accommodation', title: 'accommodationFacility', subtitle: 'selectAccommodationHint', field: 'accommodation_provided', required: true, icon: 'home-outline' },
+    { id: 'mileage', title: 'mileageRequired', subtitle: 'selectMileageHint', field: 'mileage_required', required: true, icon: 'speedometer-outline' },
+    { id: 'fastag', title: 'fastagRoadKharcha', subtitle: 'selectFastagHint', field: null, required: false, icon: 'card-outline' },
     { id: 'drivers_count', title: 'numberOfDrivers', subtitle: 'enterDriversCountHint', field: 'Job_Management', required: true, icon: 'people-outline' },
     { id: 'job_description', title: 'jobDescriptionTitle', subtitle: 'writeDescriptionHint', field: 'Job_Description', required: true, icon: 'document-text-outline' },
+    { id: 'truck_condition', title: 'truckCondition', subtitle: 'selectTruckConditionHint', field: 'truck_condition', required: false, icon: 'build-outline' },
+    { id: 'deadline', title: 'applicationDeadline', subtitle: 'selectDeadlineHint', field: 'Application_Deadline', required: true, icon: 'calendar-outline' },
     { id: 'job_summary', title: 'jobSummary', subtitle: 'reviewJobDetailsHint', field: null, required: false, icon: 'checkbox-outline' },
 ];
 
@@ -518,7 +526,41 @@ export default function AddJob() {
                 showToast(t('pleaseSelectAtLeastOne') || 'Please select at least one skill');
                 return;
             }
-        } else if (step.field && !addJob?.[step.field]) {
+        } else if (step.id === 'food_allowance') {
+            // Validate food allowance selection is required
+            if (!addJob?.food_allowance_provided) {
+                triggerShake();
+                showToast(t('pleaseSelectFoodAllowance') || 'Please select Yes or No for food allowance');
+                return;
+            }
+            // Validate food allowance amount if "Yes" is selected
+            if (addJob?.food_allowance_provided === 'yes' && (!addJob?.food_allowance_amount || addJob.food_allowance_amount.trim() === '')) {
+                triggerShake();
+                showToast(t('pleaseEnterFoodAllowanceAmount') || 'Please enter food allowance amount');
+                return;
+            }
+        } else if (step.id === 'trip_incentive') {
+            // Validate trip incentive amount if "Yes" is selected
+            if (addJob?.trip_incentive_provided === 'yes' && (!addJob?.trip_incentive_amount || addJob.trip_incentive_amount.trim() === '')) {
+                triggerShake();
+                showToast(t('pleaseEnterTripIncentiveAmount') || 'Please enter trip incentive amount');
+                return;
+            }
+        } else if (step.id === 'mileage') {
+            // Validate mileage amount if "Yes" is selected
+            if (addJob?.mileage_required === 'yes' && (!addJob?.mileage_amount || addJob.mileage_amount.trim() === '')) {
+                triggerShake();
+                showToast(t('pleaseEnterMileageAmount') || 'Please enter mileage amount');
+                return;
+            }
+        } else if (step.id === 'fastag') {
+            // Validate fastag amount if "Yes" is selected
+            if (addJob?.fastag_provided === 'yes' && (!addJob?.fastag_amount || addJob.fastag_amount.trim() === '')) {
+                triggerShake();
+                showToast(t('pleaseEnterFastagAmount') || 'Please enter FASTag/Road Kharcha amount');
+                return;
+            }
+        } else if (step.field && step.required && !addJob?.[step.field]) {
             triggerShake();
             showToast(t('pleaseEnterAllRequiredDetails') || 'Please fill in this field');
             return;
@@ -583,14 +625,26 @@ export default function AddJob() {
         let data = new FormData();
         data.append('job_title', addJob?.job_title);
         data.append('job_location', addJob?.job_location);
+        data.append('route', addJob?.route || '');
         data.append('vehicle_type', addJob?.vehicle_type);
         data.append('Required_Experience', addJob?.Required_Experience);
         data.append('Salary_Range', addJob?.Salary_Range);
+        data.append('esi_pf', addJob?.esi_pf_provided);
+        data.append('food_allowance', addJob?.food_allowance_provided || 'no');
+        data.append('food_allowance_desc', addJob?.food_allowance_amount || '');
+        data.append('trip_incentive', addJob?.trip_incentive_provided || 'no');
+        data.append('trip_incentive_desc', addJob?.trip_incentive_amount || '');
+        data.append('rahane_ki_suvidha', addJob?.accommodation_provided || 'no');
+        data.append('mileage', addJob?.mileage_required || 'no');
+        data.append('mileage_desc', addJob?.mileage_amount || '');
+        data.append('fast_tag_road_kharcha', addJob?.fastag_provided || 'no');
+        data.append('fast_tag_road_kharcha_desc', addJob?.fastag_amount || '');
         data.append('Type_of_License', addJob?.Type_of_License);
         data.append('Preferred_Skills', JSON.stringify(addJob?.Preferred_Skills));
         data.append('Application_Deadline', moment(addJob?.Application_Deadline).format("DD-MM-YYYY"));
         data.append('Job_Management', addJob?.Job_Management);
         data.append('Job_Description', addJob?.Job_Description);
+        data.append('truck_condition', addJob?.truck_condition || '');
         data.append('consent_visible_driver', checkBoxSelect ? 1 : 0);
 
         try {
@@ -665,6 +719,26 @@ export default function AddJob() {
                             </Text>
                             <Ionicons name="chevron-down" size={20} color="#666" />
                         </TouchableOpacity>
+                    </View>
+                );
+
+            case 'route':
+                return (
+                    <View style={styles.stepContainer}>
+                        <Text style={styles.classicLabel}>{t('route') || 'Route'}</Text>
+                        <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
+                            {t('routeHintDetail') || 'Enter the route for this job (e.g., Delhi to Mumbai)'}
+                        </Text>
+                        
+                        {/* Single Route Input */}
+                        <TextInput
+                            style={[styles.classicInput, styles.largeInput]}
+                            placeholder={t('enterRoute') || 'Enter route (e.g., Delhi to Mumbai)'}
+                            placeholderTextColor="#999"
+                            value={addJob?.route || ''}
+                            onChangeText={(text) => dispatch(jobAddAction({ ...addJob, route: text }))}
+                            multiline
+                        />
                     </View>
                 );
 
@@ -745,7 +819,7 @@ export default function AddJob() {
             case 'salary_range':
                 return (
                     <View style={styles.stepContainer}>
-                        <Text style={styles.classicLabel}>{t('salaryRange') || 'Salary Range'}</Text>
+                        <Text style={styles.classicLabel}>{t('fixedSalary') || 'Fixed Salary'}</Text>
                         <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
                             {t('selectSalaryHintDetail') || 'Select the monthly salary range for this position'}
                         </Text>
@@ -770,6 +844,416 @@ export default function AddJob() {
                                     )}
                                 </TouchableOpacity>
                             ))}
+                        </View>
+                    </View>
+                );
+
+            case 'esi_pf':
+                return (
+                    <View style={styles.stepContainer}>
+                        <Text style={styles.classicLabel}>{t('esiPf') || 'ESI/PF Benefits'}</Text>
+                        <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
+                            {t('esiPfHintDetail') || 'Will you provide ESI/PF benefits to the driver?'}
+                        </Text>
+                        <View style={styles.radioContainer}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.radioOption,
+                                    addJob?.esi_pf_provided === 'yes' && styles.radioOptionSelected
+                                ]}
+                                onPress={() => dispatch(jobAddAction({ ...addJob, esi_pf_provided: 'yes' }))}
+                            >
+                                <View style={[
+                                    styles.radioCircle,
+                                    addJob?.esi_pf_provided === 'yes' && styles.radioCircleSelected
+                                ]}>
+                                    {addJob?.esi_pf_provided === 'yes' && (
+                                        <View style={styles.radioInner} />
+                                    )}
+                                </View>
+                                <Text style={[
+                                    styles.radioText,
+                                    addJob?.esi_pf_provided === 'yes' && styles.radioTextSelected
+                                ]}>
+                                    {t('yes') || 'Yes'}
+                                </Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity
+                                style={[
+                                    styles.radioOption,
+                                    addJob?.esi_pf_provided === 'no' && styles.radioOptionSelected
+                                ]}
+                                onPress={() => dispatch(jobAddAction({ ...addJob, esi_pf_provided: 'no' }))}
+                            >
+                                <View style={[
+                                    styles.radioCircle,
+                                    addJob?.esi_pf_provided === 'no' && styles.radioCircleSelected
+                                ]}>
+                                    {addJob?.esi_pf_provided === 'no' && (
+                                        <View style={styles.radioInner} />
+                                    )}
+                                </View>
+                                <Text style={[
+                                    styles.radioText,
+                                    addJob?.esi_pf_provided === 'no' && styles.radioTextSelected
+                                ]}>
+                                    {t('no') || 'No'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                );
+
+            case 'food_allowance':
+                return (
+                    <View style={styles.stepContainer}>
+                        <Text style={styles.classicLabel}>{t('foodAllowance') || 'Food Allowance'}</Text>
+                        <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
+                            {t('foodAllowanceHintDetail') || 'Will you provide food allowance to the driver?'}
+                        </Text>
+                        <View style={styles.radioContainer}>
+                            <View>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.radioOption,
+                                        addJob?.food_allowance_provided === 'yes' && styles.radioOptionSelected
+                                    ]}
+                                    onPress={() => dispatch(jobAddAction({ ...addJob, food_allowance_provided: 'yes' }))}
+                                >
+                                    <View style={[
+                                        styles.radioCircle,
+                                        addJob?.food_allowance_provided === 'yes' && styles.radioCircleSelected
+                                    ]}>
+                                        {addJob?.food_allowance_provided === 'yes' && (
+                                            <View style={styles.radioInner} />
+                                        )}
+                                    </View>
+                                    <Text style={[
+                                        styles.radioText,
+                                        addJob?.food_allowance_provided === 'yes' && styles.radioTextSelected
+                                    ]}>
+                                        {t('yes') || 'Yes'}
+                                    </Text>
+                                </TouchableOpacity>
+                                
+                                {/* Conditional Amount Input - Below Yes */}
+                                {addJob?.food_allowance_provided === 'yes' && (
+                                    <View style={styles.conditionalInputInline}>
+                                        <Text style={styles.conditionalLabel}>{t('enterAmountPerDay') || 'Enter Amount (₹/day)'}</Text>
+                                        <TextInput
+                                            style={styles.amountInput}
+                                            placeholder={t('enterFoodAllowanceAmount') || '₹ Enter food allowance per day'}
+                                            placeholderTextColor="#999"
+                                            value={addJob?.food_allowance_amount || ''}
+                                            onChangeText={(text) => dispatch(jobAddAction({ ...addJob, food_allowance_amount: text }))}
+                                            keyboardType="numeric"
+                                        />
+                                    </View>
+                                )}
+                            </View>
+                            
+                            <TouchableOpacity
+                                style={[
+                                    styles.radioOption,
+                                    addJob?.food_allowance_provided === 'no' && styles.radioOptionSelected
+                                ]}
+                                onPress={() => dispatch(jobAddAction({ ...addJob, food_allowance_provided: 'no', food_allowance_amount: '' }))}
+                            >
+                                <View style={[
+                                    styles.radioCircle,
+                                    addJob?.food_allowance_provided === 'no' && styles.radioCircleSelected
+                                ]}>
+                                    {addJob?.food_allowance_provided === 'no' && (
+                                        <View style={styles.radioInner} />
+                                    )}
+                                </View>
+                                <Text style={[
+                                    styles.radioText,
+                                    addJob?.food_allowance_provided === 'no' && styles.radioTextSelected
+                                ]}>
+                                    {t('no') || 'No'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                );
+
+            case 'trip_incentive':
+                return (
+                    <View style={styles.stepContainer}>
+                        <Text style={styles.classicLabel}>{t('tripIncentive') || 'Trip Incentive'}</Text>
+                        <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
+                            {t('tripIncentiveHintDetail') || 'Will you provide trip incentive to the driver?'}
+                        </Text>
+                        <View style={styles.radioContainer}>
+                            <View>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.radioOption,
+                                        addJob?.trip_incentive_provided === 'yes' && styles.radioOptionSelected
+                                    ]}
+                                    onPress={() => dispatch(jobAddAction({ ...addJob, trip_incentive_provided: 'yes' }))}
+                                >
+                                    <View style={[
+                                        styles.radioCircle,
+                                        addJob?.trip_incentive_provided === 'yes' && styles.radioCircleSelected
+                                    ]}>
+                                        {addJob?.trip_incentive_provided === 'yes' && (
+                                            <View style={styles.radioInner} />
+                                        )}
+                                    </View>
+                                    <Text style={[
+                                        styles.radioText,
+                                        addJob?.trip_incentive_provided === 'yes' && styles.radioTextSelected
+                                    ]}>
+                                        {t('yes') || 'Yes'}
+                                    </Text>
+                                </TouchableOpacity>
+                                
+                                {/* Conditional Amount Input - Below Yes */}
+                                {addJob?.trip_incentive_provided === 'yes' && (
+                                    <View style={styles.conditionalInputInline}>
+                                        <Text style={styles.conditionalLabel}>{t('enterAmountPerDay') || 'Enter Amount (₹/day)'}</Text>
+                                        <TextInput
+                                            style={styles.amountInput}
+                                            placeholder={t('enterTripIncentiveAmount') || '₹ Enter trip incentive per day'}
+                                            placeholderTextColor="#999"
+                                            value={addJob?.trip_incentive_amount || ''}
+                                            onChangeText={(text) => dispatch(jobAddAction({ ...addJob, trip_incentive_amount: text }))}
+                                            keyboardType="numeric"
+                                        />
+                                    </View>
+                                )}
+                            </View>
+                            
+                            <TouchableOpacity
+                                style={[
+                                    styles.radioOption,
+                                    addJob?.trip_incentive_provided === 'no' && styles.radioOptionSelected
+                                ]}
+                                onPress={() => dispatch(jobAddAction({ ...addJob, trip_incentive_provided: 'no', trip_incentive_amount: '' }))}
+                            >
+                                <View style={[
+                                    styles.radioCircle,
+                                    addJob?.trip_incentive_provided === 'no' && styles.radioCircleSelected
+                                ]}>
+                                    {addJob?.trip_incentive_provided === 'no' && (
+                                        <View style={styles.radioInner} />
+                                    )}
+                                </View>
+                                <Text style={[
+                                    styles.radioText,
+                                    addJob?.trip_incentive_provided === 'no' && styles.radioTextSelected
+                                ]}>
+                                    {t('no') || 'No'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                );
+
+            case 'accommodation':
+                return (
+                    <View style={styles.stepContainer}>
+                        <Text style={styles.classicLabel}>{t('accommodationFacility') || 'Accommodation Facility'}</Text>
+                        <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
+                            {t('accommodationHintDetail') || 'Will you provide accommodation facility to the driver?'}
+                        </Text>
+                        <View style={styles.radioContainer}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.radioOption,
+                                    addJob?.accommodation_provided === 'yes' && styles.radioOptionSelected
+                                ]}
+                                onPress={() => dispatch(jobAddAction({ ...addJob, accommodation_provided: 'yes' }))}
+                            >
+                                <View style={[
+                                    styles.radioCircle,
+                                    addJob?.accommodation_provided === 'yes' && styles.radioCircleSelected
+                                ]}>
+                                    {addJob?.accommodation_provided === 'yes' && (
+                                        <View style={styles.radioInner} />
+                                    )}
+                                </View>
+                                <Text style={[
+                                    styles.radioText,
+                                    addJob?.accommodation_provided === 'yes' && styles.radioTextSelected
+                                ]}>
+                                    {t('yes') || 'Yes'}
+                                </Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity
+                                style={[
+                                    styles.radioOption,
+                                    addJob?.accommodation_provided === 'no' && styles.radioOptionSelected
+                                ]}
+                                onPress={() => dispatch(jobAddAction({ ...addJob, accommodation_provided: 'no' }))}
+                            >
+                                <View style={[
+                                    styles.radioCircle,
+                                    addJob?.accommodation_provided === 'no' && styles.radioCircleSelected
+                                ]}>
+                                    {addJob?.accommodation_provided === 'no' && (
+                                        <View style={styles.radioInner} />
+                                    )}
+                                </View>
+                                <Text style={[
+                                    styles.radioText,
+                                    addJob?.accommodation_provided === 'no' && styles.radioTextSelected
+                                ]}>
+                                    {t('no') || 'No'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                );
+
+            case 'mileage':
+                return (
+                    <View style={styles.stepContainer}>
+                        <Text style={styles.classicLabel}>{t('mileageRequired') || 'Mileage Required'}</Text>
+                        <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
+                            {t('mileageHintDetail') || 'Do you require mileage tracking from the driver?'}
+                        </Text>
+                        <View style={styles.radioContainer}>
+                            <View>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.radioOption,
+                                        addJob?.mileage_required === 'yes' && styles.radioOptionSelected
+                                    ]}
+                                    onPress={() => dispatch(jobAddAction({ ...addJob, mileage_required: 'yes' }))}
+                                >
+                                    <View style={[
+                                        styles.radioCircle,
+                                        addJob?.mileage_required === 'yes' && styles.radioCircleSelected
+                                    ]}>
+                                        {addJob?.mileage_required === 'yes' && (
+                                            <View style={styles.radioInner} />
+                                        )}
+                                    </View>
+                                    <Text style={[
+                                        styles.radioText,
+                                        addJob?.mileage_required === 'yes' && styles.radioTextSelected
+                                    ]}>
+                                        {t('yes') || 'Yes'}
+                                    </Text>
+                                </TouchableOpacity>
+                                
+                                {/* Conditional Mileage Input - Below Yes */}
+                                {addJob?.mileage_required === 'yes' && (
+                                    <View style={styles.conditionalInputInline}>
+                                        <Text style={styles.conditionalLabel}>{t('expectedMileageKmPerLiter') || 'Expected Mileage (km per 1 liter)'}</Text>
+                                        <TextInput
+                                            style={styles.amountInput}
+                                            placeholder={t('enterMileageAmount') || 'Enter km per 1 liter'}
+                                            placeholderTextColor="#999"
+                                            value={addJob?.mileage_amount || ''}
+                                            onChangeText={(text) => dispatch(jobAddAction({ ...addJob, mileage_amount: text }))}
+                                            keyboardType="numeric"
+                                        />
+                                    </View>
+                                )}
+                            </View>
+                            
+                            <TouchableOpacity
+                                style={[
+                                    styles.radioOption,
+                                    addJob?.mileage_required === 'no' && styles.radioOptionSelected
+                                ]}
+                                onPress={() => dispatch(jobAddAction({ ...addJob, mileage_required: 'no', mileage_amount: '' }))}
+                            >
+                                <View style={[
+                                    styles.radioCircle,
+                                    addJob?.mileage_required === 'no' && styles.radioCircleSelected
+                                ]}>
+                                    {addJob?.mileage_required === 'no' && (
+                                        <View style={styles.radioInner} />
+                                    )}
+                                </View>
+                                <Text style={[
+                                    styles.radioText,
+                                    addJob?.mileage_required === 'no' && styles.radioTextSelected
+                                ]}>
+                                    {t('no') || 'No'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                );
+
+            case 'fastag':
+                return (
+                    <View style={styles.stepContainer}>
+                        <Text style={styles.classicLabel}>{t('fastagRoadKharcha') || 'FASTag/Road Kharcha'}</Text>
+                        <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
+                            {t('fastagHintDetail') || 'Will you provide FASTag/Road expenses to the driver?'}
+                        </Text>
+                        <View style={styles.radioContainer}>
+                            <View>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.radioOption,
+                                        addJob?.fastag_provided === 'yes' && styles.radioOptionSelected
+                                    ]}
+                                    onPress={() => dispatch(jobAddAction({ ...addJob, fastag_provided: 'yes' }))}
+                                >
+                                    <View style={[
+                                        styles.radioCircle,
+                                        addJob?.fastag_provided === 'yes' && styles.radioCircleSelected
+                                    ]}>
+                                        {addJob?.fastag_provided === 'yes' && (
+                                            <View style={styles.radioInner} />
+                                        )}
+                                    </View>
+                                    <Text style={[
+                                        styles.radioText,
+                                        addJob?.fastag_provided === 'yes' && styles.radioTextSelected
+                                    ]}>
+                                        {t('yes') || 'Yes'}
+                                    </Text>
+                                </TouchableOpacity>
+                                
+                                {/* Conditional Amount Input - Below Yes */}
+                                {addJob?.fastag_provided === 'yes' && (
+                                    <View style={styles.conditionalInputInline}>
+                                        <Text style={styles.conditionalLabel}>{t('enterAmountRs') || 'Enter Amount (₹)'}</Text>
+                                        <TextInput
+                                            style={styles.amountInput}
+                                            placeholder={t('enterFastagAmount') || '₹ Enter FASTag/Road Kharcha amount'}
+                                            placeholderTextColor="#999"
+                                            value={addJob?.fastag_amount || ''}
+                                            onChangeText={(text) => dispatch(jobAddAction({ ...addJob, fastag_amount: text }))}
+                                            keyboardType="numeric"
+                                        />
+                                    </View>
+                                )}
+                            </View>
+                            
+                            <TouchableOpacity
+                                style={[
+                                    styles.radioOption,
+                                    addJob?.fastag_provided === 'no' && styles.radioOptionSelected
+                                ]}
+                                onPress={() => dispatch(jobAddAction({ ...addJob, fastag_provided: 'no', fastag_amount: '' }))}
+                            >
+                                <View style={[
+                                    styles.radioCircle,
+                                    addJob?.fastag_provided === 'no' && styles.radioCircleSelected
+                                ]}>
+                                    {addJob?.fastag_provided === 'no' && (
+                                        <View style={styles.radioInner} />
+                                    )}
+                                </View>
+                                <Text style={[
+                                    styles.radioText,
+                                    addJob?.fastag_provided === 'no' && styles.radioTextSelected
+                                ]}>
+                                    {t('no') || 'No'}
+                                </Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 );
@@ -1023,6 +1507,62 @@ export default function AddJob() {
                     </View>
                 );
 
+            case 'truck_condition':
+                const truckConditions = [
+                    { value: 'excellent', label: 'Excellent', description: 'New/Very well maintained' },
+                    { value: 'good', label: 'Good', description: 'Regularly serviced' },
+                    { value: 'average', label: 'Average', description: 'Working condition' },
+                    { value: 'old_running', label: 'Old but Running', description: 'Old but running' },
+                    { value: 'road_ready', label: 'Made Road Ready', description: 'Made road ready after joining' }
+                ];
+
+                return (
+                    <View style={styles.stepContainer}>
+                        <Text style={styles.classicLabel}>{t('truckCondition') || 'Overall Truck Condition'}</Text>
+                        <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
+                            {t('truckConditionHintDetail') || 'Select the overall condition of the truck'}
+                        </Text>
+                        <View>
+                            {truckConditions.map((condition) => {
+                                const isSelected = addJob?.truck_condition === condition.value;
+                                return (
+                                    <TouchableOpacity
+                                        key={condition.value}
+                                        style={[
+                                            styles.conditionOption,
+                                            isSelected && styles.conditionOptionSelected
+                                        ]}
+                                        onPress={() => dispatch(jobAddAction({ ...addJob, truck_condition: condition.value }))}
+                                    >
+                                        <View style={[
+                                            styles.radioCircle,
+                                            isSelected && styles.radioCircleSelected
+                                        ]}>
+                                            {isSelected && (
+                                                <View style={styles.radioInner} />
+                                            )}
+                                        </View>
+                                        <View style={styles.conditionTextContainer}>
+                                            <Text style={[
+                                                styles.conditionTitle,
+                                                isSelected && styles.conditionTitleSelected
+                                            ]}>
+                                                {t(condition.value) || condition.label}
+                                            </Text>
+                                            <Text style={[
+                                                styles.conditionDescription,
+                                                isSelected && styles.conditionDescriptionSelected
+                                            ]}>
+                                                {t(`${condition.value}Description`) || condition.description}
+                                            </Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
+                );
+
             case 'job_summary':
                 const getSalaryLabel = (value: string) => {
                     return salaryRanges.find(s => s.value === value)?.label || value;
@@ -1070,6 +1610,23 @@ export default function AddJob() {
                                 </View>
                                 <Text style={styles.summaryCardValue}>{addJob?.job_location || '-'}</Text>
                             </View>
+                            
+                            {/* Route Card */}
+                            <View style={[styles.summaryCard, styles.summaryCardHalf]}>
+                                <View style={styles.summaryCardHeader}>
+                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#EBF4FF' }]}>
+                                        <Ionicons name="map" size={18} color="#3B82F6" />
+                                    </View>
+                                    <Text style={styles.summaryCardTitle}>{t('route') || 'Route'}</Text>
+                                </View>
+                                <Text style={styles.summaryCardValue} numberOfLines={2}>
+                                    {addJob?.route || '-'}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Vehicle Row */}
+                        <View style={styles.summaryRow}>
                             <View style={[styles.summaryCard, styles.summaryCardHalf]}>
                                 <View style={styles.summaryCardHeader}>
                                     <View style={[styles.summaryIconContainer, { backgroundColor: '#FEF3E8' }]}>
@@ -1108,10 +1665,114 @@ export default function AddJob() {
                                     <View style={[styles.summaryIconContainer, { backgroundColor: '#E8FDF0' }]}>
                                         <Ionicons name="cash" size={18} color="#059669" />
                                     </View>
-                                    <Text style={styles.summaryCardTitle}>{t('salary') || 'Salary'}</Text>
+                                    <Text style={styles.summaryCardTitle}>{t('fixedSalary') || 'Fixed Salary'}</Text>
                                 </View>
                                 <Text style={styles.summaryCardValue}>
                                     {getSalaryLabel(addJob?.Salary_Range) || '-'}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* ESI/PF Card */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryCardHeader}>
+                                <View style={[styles.summaryIconContainer, { backgroundColor: '#F0F9FF' }]}>
+                                    <Ionicons name="shield-checkmark" size={18} color="#0EA5E9" />
+                                </View>
+                                <Text style={styles.summaryCardTitle}>{t('esiPf') || 'ESI/PF'}</Text>
+                            </View>
+                            <Text style={styles.summaryCardValue}>
+                                {addJob?.esi_pf_provided === 'yes' ? (t('yes') || 'Yes') : addJob?.esi_pf_provided === 'no' ? (t('no') || 'No') : '-'}
+                            </Text>
+                        </View>
+
+                        {/* Food Allowance Row */}
+                        <View style={styles.summaryRow}>
+                            <View style={[styles.summaryCard, styles.summaryCardFull]}>
+                                <View style={styles.summaryCardHeader}>
+                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#FEF3E2' }]}>
+                                        <Ionicons name="restaurant" size={18} color="#F59E0B" />
+                                    </View>
+                                    <Text style={styles.summaryCardTitle}>{t('foodAllowance') || 'Food Allowance'}</Text>
+                                </View>
+                                <Text style={styles.summaryCardValue}>
+                                    {addJob?.food_allowance_provided === 'yes' 
+                                        ? `${t('yes') || 'Yes'}${addJob?.food_allowance_amount ? ` - ₹${addJob.food_allowance_amount}` : ''}` 
+                                        : addJob?.food_allowance_provided === 'no' 
+                                        ? (t('no') || 'No') 
+                                        : '-'}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Trip Incentive Row */}
+                        <View style={styles.summaryRow}>
+                            <View style={[styles.summaryCard, styles.summaryCardFull]}>
+                                <View style={styles.summaryCardHeader}>
+                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#F0FDF4' }]}>
+                                        <Ionicons name="gift" size={18} color="#16A34A" />
+                                    </View>
+                                    <Text style={styles.summaryCardTitle}>{t('tripIncentive') || 'Trip Incentive'}</Text>
+                                </View>
+                                <Text style={styles.summaryCardValue}>
+                                    {addJob?.trip_incentive_provided === 'yes' 
+                                        ? `${t('yes') || 'Yes'}${addJob?.trip_incentive_amount ? ` - ₹${addJob.trip_incentive_amount}` : ''}` 
+                                        : addJob?.trip_incentive_provided === 'no' 
+                                        ? (t('no') || 'No') 
+                                        : '-'}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Accommodation Row */}
+                        <View style={styles.summaryRow}>
+                            <View style={[styles.summaryCard, styles.summaryCardFull]}>
+                                <View style={styles.summaryCardHeader}>
+                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#EEF2FF' }]}>
+                                        <Ionicons name="home" size={18} color="#6366F1" />
+                                    </View>
+                                    <Text style={styles.summaryCardTitle}>{t('accommodationFacility') || 'Accommodation Facility'}</Text>
+                                </View>
+                                <Text style={styles.summaryCardValue}>
+                                    {addJob?.accommodation_provided === 'yes' ? (t('yes') || 'Yes') : addJob?.accommodation_provided === 'no' ? (t('no') || 'No') : '-'}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Mileage Row */}
+                        <View style={styles.summaryRow}>
+                            <View style={[styles.summaryCard, styles.summaryCardFull]}>
+                                <View style={styles.summaryCardHeader}>
+                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#F0F9FF' }]}>
+                                        <Ionicons name="speedometer" size={18} color="#0EA5E9" />
+                                    </View>
+                                    <Text style={styles.summaryCardTitle}>{t('mileageRequired') || 'Mileage Required'}</Text>
+                                </View>
+                                <Text style={styles.summaryCardValue}>
+                                    {addJob?.mileage_required === 'yes' 
+                                        ? `${t('yes') || 'Yes'}${addJob?.mileage_amount ? ` - ${addJob.mileage_amount} km/l` : ''}` 
+                                        : addJob?.mileage_required === 'no' 
+                                        ? (t('no') || 'No') 
+                                        : '-'}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* FASTag/Road Kharcha Row */}
+                        <View style={styles.summaryRow}>
+                            <View style={[styles.summaryCard, styles.summaryCardFull]}>
+                                <View style={styles.summaryCardHeader}>
+                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#FEF3E2' }]}>
+                                        <Ionicons name="card" size={18} color="#F59E0B" />
+                                    </View>
+                                    <Text style={styles.summaryCardTitle}>{t('fastagRoadKharcha') || 'FASTag/Road Kharcha'}</Text>
+                                </View>
+                                <Text style={styles.summaryCardValue}>
+                                    {addJob?.fastag_provided === 'yes' 
+                                        ? `${t('yes') || 'Yes'}${addJob?.fastag_amount ? ` - ₹${addJob.fastag_amount}` : ''}` 
+                                        : addJob?.fastag_provided === 'no' 
+                                        ? (t('no') || 'No') 
+                                        : '-'}
                                 </Text>
                             </View>
                         </View>
@@ -1189,6 +1850,30 @@ export default function AddJob() {
                             </View>
                             <Text style={[styles.summaryCardValue, styles.summaryDescription]}>
                                 {addJob?.Job_Description || '-'}
+                            </Text>
+                        </View>
+
+                        {/* Truck Condition Card */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryCardHeader}>
+                                <View style={[styles.summaryIconContainer, { backgroundColor: '#FEF3E2' }]}>
+                                    <Ionicons name="build" size={18} color="#F59E0B" />
+                                </View>
+                                <Text style={styles.summaryCardTitle}>{t('truckCondition') || 'Truck Condition'}</Text>
+                            </View>
+                            <Text style={styles.summaryCardValue}>
+                                {addJob?.truck_condition ? (
+                                    (() => {
+                                        const conditionLabels: { [key: string]: string } = {
+                                            'excellent': t('excellent') || 'Excellent (New/Very well maintained)',
+                                            'good': t('good') || 'Good (Regularly serviced)',
+                                            'average': t('average') || 'Average (Working condition)',
+                                            'old_running': t('old_running') || 'Old but Running',
+                                            'road_ready': t('road_ready') || 'Made Road Ready after joining'
+                                        };
+                                        return conditionLabels[addJob.truck_condition] || addJob.truck_condition;
+                                    })()
+                                ) : '-'}
                             </Text>
                         </View>
 
@@ -2507,5 +3192,166 @@ const styles = StyleSheet.create({
         lineHeight: 22,
         color: '#495057',
         fontWeight: '400',
+    },
+
+    // Route styles
+    routeContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    routeFieldContainer: {
+        flex: 1,
+    },
+    routeLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
+        marginBottom: 8,
+    },
+    routeInput: {
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        fontSize: 16,
+        color: '#333',
+        backgroundColor: '#FAFAFA',
+    },
+    routeArrow: {
+        marginHorizontal: 12,
+        marginTop: 20,
+    },
+    routeSummary: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 8,
+    },
+    routeText: {
+        fontSize: 11,
+        color: '#666',
+        flex: 1,
+        textAlign: 'center',
+    },
+
+    // Radio button styles
+    radioContainer: {
+        flexDirection: 'column',
+        gap: 12,
+        marginTop: 8,
+    },
+    radioOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        backgroundColor: '#FAFAFA',
+        width: '100%',
+        justifyContent: 'flex-start',
+    },
+    radioOptionSelected: {
+        borderColor: '#246BFD',
+        backgroundColor: '#F0F7FF',
+    },
+    radioCircle: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        borderWidth: 2,
+        borderColor: '#D1D5DB',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    radioCircleSelected: {
+        borderColor: '#246BFD',
+    },
+    radioInner: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: '#246BFD',
+    },
+    radioText: {
+        fontSize: 18,
+        color: '#374151',
+        fontWeight: '500',
+    },
+    radioTextSelected: {
+        color: '#246BFD',
+        fontWeight: '600',
+    },
+
+    // Truck condition styles
+    conditionOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 12,
+        backgroundColor: '#FFFFFF',
+    },
+    conditionOptionSelected: {
+        borderColor: '#246BFD',
+        backgroundColor: '#F0F7FF',
+    },
+    conditionTextContainer: {
+        flex: 1,
+        marginLeft: 4,
+    },
+    conditionTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#374151',
+        marginBottom: 2,
+    },
+    conditionTitleSelected: {
+        color: '#246BFD',
+    },
+    conditionDescription: {
+        fontSize: 14,
+        color: '#6B7280',
+        fontWeight: '400',
+    },
+    conditionDescriptionSelected: {
+        color: '#246BFD',
+    },
+
+    // Conditional input styles
+    conditionalInput: {
+        marginTop: 16,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: '#E5E7EB',
+    },
+    conditionalInputInline: {
+        marginTop: 12,
+    },
+    conditionalLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
+        marginBottom: 8,
+    },
+    amountInput: {
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        fontSize: 16,
+        color: '#333',
+        backgroundColor: '#FAFAFA',
+    },
+
+    // Summary card full width
+    summaryCardFull: {
+        flex: 1,
     },
 });
