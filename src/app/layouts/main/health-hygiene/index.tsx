@@ -20,7 +20,7 @@ type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorP
 
 export default function HealthHygiene() {
   const { t } = useTranslation();
-   const dispatch = useDispatch()
+  const dispatch = useDispatch()
   useStatusBarStyle('dark-content')
   const colors = useColor();
   const safeAreaInsets = useSafeAreaInsets();
@@ -33,7 +33,7 @@ export default function HealthHygiene() {
 
   const [healthHygiene, sethealthHygiene] = useState([])
   const [loading, setloading] = useState(true)
-    const { subscriptionDetails, subscriptionModal } = useSelector((state: any) => { return state?.user })
+  const { subscriptionDetails, subscriptionModal } = useSelector((state: any) => { return state?.user })
 
   useFocusEffect(
     useCallback(() => {
@@ -68,7 +68,10 @@ export default function HealthHygiene() {
       const currentLang = i18n.language;
       const selected = LANGUAGES.find(l => l.code === currentLang);
       if (selected) {
-        setSelectedLanguage(selected.name);
+        let displayName = selected.name;
+        if (selected.name === 'English') displayName = 'Eng';
+        if (selected.name === 'हिन्दी') displayName = 'Hi';
+        setSelectedLanguage(displayName);
       }
     }, [])
   );
@@ -78,11 +81,11 @@ export default function HealthHygiene() {
     settheme(value)
   }
 
-  const _navigatePlayer = (item: any, index:any) => () => {
-     if (subscriptionDetails?.showSubscriptionModel && index !== 0) {
-                    !subscriptionModal && dispatch(subscriptionModalAction(true))
-                } else {navigation.navigate(STACKS.PLAYER, { item })}
-    
+  const _navigatePlayer = (item: any, index: any) => () => {
+    if (subscriptionDetails?.showSubscriptionModel && index !== 0) {
+      !subscriptionModal && dispatch(subscriptionModalAction(true))
+    } else { navigation.navigate(STACKS.PLAYER, { item }) }
+
   }
   const _navigateLanguage = () => {
     navigation.navigate(STACKS.LANGUAGE_MAIN)
@@ -90,21 +93,19 @@ export default function HealthHygiene() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.white }}>
       <Space height={safeAreaInsets.top} />
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: responsiveWidth(5) }}>
-        <Image source={images.TRUCKMITR_HORIZONTAL} style={{ height: responsiveHeight(8), width: responsiveWidth(32), resizeMode: 'contain' }} />
-        {/* <View style={{ height: responsiveFontSize(3.7), flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white, padding: responsiveFontSize(.5), borderRadius: 100, borderColor: colors.blackOpacity(.1), borderWidth: 1 }}>
-          <TouchableOpacity activeOpacity={.7} onPress={_onpressTheme('DARK')} hitSlop={hitSlop(10)} style={{ height: responsiveFontSize(3.2), width: responsiveFontSize(3.2), backgroundColor: theme === 'DARK' ? colors.royalBlue : colors.transparent, alignItems: 'center', justifyContent: 'center', borderRadius: 100 }}>
-            <Ionicons name={'moon'} size={16} color={theme === 'DARK' ? colors.white : colors.blackOpacity(.2)} />
-          </TouchableOpacity>
-          <Space width={responsiveWidth(.5)} />
-          <TouchableOpacity activeOpacity={.7} onPress={_onpressTheme('LIGHT')} hitSlop={hitSlop(10)} style={{ height: responsiveFontSize(3.2), width: responsiveFontSize(3.2), backgroundColor: theme === 'LIGHT' ? colors.royalBlue : colors.transparent, alignItems: 'center', justifyContent: 'center', borderRadius: 100 }}>
-            <Ionicons name={'sunny'} size={16} color={theme === 'LIGHT' ? colors.white : colors.blackOpacity(.2)} />
-          </TouchableOpacity>
-        </View> */}
-        <TouchableOpacity onPress={_navigateLanguage} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: responsiveFontSize(.4), paddingHorizontal: responsiveFontSize(1.6), borderRadius: 100, borderColor: colors.blackOpacity(.1), borderWidth: 1 }}>
-          <Ionicons name={'language'} size={22} color={colors.royalBlue} />
-          <Text style={{ color: colors.royalBlue, fontWeight: 'bold', marginHorizontal: responsiveFontSize(.5) }}>{selectedLanguage}</Text>
-          <Feather name={'chevron-down'} size={18} color={colors.blackOpacity(.5)} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: responsiveWidth(5), position: 'relative' }}>
+        <TouchableOpacity hitSlop={hitSlop(10)} onPress={() => navigation.goBack()} style={{ zIndex: 10 }}>
+          <Ionicons name={'chevron-back'} size={responsiveFontSize(3)} color={colors.royalBlue} />
+        </TouchableOpacity>
+
+        <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, justifyContent: 'center', alignItems: 'center', zIndex: 1 }}>
+          <Text style={{ fontSize: responsiveFontSize(2.3), fontWeight: 'bold', color: colors.royalBlue, textAlign: 'center' }}>{t('healthHygiene')}</Text>
+        </View>
+
+        <TouchableOpacity onPress={_navigateLanguage} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: responsiveFontSize(.3), paddingHorizontal: responsiveFontSize(1), borderRadius: 100, borderColor: colors.blackOpacity(.1), borderWidth: 1, zIndex: 10 }}>
+          <Ionicons name={'language'} size={14} color={colors.royalBlue} />
+          <Text style={{ color: colors.royalBlue, fontWeight: 'bold', marginHorizontal: responsiveFontSize(.5), fontSize: responsiveFontSize(1.6) }}>{selectedLanguage}</Text>
+          <Feather name={'chevron-down'} size={16} color={colors.blackOpacity(.5)} />
         </TouchableOpacity>
       </View>
       <Space height={responsiveFontSize(1)} />

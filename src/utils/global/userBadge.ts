@@ -58,19 +58,19 @@ const capitalizeFirst = (str: string): string => {
  */
 export const getUserBadgeText = ({ user, subscriptionDetails, isDriver }: UserBadgeParams): string => {
   const userRole = capitalizeFirst(user?.role || '');
-  
+
   // Check if user has subscription
   const hasSub = subscriptionDetails && (subscriptionDetails?.id || subscriptionDetails?.payment_id);
-  
+
   if (!hasSub) {
     // No subscription - show role only
     return userRole;
   }
-  
+
   // Get paid amount
   const paidAmount = getPaidAmount(subscriptionDetails, isDriver || false);
   const role = user?.role?.toLowerCase();
-  
+
   if (role === 'transporter') {
     // Transporter logic
     if (paidAmount === 99 || paidAmount === 100 || paidAmount === 1) {
@@ -82,7 +82,7 @@ export const getUserBadgeText = ({ user, subscriptionDetails, isDriver }: UserBa
     // Default for transporter with subscription but unrecognized amount
     return userRole;
   }
-  
+
   if (role === 'driver') {
     // Driver logic
     if (paidAmount === 1 || paidAmount === 49 || paidAmount === 100) {
@@ -97,7 +97,7 @@ export const getUserBadgeText = ({ user, subscriptionDetails, isDriver }: UserBa
     // Default for driver with subscription but unrecognized amount
     return userRole;
   }
-  
+
   // Fallback for unknown roles
   return userRole;
 };
@@ -109,14 +109,14 @@ export type TierType = 'JOB READY' | 'VERIFIED' | 'TRUSTED' | 'LEGACY' | 'TRANSP
 
 export const getUserTier = ({ user, subscriptionDetails, isDriver }: UserBadgeParams): TierType => {
   const hasSub = subscriptionDetails && (subscriptionDetails?.id || subscriptionDetails?.payment_id);
-  
+
   if (!hasSub) {
     return 'JOB READY';
   }
-  
+
   const paidAmount = getPaidAmount(subscriptionDetails, isDriver || false);
   const role = user?.role?.toLowerCase();
-  
+
   if (role === 'transporter') {
     if (paidAmount === 99 || paidAmount === 100 || paidAmount === 1) {
       return 'LEGACY';
@@ -126,7 +126,7 @@ export const getUserTier = ({ user, subscriptionDetails, isDriver }: UserBadgePa
     }
     return 'JOB READY';
   }
-  
+
   if (role === 'driver') {
     if (paidAmount === 1 || paidAmount === 49 || paidAmount === 100) {
       return 'LEGACY';
@@ -139,6 +139,6 @@ export const getUserTier = ({ user, subscriptionDetails, isDriver }: UserBadgePa
     }
     return 'JOB READY';
   }
-  
+
   return 'JOB READY';
 };

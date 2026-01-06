@@ -706,7 +706,26 @@ const Home = React.forwardRef((props, ref) => {
         setAddDriverModal(true);
     }
     const _navigateAppliedJobsTransporter = () => {
-        if (subscriptionDetails?.showSubscriptionModel && isTransporter) {
+        let hasPremium = false;
+
+        const checkAmt = (details: any) => {
+            if (isSubscriptionActive(details)) {
+                const amt = details.amount ? parseFloat(details.amount) : 0;
+                const floorAmt = Math.floor(amt);
+                if ([499, 99, 100, 1].includes(floorAmt)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if (Array.isArray(subscriptionDetails)) {
+            hasPremium = subscriptionDetails.some(checkAmt);
+        } else if (subscriptionDetails && typeof subscriptionDetails === 'object') {
+            hasPremium = checkAmt(subscriptionDetails);
+        }
+
+        if (subscriptionDetails?.showSubscriptionModel && isTransporter && !hasPremium) {
             !subscriptionModal && dispatch(subscriptionModalAction(true))
         } else {
             navigation.navigate(STACKS.TRANSPORTER_APPLIED_JOB)

@@ -50,10 +50,35 @@ function TabBarTransporter({ state, descriptors, navigation }: { state: any, des
         }
     };
 
+    const isSubscriptionActive = (item: any) => {
+        if (!item) return false;
+        if (!item.end_at) return false;
+        const endDate = new Date(item.end_at * 1000);
+        const now = new Date();
+        return endDate > now;
+    };
+
     const handlePress = (index: number, route: any) => {
+        let hasPremium = false;
 
+        const checkAmt = (details: any) => {
+            if (isSubscriptionActive(details)) {
+                const amt = details.amount ? parseFloat(details.amount) : 0;
+                const floorAmt = Math.floor(amt);
+                if ([499, 99, 100, 1].includes(floorAmt)) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
-        if (subscriptionDetails?.showSubscriptionModel && index === 1) {
+        if (Array.isArray(subscriptionDetails)) {
+            hasPremium = subscriptionDetails.some(checkAmt);
+        } else if (subscriptionDetails && typeof subscriptionDetails === 'object') {
+            hasPremium = checkAmt(subscriptionDetails);
+        }
+
+        if (subscriptionDetails?.showSubscriptionModel && index === 1 && !hasPremium) {
             !subscriptionModal && dispatch(subscriptionModalAction(true))
             return
 
@@ -187,20 +212,20 @@ function TabBarTransporter({ state, descriptors, navigation }: { state: any, des
                                 //     text={tourTitle[index]?.title}
                                 //     shape='circle'
                                 //     tooltipBottomOffset={50}>
-                                    <Animated.View style={[
-                                        {
-                                            height: responsiveHeight(7),
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            borderRadius: 100,
-                                            transform: [{ scale: animatedValues[index] }],
-                                        },
-                                    ]}>
-                                        <View style={{ height: responsiveFontSize(3.5), width: responsiveFontSize(3.5), alignItems: 'center', justifyContent: 'center' }}>
-                                            {_tabIcon(label, isFocused)}
-                                        </View>
-                                        {isFocused && <Text numberOfLines={1} style={{ width: '100%', color: isFocused ? colors.white : colors.whiteOpacity(0.5), fontSize: responsiveFontSize(1.3), fontWeight: isFocused ? '600' : '400', textTransform: 'capitalize', marginTop: responsiveFontSize(.2), textAlign: 'center' }}>{getLabelText()}</Text>}
-                                    </Animated.View>
+                                <Animated.View style={[
+                                    {
+                                        height: responsiveHeight(7),
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        borderRadius: 100,
+                                        transform: [{ scale: animatedValues[index] }],
+                                    },
+                                ]}>
+                                    <View style={{ height: responsiveFontSize(3.5), width: responsiveFontSize(3.5), alignItems: 'center', justifyContent: 'center' }}>
+                                        {_tabIcon(label, isFocused)}
+                                    </View>
+                                    {isFocused && <Text numberOfLines={1} style={{ width: '100%', color: isFocused ? colors.white : colors.whiteOpacity(0.5), fontSize: responsiveFontSize(1.3), fontWeight: isFocused ? '600' : '400', textTransform: 'capitalize', marginTop: responsiveFontSize(.2), textAlign: 'center' }}>{getLabelText()}</Text>}
+                                </Animated.View>
                                 // </TourGuideZone>
                             }
                         </TouchableOpacity>
@@ -402,7 +427,7 @@ function TabBarDriver({ state, descriptors, navigation, homeRef }: { state: any,
                                     </View>
                                     {isFocused && <Text numberOfLines={1} style={{ width: '100%', color: isFocused ? colors.white : colors.whiteOpacity(0.5), fontSize: responsiveFontSize(1.3), fontWeight: isFocused ? '600' : '400', textTransform: 'capitalize', marginTop: responsiveFontSize(.2), textAlign: 'center' }}>{getLabelText()}</Text>}
                                 </Animated.View>
-                            // </TourGuideZone>
+                                // </TourGuideZone>
                             }
                         </TouchableOpacity>
                     </View>
