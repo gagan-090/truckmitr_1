@@ -35,6 +35,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { BASE_URL, END_POINTS } from '@truckmitr/src/utils/config';
 import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
+import { getUserBadgeText } from '@truckmitr/src/utils/global';
 import { useTranslation } from 'react-i18next';
 import moment from 'moment';
 import analytics from '@react-native-firebase/analytics';
@@ -905,6 +906,9 @@ export default function Profile() {
     }
   };
 
+  console.log('-----------driver rank-------------', rank);
+
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Space height={safeAreaInsets.top} />
@@ -1053,24 +1057,7 @@ export default function Profile() {
                   fontSize: responsiveFontSize(1.4),
                 }
               ]}>
-                {(() => {
-                  const hasSub = subscriptionDetails && (subscriptionDetails?.id || subscriptionDetails?.payment_id);
-                  if (hasSub) {
-                    const tier = getTierFromPaymentType(subscriptionDetails?.payment_type, getPaidAmount(), user?.role);
-                    let tierName = '';
-                    if (tier === 'JOB READY') tierName = 'Job Ready';
-                    else if (tier === 'VERIFIED') tierName = 'Verified';
-                    else if (tier === 'TRUSTED') tierName = 'Trusted';
-                    else if (tier === 'Standard') tierName = 'Standard';
-                    else if (tier === 'LEGACY') tierName = 'Legacy';
-                    else if (tier === 'LEGACY TRANSPORTER') tierName = 'Legacy';
-                    else if (tier === 'TRANSPORTER PRO') tierName = 'Transporter Pro';
-                    else tierName = capitalizeFirst((tier as string)?.toLowerCase() || '');
-
-                    return `${tierName} ${capitalizeFirst(user?.role)}`;
-                  }
-                  return capitalizeFirst(user?.role);
-                })()}
+                {getUserBadgeText({ user, subscriptionDetails, isDriver })}
               </Text>
             </View>
 
