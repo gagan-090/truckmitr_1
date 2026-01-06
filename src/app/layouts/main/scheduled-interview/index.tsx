@@ -1,9 +1,11 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, TouchableOpacity, Image, FlatList, ActivityIndicator, Linking } from 'react-native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useColor, useResponsiveScale, useShadow } from '@truckmitr/src/app/hooks';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
+import { END_POINTS } from '@truckmitr/src/utils/config';
+import moment from 'moment';
 
 const ScheduledInterviews = () => {
     const navigation = useNavigation<any>();
@@ -11,72 +13,150 @@ const ScheduledInterviews = () => {
     const { responsiveWidth, responsiveFontSize, responsiveHeight } = useResponsiveScale();
     const { shadow } = useShadow();
 
+    const [interviews, setInterviews] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
     const _goBack = () => navigation.goBack();
 
-    // Interview Card Component
-    const InterviewCard = ({ date, time, status }: { date: string, time: string, status: 'scheduled' | 'live' | 'completed' }) => (
-        <View style={{ backgroundColor: colors.white, borderRadius: 12, padding: responsiveWidth(3), marginBottom: responsiveHeight(1.5), ...shadow, shadowColor: 'rgba(0,0,0,0.06)', borderLeftWidth: 4, borderLeftColor: status === 'live' ? '#22C55E' : '#2563EB', borderWidth: 1, borderColor: '#E2E8F0' }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <View>
-                    <Text style={{ fontSize: responsiveFontSize(1.8), fontWeight: '700', color: '#001F3F', marginBottom: 4 }}>
-                        {status === 'live' ? 'Live Interview' : 'Upcoming Interview'}
-                    </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                        <Ionicons name="calendar-outline" size={16} color="#64748B" style={{ marginRight: 6 }} />
-                        <Text style={{ fontSize: responsiveFontSize(1.5), color: '#334155' }}>{date}</Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                        <Ionicons name="time-outline" size={16} color="#64748B" style={{ marginRight: 6 }} />
-                        <Text style={{ fontSize: responsiveFontSize(1.5), color: '#334155' }}>{time}</Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Ionicons name="videocam-outline" size={16} color="#64748B" style={{ marginRight: 6 }} />
-                        <Text style={{ fontSize: responsiveFontSize(1.5), color: '#334155' }}>Video Interview</Text>
-                    </View>
-                </View>
-                <View style={{ backgroundColor: status === 'live' ? '#DCFCE7' : '#DBEAFE', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
-                    <Text style={{ color: status === 'live' ? '#166534' : '#1E40AF', fontWeight: 'bold', fontSize: responsiveFontSize(1.2) }}>
-                        {status === 'live' ? 'LIVE NOW' : 'SCHEDULED'}
-                    </Text>
-                </View>
-            </View>
+    const fetchInterviews = async () => {
+        try {
+            setLoading(true);
+            const response = await axiosInstance.get(END_POINTS.DRIVER_INTERVIEW);
+            if (response?.data?.status) {
+                setInterviews(response.data.data);
+            }
+        } catch (error) {
+            console.error("Error fetching interviews:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-            {status !== 'completed' && (
-                <TouchableOpacity style={{ marginTop: 12, paddingVertical: 10, backgroundColor: status === 'live' ? '#16A34A' : colors.royalBlue, borderRadius: 8, alignItems: 'center' }}>
-                    <Text style={{ color: colors.white, fontWeight: '600', fontSize: responsiveFontSize(1.6) }}>
-                        {status === 'live' ? 'Join Now' : 'Join Link (Active 5m before)'}
-                    </Text>
-                </TouchableOpacity>
-            )}
-
-            <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
-                <Text style={{ fontSize: responsiveFontSize(1.3), color: '#64748B', fontStyle: 'italic' }}>
-                    Check your interview date and time in the calendar and be ready in advance.
-                </Text>
-            </View>
-        </View>
+    useFocusEffect(
+        useCallback(() => {
+            fetchInterviews();
+        }, [])
     );
+
+    const getStatus = (interviewAt: string) => {
+        const now = moment();
+        const interviewTime = moment(interviewAt, "YYYY-MM-DD HH:mm:ss");
+        const diffMinutes = interviewTime.diff(now, 'minutes');
+
+        if (diffMinutes >= -15 && diffMinutes <= 15) {
+            return 'live';
+        } else if (now.isAfter(interviewTime)) {
+            return 'completed';
+        } else {
+            return 'scheduled';
+        }
+    };
+
+    // InterviewCard Component
+    const InterviewCard = ({ item }: { item: any }) => {
+        const { driver_name, transporter_name, job_id, interview_at } = item;
+        const status = getStatus(interview_at);
+        const date = moment(interview_at).format("DD MMM YYYY");
+        const time = moment(interview_at).format("hh:mm A");
+
+        // Color Logic
+        let statusColor = '#2563EB'; // Default Blue
+        let statusBg = '#DBEAFE';
+        let statusText = 'SCHEDULED';
+        let statusLabel = 'Upcoming Interview';
+
+        if (status === 'live') {
+            statusColor = '#22C55E'; // Green
+            statusBg = '#DCFCE7';
+            statusText = 'LIVE NOW';
+            statusLabel = 'Live Interview';
+        } else if (status === 'completed') {
+            statusColor = '#006400'; // Dark Green
+            statusBg = '#E0F2F1'; // Light Greenish
+            statusText = 'COMPLETED';
+            statusLabel = 'Completed Interview';
+        } else if (status === 'scheduled') {
+            statusColor = '#FFA500'; // Orange
+            statusBg = '#FFF3E0'; // Light Orange
+            statusText = 'SCHEDULED';
+            statusLabel = 'Upcoming Interview';
+        }
+
+        return (
+            <View style={{ backgroundColor: colors.white, borderRadius: 12, padding: responsiveWidth(4), marginBottom: responsiveHeight(1.8), ...shadow, shadowColor: 'rgba(0,0,0,0.06)', borderLeftWidth: 4, borderLeftColor: statusColor, borderWidth: 1, borderColor: '#E2E8F0', opacity: status === 'completed' ? 0.8 : 1 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <View>
+                        <Text style={{ fontSize: responsiveFontSize(2.1), fontWeight: '700', color: '#001F3F', marginBottom: 8 }}>
+                            {statusLabel}
+                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                            <Ionicons name="calendar-outline" size={18} color="#64748B" style={{ marginRight: 8 }} />
+                            <Text style={{ fontSize: responsiveFontSize(1.8), color: '#334155', fontWeight: '600' }}>Date: </Text>
+                            <Text style={{ fontSize: responsiveFontSize(1.8), color: '#334155' }}>{date}</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                            <Ionicons name="time-outline" size={18} color="#64748B" style={{ marginRight: 8 }} />
+                            <Text style={{ fontSize: responsiveFontSize(1.8), color: '#334155', fontWeight: '600' }}>Time: </Text>
+                            <Text style={{ fontSize: responsiveFontSize(1.8), color: '#334155' }}>{time}</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                            <Ionicons name="person-outline" size={18} color="#64748B" style={{ marginRight: 8 }} />
+                            <Text style={{ fontSize: responsiveFontSize(1.8), color: '#334155', fontWeight: '600' }}>Transporter: </Text>
+                            <Text style={{ fontSize: responsiveFontSize(1.8), color: '#334155' }}>{transporter_name}</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Ionicons name="briefcase-outline" size={18} color="#64748B" style={{ marginRight: 8 }} />
+                            <Text style={{ fontSize: responsiveFontSize(1.8), color: '#334155', fontWeight: '600' }}>Job ID: </Text>
+                            <Text style={{ fontSize: responsiveFontSize(1.8), color: '#334155' }}>{job_id}</Text>
+                        </View>
+                    </View>
+                    <View style={{ backgroundColor: statusBg, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 }}>
+                        <Text style={{ color: statusColor, fontWeight: 'bold', fontSize: responsiveFontSize(1.4) }}>
+                            {statusText}
+                        </Text>
+                    </View>
+                </View>
+
+                {status !== 'completed'}
+
+                <View style={{ marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
+                    <Text style={{ fontSize: responsiveFontSize(1.5), color: '#64748B', fontStyle: 'italic' }}>
+                        Check your interview date and time in the calendar and be ready in advance.
+                    </Text>
+                </View>
+            </View>
+        );
+    };
 
     return (
         <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
             {/* Header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', padding: responsiveWidth(4), paddingTop: responsiveHeight(4), backgroundColor: colors.white, elevation: 2 }}>
-                <TouchableOpacity onPress={_goBack} style={{ padding: 5, marginRight: 10 }}>
-                    <Ionicons name="chevron-back" size={24} color={colors.royalBlue} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: responsiveWidth(4), paddingTop: responsiveHeight(7), paddingBottom: responsiveHeight(2), backgroundColor: colors.white, elevation: 2 }}>
+                <TouchableOpacity onPress={_goBack} style={{ position: 'absolute', left: responsiveWidth(4), top: responsiveHeight(6), padding: 5, zIndex: 1 }}>
+                    <Ionicons name="chevron-back" size={28} color={colors.royalBlue} />
                 </TouchableOpacity>
-                <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: 'bold', color: colors.royalBlue }}>
-                    Scheduled Interviews
+                <Text style={{ fontSize: responsiveFontSize(2.5), fontWeight: 'bold', color: colors.royalBlue, textAlign: 'center' }}>
+                    Scheduled Interviews ({interviews.length})
                 </Text>
             </View>
 
-            <ScrollView contentContainerStyle={{ padding: responsiveWidth(4) }} showsVerticalScrollIndicator={false}>
-                <InterviewCard date="12 Feb 2025" time="11:30 AM" status="scheduled" />
-                <InterviewCard date="14 Feb 2025" time="02:00 PM" status="scheduled" />
-                <InterviewCard date="15 Feb 2025" time="10:00 AM" status="scheduled" />
-                <View style={{ opacity: 0.7 }}>
-                    <InterviewCard date="10 Feb 2025" time="04:30 PM" status="completed" />
+            {loading ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color={colors.royalBlue} />
                 </View>
-            </ScrollView>
+            ) : interviews.length === 0 ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ color: '#64748B', fontSize: responsiveFontSize(1.8) }}>No scheduled interviews found.</Text>
+                </View>
+            ) : (
+                <FlatList
+                    data={interviews}
+                    renderItem={({ item }) => <InterviewCard item={item} />}
+                    keyExtractor={(item, index) => index.toString()}
+                    contentContainerStyle={{ padding: responsiveWidth(4) }}
+                    showsVerticalScrollIndicator={false}
+                />
+            )}
         </View>
     );
 };

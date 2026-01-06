@@ -55,6 +55,7 @@ const PROFILE_PLACEHOLDER = require('@truckmitr/src/assets/membership-card/man.p
 const BACKGROUND_VERIFIED = require('@truckmitr/src/assets/membership-card/membershipbg.png');
 const BACKGROUND_TRUSTED = require('@truckmitr/src/assets/membership-card/membershipcardbg2.png');
 const BACKGROUND_JOB_READY = require('@truckmitr/src/assets/membership-card/membershipcard3.png');
+const BACKGROUND_TRANSPORTER_PRO = require('@truckmitr/src/assets/membership-card/TransporterPro.png');
 
 // Card tier configurations
 type TierType = 'JOB READY' | 'VERIFIED' | 'TRUSTED' | 'Standard' | 'LEGACY' | 'TRANSPORTER PRO' | 'LEGACY TRANSPORTER';
@@ -128,14 +129,14 @@ const getTierConfigs = (t: any): Record<TierType, TierConfig> => ({
     categoryText: t('cardLegacyDriver'),
   },
   'TRANSPORTER PRO': {
-    background: BACKGROUND_TRUSTED,
-    borderColors: ['#A67C00', '#C9A23F', '#FFF6C8', '#C9A23F', '#A67C00'],
+    background: BACKGROUND_TRANSPORTER_PRO,
+    borderColors: ['#404040', '#E0E3E7', '#FFFFFF', '#E0E3E7', '#404040'],
     chromeGradient: [
-      { offset: '0', color: '#FFF6C8' },
-      { offset: '0.25', color: '#C9A23F' },
-      { offset: '0.5', color: '#A67C00' },
-      { offset: '0.75', color: '#C9A23F' },
-      { offset: '1', color: '#FFF6C8' },
+      { offset: '0', color: '#E0E3E7' },
+      { offset: '0.25', color: '#BFC5CC' },
+      { offset: '0.5', color: '#9AA0A6' },
+      { offset: '0.75', color: '#BFC5CC' },
+      { offset: '1', color: '#E0E3E7' },
     ],
     categoryText: 'TRANSPORTER PRO',
   },
@@ -162,7 +163,7 @@ const getTierFromPaymentType = (paymentType: string, amount?: number, role?: str
   }
 
   // Transporter Pro detection: Rs 499 payment for transporters
-  if (role === 'transporter' && (amount === 499 || amount === 499.00)) {
+  if (role?.toLowerCase() === 'transporter' && (amount === 499 || amount === 499.00)) {
     return 'TRANSPORTER PRO';
   }
 
@@ -1180,8 +1181,25 @@ export default function Profile() {
           </>
         )}
 
-        {/* Dynamic Membership Card - Show when user has an active subscription (only for drivers) */}
-        {isDriver && (subscriptionDetails?.hasActiveSubscription || !subscriptionDetails?.showSubscriptionModel) && subscriptionDetails?.id && (() => {
+        {/* Dynamic Membership Card - Show when user has an active subscription (drivers and transporters) */}
+        {/* Dynamic Membership Card - Show when user has an active subscription (drivers and transporters) */}
+        {((rawSub) => {
+          // Normalize subscriptionDetails (handle array vs object)
+          // Shadowing is now safe because 'subscriptionDetails' comes from the argument 'rawSub'
+          const subscriptionDetails = Array.isArray(rawSub) ? rawSub[0] : rawSub;
+
+          if (!(isDriver || isTransporter)) return null;
+          if (!subscriptionDetails) return null;
+
+          // Robust check for active subscription (matching Membership Card logic)
+          const isActive = subscriptionDetails?.hasActiveSubscription ||
+            (subscriptionDetails?.subscription_id && subscriptionDetails?.payment_status === 'captured') ||
+            (subscriptionDetails?.payment_status === 'captured') ||
+            (subscriptionDetails?.status === 'active') ||
+            !subscriptionDetails?.showSubscriptionModel;
+
+          if (!isActive) return null;
+
           // Get tier configuration based on payment_type and amount (for legacy driver detection)
           const paymentType = subscriptionDetails?.payment_type || 'JOB READY';
           const amount = parseFloat(subscriptionDetails?.amount) || 0;
@@ -1512,7 +1530,7 @@ export default function Profile() {
               </View>
             </>
           );
-        })()}
+        })(subscriptionDetails)}
 
         {/* Account Section */}
         <SectionHeader title={t('account')} />

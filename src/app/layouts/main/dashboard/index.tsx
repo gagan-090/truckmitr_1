@@ -190,12 +190,7 @@ export default function Dashboard() {
         }
     }
 
-    // Fetch jobs that suits you count
-    useEffect(() => {
-        if (isDriver) {
-            getSuitsJobCount();
-        }
-    }, [isDriver]);
+
 
     const getSuitsJobCount = async () => {
         try {
@@ -210,6 +205,30 @@ export default function Dashboard() {
             setSuitsJobCount(0);
         }
     };
+
+    const [interviewsCount, setInterviewsCount] = React.useState<number | null>(null);
+
+    const getInterviewsCount = async () => {
+        try {
+            const response = await axiosInstance.get(END_POINTS.DRIVER_INTERVIEW);
+            if (response.data && Array.isArray(response.data.data)) {
+                setInterviewsCount(response.data.data.length);
+            } else {
+                setInterviewsCount(0);
+            }
+        } catch (error) {
+            console.error('Error fetching interviews count:', error);
+            setInterviewsCount(0);
+        }
+    };
+
+    // Fetch jobs that suits you count
+    useEffect(() => {
+        if (isDriver) {
+            getSuitsJobCount();
+            getInterviewsCount();
+        }
+    }, [isDriver]);
 
     // Determine Driver Badge Text using utility function
     // const driverBadgeText = getUserBadgeText({
@@ -509,9 +528,9 @@ export default function Dashboard() {
                         <DashboardCard
                             title={`Video Interview\nInvitation`}
                             subtitle=""
-                            count={dashboard?.total_video_interviews ?? 0}
+                            count={interviewsCount ?? 0}
                             icon="https://cdn-icons-png.flaticon.com/512/1256/1256650.png"
-                            onPress={() => navigation.navigate(STACKS.VIDEO_INTERVIEW_INFO)}
+                            onPress={() => navigation.navigate(STACKS.SCHEDULED_INTERVIEWS)}
                             colors={colors}
                             shadow={shadow}
                             responsiveFontSize={responsiveFontSize}

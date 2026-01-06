@@ -26,6 +26,7 @@ const PROFILE_PLACEHOLDER = require('@truckmitr/src/assets/membership-card/man.p
 const BACKGROUND_VERIFIED = require('@truckmitr/src/assets/membership-card/membershipbg.png');       // Silver/Gray for Verified
 const BACKGROUND_TRUSTED = require('@truckmitr/src/assets/membership-card/membershipcardbg2.png');   // Gold for Trusted
 const BACKGROUND_JOB_READY = require('@truckmitr/src/assets/membership-card/membershipcard3.png');   // Blue for Job Ready
+const BACKGROUND_TRANSPORTER_PRO = require('@truckmitr/src/assets/membership-card/TransporterPro.png');
 
 // Card configurations for each tier
 type TierType = 'JOB READY' | 'VERIFIED' | 'TRUSTED' | 'Standard' | 'LEGACY' | 'TRANSPORTER PRO';
@@ -99,14 +100,14 @@ const TIER_CONFIGS: Record<TierType, TierConfig> = {
         categoryText: 'LEGACY MEMBER', // Will be overridden dynamically
     },
     'TRANSPORTER PRO': {
-        background: BACKGROUND_TRUSTED,
-        borderColors: ['#A67C00', '#C9A23F', '#FFF6C8', '#C9A23F', '#A67C00'],
+        background: BACKGROUND_TRANSPORTER_PRO,
+        borderColors: ['#404040', '#E0E3E7', '#FFFFFF', '#E0E3E7', '#404040'],
         chromeGradient: [
-            { offset: '0', color: '#FFF6C8' },
-            { offset: '0.25', color: '#C9A23F' },
-            { offset: '0.5', color: '#A67C00' },
-            { offset: '0.75', color: '#C9A23F' },
-            { offset: '1', color: '#FFF6C8' },
+            { offset: '0', color: '#E0E3E7' },
+            { offset: '0.25', color: '#BFC5CC' },
+            { offset: '0.5', color: '#9AA0A6' },
+            { offset: '0.75', color: '#BFC5CC' },
+            { offset: '1', color: '#E0E3E7' },
         ],
         categoryText: 'TRANSPORTER PRO',
     },

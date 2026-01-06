@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View, Text, ScrollView, TouchableOpacity, Linking, Image } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useColor, useResponsiveScale, useShadow } from '@truckmitr/src/app/hooks';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { STACKS } from '@truckmitr/src/stacks/stacks';
 import { useDispatch } from 'react-redux';
+import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
+import { END_POINTS } from '@truckmitr/src/utils/config';
 
 const VideoInterviewInfo = () => {
     const navigation = useNavigation<any>();
@@ -15,14 +17,32 @@ const VideoInterviewInfo = () => {
     const { shadow } = useShadow();
     const { t } = useTranslation();
     const [refreshKey, setRefreshKey] = useState(0);
+    const [scheduledCount, setScheduledCount] = useState(0);
 
     // Mock State: 'none', 'scheduled', 'live', 'missed'
     const [interviewStatus, setInterviewStatus] = useState<'none' | 'scheduled' | 'live' | 'missed'>('scheduled');
 
+    const fetchInterviews = async () => {
+        try {
+            const response = await axiosInstance.get(END_POINTS.DRIVER_INTERVIEW);
+            if (response?.data?.status) {
+                setScheduledCount(response.data.data.length);
+            }
+        } catch (error) {
+            console.error("Error fetching interviews:", error);
+        }
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchInterviews();
+        }, [])
+    );
+
     const _goBack = () => navigation.goBack();
     const _refreshPage = () => {
         setRefreshKey(prev => prev + 1);
-        // Toggle status for demo purposes if needed, logic normally fetched here
+        fetchInterviews();
     };
     const _contactSupport = () => {
         Linking.openURL('tel:+911234567890');
@@ -49,14 +69,14 @@ const VideoInterviewInfo = () => {
     return (
         <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
             {/* Header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: responsiveWidth(4), paddingTop: responsiveHeight(4), backgroundColor: colors.white, elevation: 2 }}>
-                <TouchableOpacity onPress={_goBack} style={{ padding: 5 }}>
-                    <Ionicons name="chevron-back" size={24} color={colors.royalBlue} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: responsiveWidth(4), paddingTop: responsiveHeight(7), paddingBottom: responsiveHeight(2), backgroundColor: colors.white, elevation: 2 }}>
+                <TouchableOpacity onPress={_goBack} style={{ position: 'absolute', left: responsiveWidth(4), top: responsiveHeight(6), padding: 5, zIndex: 1 }}>
+                    <Ionicons name="chevron-back" size={28} color={colors.royalBlue} />
                 </TouchableOpacity>
-                <Text style={{ fontSize: responsiveFontSize(2.4), fontWeight: 'bold', color: colors.royalBlue, textAlign: 'center' }}>
+                <Text style={{ fontSize: responsiveFontSize(2.5), fontWeight: 'bold', color: colors.royalBlue, textAlign: 'center' }}>
                     {t('videoInterviewTitle')}
                 </Text>
-                <TouchableOpacity onPress={_refreshPage} style={{ padding: 5 }}>
+                <TouchableOpacity onPress={_refreshPage} style={{ position: 'absolute', right: responsiveWidth(4), top: responsiveHeight(6), padding: 5, zIndex: 1 }}>
                     <Ionicons name="refresh" size={22} color={colors.royalBlue} />
                 </TouchableOpacity>
             </View>
@@ -125,7 +145,7 @@ const VideoInterviewInfo = () => {
                         style={{ backgroundColor: colors.royalBlue, paddingVertical: responsiveHeight(1.8), borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
                     >
                         <Text style={{ color: colors.white, fontSize: responsiveFontSize(2.0), fontWeight: 'bold' }}>
-                            {interviewStatus === 'live' ? t('joinInterview') : t('viewScheduledInterview')}
+                            {interviewStatus === 'live' ? t('joinInterview') : `${t('viewScheduledInterview')} (${scheduledCount})`}
                         </Text>
                     </TouchableOpacity>
                 )}
