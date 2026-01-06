@@ -21,6 +21,7 @@ import { showToast } from '@truckmitr/src/app/hooks/toast';
 import LinearGradient from 'react-native-linear-gradient';
 import FileViewer from 'react-native-file-viewer';
 import Share from 'react-native-share';
+import { getUserBadgeText } from '@truckmitr/src/utils/global/userBadge';
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 
 const capitalizeFirst = (str: string): string => {
@@ -60,43 +61,12 @@ export default function QuizResult() {
             activeSub = subscriptionDetails;
         }
 
-        const role = capitalizeFirst(user?.role || 'Driver');
-
-        if (activeSub) {
-            let tier = '';
-            // Try to deduce tier from payment_type or plan_name
-            const type = (activeSub.payment_type || activeSub.plan_name || '').toUpperCase();
-
-            // Prioritize explicit name matching first
-            if (type.includes('TRUSTED')) tier = 'Trusted';
-            else if (type.includes('VERIFIED')) tier = 'Verified';
-            else if (type.includes('JOB READY') || type.includes('JOBREADY')) tier = 'Job Ready';
-            else if (type.includes('STANDARD')) tier = 'Standard';
-            else if (type.includes('LEGACY')) tier = 'Legacy';
-
-            // Fallback to amount-based detection if name didn't match
-            if (!tier && activeSub.amount) {
-                const amt = parseFloat(activeSub.amount);
-                if (amt >= 499) tier = 'Trusted';
-                else if (amt >= 199) tier = 'Verified';
-                else if (amt >= 99) tier = 'Job Ready';
-            }
-
-            // Fallback to raw name
-            if (!tier && type && type !== 'SUBSCRIPTION') {
-                tier = capitalizeFirst(activeSub.payment_type || activeSub.plan_name);
-            }
-
-            if (tier) {
-                // Ensure we don't duplicate "Driver" e.g. "Trusted Driver Driver"
-                if (tier.toLowerCase().endsWith(' driver')) {
-                    tier = tier.substring(0, tier.length - 7);
-                }
-                return `${tier} ${role}`;
-            }
-        }
-
-        return role;
+        // Use the centralized utility
+        return getUserBadgeText({
+            user: user,
+            subscriptionDetails: activeSub,
+            isDriver: isDriver
+        });
     };
 
     // Get subscription tier color - always dark blue
@@ -399,7 +369,7 @@ export default function QuizResult() {
                 </View>
                 <View style={{ marginStart: responsiveFontSize(2.5) }}>
                     <Text style={{ color: colors.black, fontSize: responsiveFontSize(2.6), fontWeight: '500' }}>{`${user?.name || ''}`}</Text>
-                    <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.6), fontWeight: '400' }}>{`ID - ${user?.unique_id || ''}`}</Text>
+                    <Text style={{ color: colors.black, fontSize: responsiveFontSize(1.6), fontWeight: '400' }}>{`${user?.unique_id || ''}`}</Text>
                     <Text style={{ backgroundColor: getSubscriptionBadgeColor().bg, alignSelf: 'flex-start', color: getSubscriptionBadgeColor().text, fontSize: responsiveFontSize(1.7), fontWeight: '600', paddingVertical: responsiveFontSize(.2), paddingHorizontal: responsiveFontSize(2), borderRadius: 100 }}>{getActivePlanName()}</Text>
                     <View style={{ flexDirection: 'row', backgroundColor: colors.bronzeOpacity(.08), alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: responsiveFontSize(2), paddingVertical: responsiveFontSize(.2), marginTop: responsiveFontSize(1), borderRadius: 100 }}>
                         <Text style={{ color: colors.bronze, fontSize: responsiveFontSize(1.6), fontWeight: '500' }}>{rank}</Text>
