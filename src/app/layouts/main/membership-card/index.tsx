@@ -252,7 +252,7 @@ export default function MembershipCard() {
             {/* Tier Badge */}
             <View style={{ alignItems: 'center', marginBottom: responsiveHeight(1) }}>
                 <View style={[styles.tierBadge, { backgroundColor: tierConfig.borderColors[2] + '20' }]}>
-                    <Text style={[styles.tierBadgeText, { color: tierConfig.borderColors[1] }]}>
+                    <Text style={[styles.tierBadgeText, { color: tierConfig.borderColors[0] }]}>
                         {tier} MEMBER
                     </Text>
                 </View>
@@ -278,79 +278,99 @@ export default function MembershipCard() {
                             >
                                 <View style={styles.darkOverlay} />
 
-                                {/* Main Content - 65/35 Split */}
-                                <View style={styles.contentRow}>
-                                    {/* Left Section - 65% */}
-                                    <View style={styles.leftSection}>
+                                {/* Card Content - Adapted from Profile Screen for consistency */}
+                                <View style={{ flex: 1, padding: 12 }}>
+
+                                    {/* Top Row: Logo and Profile Photo */}
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         {/* Logo */}
-                                        <View style={styles.logoArea}>
-                                            <Image
-                                                source={LOGO_IMAGE}
-                                                style={styles.logoImage}
-                                                resizeMode="contain"
-                                            />
+                                        <Image
+                                            source={LOGO_IMAGE}
+                                            style={{ width: 120, height: 40 }}
+                                            resizeMode="contain"
+                                        />
+
+                                        {/* Profile Photo with border */}
+                                        <LinearGradient
+                                            colors={tierConfig.borderColors}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 1 }}
+                                            style={{
+                                                padding: 2,
+                                                borderRadius: 30,
+                                            }}
+                                        >
+                                            <View style={{
+                                                backgroundColor: '#fff',
+                                                padding: 2,
+                                                borderRadius: 28
+                                            }}>
+                                                <Image
+                                                    source={profileImage}
+                                                    style={{ width: 52, height: 52, borderRadius: 26 }}
+                                                    resizeMode="cover"
+                                                />
+                                            </View>
+                                        </LinearGradient>
+                                    </View>
+
+                                    {/* Middle Section: Category & ID */}
+                                    <View style={{ marginTop: 4 }}>
+                                        {/* Category Label with SVG Gradient */}
+                                        <View style={{ height: 22, width: 200 }}>
+                                            <Svg height="100%" width="100%" viewBox="0 0 200 22">
+                                                <Defs>
+                                                    <SvgLinearGradient id="chromeGradientCat" x1="0" y1="0" x2="0" y2="1">
+                                                        {tierConfig.chromeGradient.map((stop, index) => (
+                                                            <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
+                                                        ))}
+                                                    </SvgLinearGradient>
+                                                </Defs>
+                                                {/* Shadow layer */}
+                                                <SvgText fill="#000000" fillOpacity="0.7" fontSize="15" fontWeight="900" fontStyle="italic" letterSpacing="1" x="1.5" y="17">
+                                                    {tierConfig.categoryText}
+                                                </SvgText>
+                                                {/* Main gradient text */}
+                                                <SvgText fill="url(#chromeGradientCat)" stroke="#000" strokeWidth="0.5" fontSize="15" fontWeight="900" fontStyle="italic" letterSpacing="1" x="0" y="15.5">
+                                                    {tierConfig.categoryText}
+                                                </SvgText>
+                                            </Svg>
                                         </View>
 
-                                        {/* Category & ID Code Section */}
-                                        <View style={styles.idCodeSection}>
-                                            {/* Category Label */}
-                                            <View style={{ marginBottom: 4, marginLeft: 2 }}>
-                                                <View style={{ height: 20, width: 200 }}>
-                                                    <Svg height="100%" width="100%" viewBox="0 0 200 20">
-                                                        <Defs>
-                                                            <SvgLinearGradient id="chromeGradientCat" x1="0" y1="0" x2="0" y2="1">
-                                                                {tierConfig.chromeGradient.map((stop, index) => (
-                                                                    <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
-                                                                ))}
-                                                            </SvgLinearGradient>
-                                                        </Defs>
-                                                        {/* Shadow */}
-                                                        <SvgText fill="#000000" fillOpacity="0.8" fontSize="14" fontWeight="900" fontFamily="sans-serif" letterSpacing="1" x="1.5" y="15.5" textAnchor="start">
-                                                            {tierConfig.categoryText}
-                                                        </SvgText>
-                                                        {/* Thickener */}
-                                                        <SvgText fill="#383838ff" stroke="#383838ff" strokeWidth="1.2" fontSize="14" fontWeight="900" fontFamily="sans-serif" letterSpacing="1" x="0" y="14" textAnchor="start">
-                                                            {tierConfig.categoryText}
-                                                        </SvgText>
-                                                        {/* Chrome */}
-                                                        <SvgText fill="url(#chromeGradientCat)" stroke="#FFFFFF" strokeWidth="0.6" fontSize="14" fontWeight="900" fontFamily="sans-serif" letterSpacing="1" x="0" y="14" textAnchor="start">
-                                                            {tierConfig.categoryText}
-                                                        </SvgText>
-                                                    </Svg>
-                                                </View>
-                                            </View>
-
-                                            {/* TM ID */}
-                                            <View style={{ height: 40, width: '100%', alignItems: 'flex-start', justifyContent: 'center', marginBottom: -10 }}>
-                                                <Svg height="100%" width="100%" viewBox="0 0 400 40">
-                                                    <Defs>
-                                                        <SvgLinearGradient id="chromeGradientId" x1="0" y1="0" x2="0" y2="1">
-                                                            {tierConfig.chromeGradient.map((stop, index) => (
-                                                                <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
-                                                            ))}
-                                                        </SvgLinearGradient>
-                                                    </Defs>
-                                                    {/* Shadow */}
-                                                    <SvgText fill="#000000" fillOpacity="0.8" fontSize="28" fontWeight="900" letterSpacing="1.5" x="2" y="28" textAnchor="start">
-                                                        {uniqueId}
-                                                    </SvgText>
-                                                    {/* Thickener */}
-                                                    <SvgText fill="#383838ff" stroke="#383838ff" strokeWidth="1.5" fontSize="28" fontWeight="900" letterSpacing="1.5" x="0" y="26" textAnchor="start">
-                                                        {uniqueId}
-                                                    </SvgText>
-                                                    {/* Chrome */}
-                                                    <SvgText fill="url(#chromeGradientId)" stroke="#FFFFFF" strokeWidth="0.8" fontSize="28" fontWeight="900" letterSpacing="1.5" x="0" y="26" textAnchor="start">
-                                                        {uniqueId}
-                                                    </SvgText>
-                                                </Svg>
-                                            </View>
+                                        {/* TM ID with SVG Gradient */}
+                                        <View style={{ height: 38, width: '100%', marginTop: 2 }}>
+                                            <Svg height="100%" width="100%" viewBox="0 0 340 38">
+                                                <Defs>
+                                                    <SvgLinearGradient id="chromeGradientId" x1="0" y1="0" x2="0" y2="1">
+                                                        {tierConfig.chromeGradient.map((stop, index) => (
+                                                            <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
+                                                        ))}
+                                                    </SvgLinearGradient>
+                                                </Defs>
+                                                {/* Shadow layer */}
+                                                <SvgText fill="#000000" fillOpacity="0.8" fontSize="28" fontWeight="900" letterSpacing="2" x="2" y="30">
+                                                    {uniqueId}
+                                                </SvgText>
+                                                {/* Main gradient text */}
+                                                <SvgText fill="url(#chromeGradientId)" stroke="#000" strokeWidth="0.8" fontSize="28" fontWeight="900" letterSpacing="2" x="0" y="28">
+                                                    {uniqueId}
+                                                </SvgText>
+                                            </Svg>
                                         </View>
+                                    </View>
 
-                                        {/* Member Name and Location */}
-                                        <View style={styles.memberInfo}>
-                                            {/* Name */}
-                                            <View style={{ height: 30, width: 320, marginBottom: -6, marginLeft: -2 }}>
-                                                <Svg height="100%" width="100%" viewBox="0 0 320 30">
+                                    {/* Bottom Section: Name, Location, Validity */}
+                                    <View style={{
+                                        marginTop: 'auto',
+                                        flexDirection: 'row',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'flex-end',
+                                    }}>
+                                        {/* Left: Name, Location, License */}
+                                        <View style={{ flex: 1 }}>
+                                            {/* Name with SVG Gradient */}
+                                            <View style={{ height: 20, width: 200 }}>
+                                                <Svg height="100%" width="100%" viewBox="0 0 200 20">
                                                     <Defs>
                                                         <SvgLinearGradient id="chromeGradientName" x1="0" y1="0" x2="0" y2="1">
                                                             {tierConfig.chromeGradient.map((stop, index) => (
@@ -358,97 +378,90 @@ export default function MembershipCard() {
                                                             ))}
                                                         </SvgLinearGradient>
                                                     </Defs>
-                                                    {/* Shadow */}
-                                                    <SvgText fill="#000000" fillOpacity="0.8" fontSize="13" fontWeight="900" letterSpacing="1.2" x="2" y="22" textAnchor="start">
+                                                    <SvgText fill="#000000" fillOpacity="0.7" fontSize="14" fontWeight="900" letterSpacing="1" x="1" y="16">
                                                         {userName}
                                                     </SvgText>
-                                                    {/* Thickener */}
-                                                    <SvgText fill="#383838ff" stroke="#383838ff" strokeWidth="1.0" fontSize="13" fontWeight="900" letterSpacing="1.2" x="0" y="20" textAnchor="start">
-                                                        {userName}
-                                                    </SvgText>
-                                                    {/* Chrome */}
-                                                    <SvgText fill="url(#chromeGradientName)" stroke="#FFFFFF" strokeWidth="0.6" fontSize="13" fontWeight="900" letterSpacing="1.2" x="0" y="20" textAnchor="start">
+                                                    <SvgText fill="url(#chromeGradientName)" stroke="#000" strokeWidth="0.4" fontSize="14" fontWeight="900" letterSpacing="1" x="0" y="15">
                                                         {userName}
                                                     </SvgText>
                                                 </Svg>
                                             </View>
-                                            <Text style={styles.memberLocation}>{userLocation}</Text>
-                                        </View>
-                                    </View>
-
-                                    {/* Right Section - Photo */}
-                                    <View style={styles.rightSection}>
-                                        <LinearGradient
-                                            colors={tierConfig.borderColors}
-                                            start={{ x: 0, y: 0 }}
-                                            end={{ x: 1, y: 1 }}
-                                            style={styles.photoMetallicBorder}
-                                        >
-                                            <View style={styles.photoInnerFrame}>
-                                                <Image
-                                                    source={profileImage}
-                                                    style={styles.photoImage}
-                                                    resizeMode="cover"
-                                                />
-                                            </View>
-                                        </LinearGradient>
-                                    </View>
-
-                                    {/* Validity Dates & License - Bottom Right */}
-                                    <View style={styles.validityAbsContainer}>
-                                        <View style={styles.datesRow}>
-                                            <View style={styles.validityBlock}>
-                                                <Text style={styles.validityLabelAbs}>VALID FROM</Text>
-                                                <View style={{ height: 20, width: 100, marginTop: -2 }}>
-                                                    <Svg height="100%" width="100%" viewBox="0 0 100 20">
-                                                        <Defs>
-                                                            <SvgLinearGradient id="chromeGradientDate1" x1="0" y1="0" x2="0" y2="1">
-                                                                {tierConfig.chromeGradient.map((stop, index) => (
-                                                                    <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
-                                                                ))}
-                                                            </SvgLinearGradient>
-                                                        </Defs>
-                                                        <SvgText fill="#000000" fillOpacity="0.8" fontSize="12" fontWeight="900" fontFamily="sans-serif" letterSpacing="1" x="50" y="14" textAnchor="middle">
-                                                            {startDate}
-                                                        </SvgText>
-                                                        <SvgText fill="#383838ff" stroke="#383838ff" strokeWidth="0.8" fontSize="12" fontWeight="900" fontFamily="sans-serif" letterSpacing="1" x="50" y="13" textAnchor="middle">
-                                                            {startDate}
-                                                        </SvgText>
-                                                        <SvgText fill="url(#chromeGradientDate1)" stroke="#FFFFFF" strokeWidth="0.4" fontSize="12" fontWeight="900" fontFamily="sans-serif" letterSpacing="1" x="50" y="13" textAnchor="middle">
-                                                            {startDate}
-                                                        </SvgText>
-                                                    </Svg>
-                                                </View>
-                                            </View>
-                                            <View style={styles.validityBlock}>
-                                                <Text style={styles.validityLabelAbs}>VALID THRU</Text>
-                                                <View style={{ height: 20, width: 100, marginTop: -2 }}>
-                                                    <Svg height="100%" width="100%" viewBox="0 0 100 20">
-                                                        <Defs>
-                                                            <SvgLinearGradient id="chromeGradientDate2" x1="0" y1="0" x2="0" y2="1">
-                                                                {tierConfig.chromeGradient.map((stop, index) => (
-                                                                    <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
-                                                                ))}
-                                                            </SvgLinearGradient>
-                                                        </Defs>
-                                                        <SvgText fill="#000000" fillOpacity="0.8" fontSize="12" fontWeight="900" fontFamily="sans-serif" letterSpacing="1" x="50" y="14" textAnchor="middle">
-                                                            {endDate}
-                                                        </SvgText>
-                                                        <SvgText fill="#383838ff" stroke="#383838ff" strokeWidth="0.8" fontSize="12" fontWeight="900" fontFamily="sans-serif" letterSpacing="1" x="50" y="13" textAnchor="middle">
-                                                            {endDate}
-                                                        </SvgText>
-                                                        <SvgText fill="url(#chromeGradientDate2)" stroke="#FFFFFF" strokeWidth="0.4" fontSize="12" fontWeight="900" fontFamily="sans-serif" letterSpacing="1" x="50" y="13" textAnchor="middle">
-                                                            {endDate}
-                                                        </SvgText>
-                                                    </Svg>
-                                                </View>
-                                            </View>
+                                            <Text style={{
+                                                color: '#fff',
+                                                fontSize: responsiveFontSize(1.3),
+                                                fontWeight: '700',
+                                                marginTop: 1,
+                                                textShadowColor: 'rgba(0,0,0,0.8)',
+                                                textShadowOffset: { width: 1, height: 1 },
+                                                textShadowRadius: 2,
+                                            }}>
+                                                {userLocation}
+                                            </Text>
+                                            <Text style={{
+                                                color: 'rgba(255, 255, 255, 1)',
+                                                fontSize: responsiveFontSize(1.1),
+                                                fontWeight: '900',
+                                                marginTop: 3,
+                                                textShadowColor: 'rgba(0,0,0,0.6)',
+                                                textShadowOffset: { width: 1, height: 1 },
+                                                textShadowRadius: 1,
+                                            }}>
+                                                {t('licenseType') || 'LICENSE TYPE'}: <Text style={{ fontWeight: '800' }}>{licenseType}</Text>
+                                            </Text>
                                         </View>
 
-                                        {/* License Type */}
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2, marginRight: 35 }}>
-                                            <Text style={[styles.validityLabelAbs, { marginBottom: 0, marginRight: 4 }]}>LICENSE TYPE:</Text>
-                                            <Text style={[styles.validityLabelAbs, { marginBottom: 0, color: '#FFFFFF', fontWeight: '900' }]}>{licenseType}</Text>
+                                        {/* Right: Validity Dates with SVG Gradient */}
+                                        <View style={{ alignItems: 'flex-end' }}>
+                                            <View style={{ flexDirection: 'row', gap: 10 }}>
+                                                <View style={{ alignItems: 'center' }}>
+                                                    <Text style={{
+                                                        color: 'rgba(255,255,255,0.7)',
+                                                        fontSize: responsiveFontSize(1.2),
+                                                        fontWeight: '800',
+                                                        letterSpacing: 0.5,
+                                                    }}>
+                                                        {t('validFrom')?.toUpperCase() || 'VALID FROM'}
+                                                    </Text>
+                                                    <View style={{ height: 16, width: 70, marginTop: 1 }}>
+                                                        <Svg height="100%" width="100%" viewBox="0 0 70 16">
+                                                            <Defs>
+                                                                <SvgLinearGradient id="chromeGradientDate1" x1="0" y1="0" x2="0" y2="1">
+                                                                    {tierConfig.chromeGradient.map((stop, index) => (
+                                                                        <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
+                                                                    ))}
+                                                                </SvgLinearGradient>
+                                                            </Defs>
+                                                            <SvgText fill="url(#chromeGradientDate1)" stroke="#000" strokeWidth="0.3" fontSize="12" fontWeight="900" x="35" y="13" textAnchor="middle">
+                                                                {startDate}
+                                                            </SvgText>
+                                                        </Svg>
+                                                    </View>
+                                                </View>
+                                                <View style={{ alignItems: 'center' }}>
+                                                    <Text style={{
+                                                        color: 'rgba(255,255,255,0.7)',
+                                                        fontSize: responsiveFontSize(1.2),
+                                                        fontWeight: '800',
+                                                        letterSpacing: 0.5,
+                                                    }}>
+                                                        {t('validUntil')?.toUpperCase() || 'VALID THRU'}
+                                                    </Text>
+                                                    <View style={{ height: 16, width: 70, marginTop: 1 }}>
+                                                        <Svg height="100%" width="100%" viewBox="0 0 70 16">
+                                                            <Defs>
+                                                                <SvgLinearGradient id="chromeGradientDate2" x1="0" y1="0" x2="0" y2="1">
+                                                                    {tierConfig.chromeGradient.map((stop, index) => (
+                                                                        <Stop key={index} offset={stop.offset} stopColor={stop.color} stopOpacity="1" />
+                                                                    ))}
+                                                                </SvgLinearGradient>
+                                                            </Defs>
+                                                            <SvgText fill="url(#chromeGradientDate2)" stroke="#000" strokeWidth="0.3" fontSize="12" fontWeight="900" x="35" y="13" textAnchor="middle">
+                                                                {endDate}
+                                                            </SvgText>
+                                                        </Svg>
+                                                    </View>
+                                                </View>
+                                            </View>
                                         </View>
                                     </View>
                                 </View>
@@ -468,7 +481,12 @@ export default function MembershipCard() {
 
                 <View style={styles.infoRow}>
                     <Text style={styles.infoLabel}>{t('membershipType') || 'Membership Type'}</Text>
-                    <Text style={[styles.infoValue, { color: tierConfig.borderColors[1] }]}>{tier}</Text>
+                    <Text style={[styles.infoValue, { color: tierConfig.borderColors[0] }]}>{tier}</Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>{t('subscriptionAmount') || 'Subscription Amount'}</Text>
+                    <Text style={styles.infoValue}>₹ {subscriptionDetails?.amount || subscriptionDetails?.plan_amount || '0'}</Text>
                 </View>
 
                 <View style={styles.infoRow}>
@@ -562,112 +580,6 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         backgroundColor: 'rgba(0, 0, 0, 0.17)',
         borderRadius: 25,
-    },
-    contentRow: {
-        flex: 1,
-        flexDirection: 'row',
-        padding: 18,
-    },
-    leftSection: {
-        flex: 65,
-        paddingRight: 12,
-        justifyContent: 'space-between',
-    },
-    rightSection: {
-        position: 'absolute',
-        top: 4,
-        right: 4,
-        alignItems: 'flex-end',
-        justifyContent: 'flex-start',
-        paddingTop: -4,
-    },
-    logoArea: {
-        position: 'absolute',
-        top: -10,
-        left: -25,
-        marginBottom: -20,
-        alignItems: 'flex-start',
-    },
-    logoImage: {
-        width: 160,
-        height: 52,
-        marginBottom: 2,
-    },
-    idCodeSection: {
-        position: 'absolute',
-        top: 65,
-        left: 5,
-        width: 380,
-        alignItems: 'flex-start',
-        marginVertical: 0,
-        zIndex: 10,
-    },
-    memberInfo: {
-        position: 'absolute',
-        bottom: -20,
-        left: -5,
-        top: 140,
-        right: -90,
-        marginTop: 0,
-    },
-    memberLocation: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '800',
-        letterSpacing: 1.2,
-        marginTop: -2,
-        textShadowColor: 'rgba(0,0,0,1)',
-        textShadowOffset: { width: 1, height: 1 },
-        textShadowRadius: 2,
-        elevation: 3,
-    },
-    photoMetallicBorder: {
-        padding: 3,
-        borderRadius: 100,
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.4,
-        shadowRadius: 4,
-        elevation: 5,
-    },
-    photoInnerFrame: {
-        backgroundColor: '#FFFFFF',
-        padding: 2,
-        borderRadius: 100,
-    },
-    photoImage: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-    },
-    validityAbsContainer: {
-        position: 'absolute',
-        bottom: 15,
-        right: -15,
-        alignItems: 'flex-end',
-        gap: 16,
-        zIndex: 20,
-    },
-    datesRow: {
-        flexDirection: 'row',
-        gap: 4,
-    },
-    validityBlock: {
-        alignItems: 'center',
-        marginBottom: 0,
-    },
-    validityLabelAbs: {
-        color: '#D0D0D0',
-        fontSize: 9,
-        fontWeight: '700',
-        letterSpacing: 0.5,
-        marginBottom: -2,
-        lineHeight: 10,
-        textShadowColor: 'rgba(0,0,0,0.8)',
-        textShadowOffset: { width: 1, height: 1 },
-        textShadowRadius: 1,
     },
     // Info Section Styles
     infoTitle: {

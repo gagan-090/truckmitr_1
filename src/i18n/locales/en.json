@@ -714,6 +714,7 @@
   "downloadInvoice": "Download Invoice",
   "membershipCard": "Membership Card",
   "membershipDetails": "Membership Details",
+  "subscriptionAmount": "Subscription Amount",
   "membershipType": "Membership Type",
   "memberId": "Member ID",
   "validFrom": "Valid From",
