@@ -550,10 +550,14 @@ const Home = React.forwardRef((props, ref) => {
             const type = (activeSub.payment_type || activeSub.plan_name || '').toUpperCase();
             const amt = activeSub.amount ? parseFloat(activeSub.amount) : 0;
 
-            // Check for legacy subscriptions first (Rs 49 for drivers, Rs 100/99 for transporters)
-            if (amt === 49 || amt === 49.00) {
+            // Check for specific subscription tiers based on amount and role
+            const floorAmt = Math.floor(amt);
+
+            if (user?.role === 'transporter' && (floorAmt === 99 || floorAmt === 100)) {
                 tier = 'Legacy';
-            } else if (amt === 100 || amt === 100.00 || amt === 99 || amt === 99.00) {
+            } else if (isDriver && floorAmt === 99) {
+                tier = 'Job Ready';
+            } else if (floorAmt === 49 || floorAmt === 100) {
                 tier = 'Legacy';
             }
             else if (user?.role === 'transporter' && (amt === 499 || amt === 499.00)) {
@@ -960,7 +964,7 @@ const Home = React.forwardRef((props, ref) => {
                                 ))}
                             </View>
                             <View style={{ marginTop: 2, backgroundColor: colors.white, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
-                                <Text style={{ fontSize: responsiveFontSize(1.2), color: colors.royalBlue, fontFamily: 'Inter-Bold', textAlign: 'center' }}>💎 {rank || 'N/A'}</Text>
+                                <Text style={{ fontSize: responsiveFontSize(1.2), color: colors.royalBlue, fontFamily: 'Inter-Bold', textAlign: 'center' }}>{rank || 'N/A'} 🏆</Text>
                             </View>
                         </TouchableOpacity>
                     </View>

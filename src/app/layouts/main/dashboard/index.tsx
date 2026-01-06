@@ -22,14 +22,20 @@ import { BASE_URL, END_POINTS } from '@truckmitr/src/utils/config';
 import { useTranslation } from 'react-i18next';
 import { subscriptionModalAction } from '@truckmitr/src/redux/actions/user.action';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
+import { getUserBadgeText } from '@truckmitr/src/utils/global';
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 
-type TierType = 'TRUSTED' | 'VERIFIED' | 'JOB READY' | 'Standard' | 'LEGACY';
+type TierType = 'TRUSTED' | 'VERIFIED' | 'JOB READY' | 'Standard' | 'LEGACY' | 'TRANSPORTER PRO';
 
 // Helper function to get tier from payment_type
-const getTierFromPaymentType = (paymentType: string, amount?: number): TierType => {
-    // Legacy driver detection: Rs 49 payment = Legacy Driver
-    if (amount === 49 || amount === 49.00) {
+const getTierFromPaymentType = (paymentType: string, amount?: number, role?: string): TierType => {
+    // Legacy driver detection: Rs 49 or Rs 100 payment for DRIVERS
+    if (role === 'driver' && (amount === 49 || amount === 49.00 || amount === 100 || amount === 100.00)) {
+        return 'LEGACY';
+    }
+
+    // Legacy transporter detection: Rs 100/99 payment for TRANSPORTERS
+    if (role === 'transporter' && (amount === 99 || amount === 99.00 || amount === 100 || amount === 100.00)) {
         return 'LEGACY';
     }
 
@@ -39,7 +45,22 @@ const getTierFromPaymentType = (paymentType: string, amount?: number): TierType 
     if (normalizedType === 'JOB READY' || normalizedType === 'JOBREADY') return 'JOB READY';
     if (normalizedType === 'STANDARD') return 'Standard';
     if (normalizedType === 'LEGACY') return 'LEGACY';
+    if (normalizedType === 'TRANSPORTER PRO') return 'TRANSPORTER PRO';
     return 'JOB READY';
+};
+
+// Get the actual paid amount from subscription
+const getPaidAmount = (subscriptionDetails: any, isDriver: boolean): number => {
+    // Amount is stored directly on subscription object as string (e.g., "99.00")
+    if (subscriptionDetails?.amount) {
+        return parseFloat(subscriptionDetails.amount);
+    }
+    // Fallback to payment_details.amount (in paise, needs /100)
+    if (subscriptionDetails?.payment_details?.amount) {
+        return subscriptionDetails.payment_details.amount / 100;
+    }
+    // Default fallback
+    return isDriver ? 199 : 499;
 };
 
 const capitalizeFirst = (str: string): string => {
@@ -155,6 +176,9 @@ export default function Dashboard() {
         }
     };
 
+    console.log('-------------------subscriptionDetails-----------------', subscriptionDetails);
+
+
     const _navigateToQuizTrainingScreen = () => {
         if (subscriptionDetails?.showSubscriptionModel && isDriver) {
             !subscriptionModal && dispatch(subscriptionModalAction(true));
@@ -184,23 +208,42 @@ export default function Dashboard() {
         }
     };
 
-    // Determine Driver Badge Text
+    // Determine Driver Badge Text using utility function
+    // const driverBadgeText = getUserBadgeText({
+    //     user,
+    //     subscriptionDetails,
+    //     isDriver
+    // });
+
     const getDriverBadgeText = () => {
+
         if (subscriptionDetails?.hasActiveSubscription || !subscriptionDetails?.showSubscriptionModel) {
+
             const paymentType = subscriptionDetails?.payment_type || 'JOB READY';
+
             const amount = parseFloat(subscriptionDetails?.amount) || 0;
+
             const tier = getTierFromPaymentType(paymentType, amount);
 
             if (tier === 'TRUSTED') return t('cardTrustedDriver') || 'Trusted Driver';
+
             if (tier === 'VERIFIED') return t('cardVerifiedDriver') || 'Verified Driver';
+
             if (tier === 'LEGACY') return t('cardLegacyDriver') || 'Legacy Driver';
+
             if (tier === 'JOB READY') return t('cardJobReady') || 'Job Ready Driver';
+
             return t('cardJobReady') || 'Job Ready Driver';
+
         }
+
         return t('cardJobReady') || 'Job Ready Driver';
+
     };
 
     const driverBadgeText = getDriverBadgeText();
+
+
 
     return (
         <ScrollView style={{ flex: 1, backgroundColor: colors.white }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 50 }}>
