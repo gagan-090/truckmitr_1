@@ -168,7 +168,7 @@ export const shouldShowMembershipCard = ({ user, subscriptionDetails, isDriver }
     // Future: Transporters will get cards based on similar logic
     // To enable transporter cards, simply change this to:
     // return Boolean(hasActiveSubscription && hasSub);
-    return false; // Change to true when transporter cards are implemented
+    return Boolean(hasActiveSubscription && hasSub);
   }
 
   return false;

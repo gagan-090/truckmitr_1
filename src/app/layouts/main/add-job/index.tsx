@@ -48,6 +48,7 @@ import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
 import { END_POINTS } from '@truckmitr/src/utils/config';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
 import { jobAddAction, subscriptionModalAction } from '@truckmitr/src/redux/actions/user.action';
+import { Dropdown } from 'react-native-element-dropdown';
 import LinearGradient from 'react-native-linear-gradient';
 
 // Truck Images
@@ -160,6 +161,13 @@ export default function AddJob() {
     const [calendarMonth, setCalendarMonth] = useState(moment().format('YYYY-MM-DD'));
     const [yearPickerOpen, setYearPickerOpen] = useState(false);
 
+    // Pincode states
+    const [pincode, setPincode] = useState('');
+    const [pincodeAreas, setPincodeAreas] = useState<any[]>([]);
+    const [pincodeLoading, setPincodeLoading] = useState(false);
+    const [pincodeError, setPincodeError] = useState('');
+    const [selectedArea, setSelectedArea] = useState<string | null>(null);
+
     // ===== ACCESSIBILITY: REDUCED MOTION SUPPORT =====
     const [reduceMotion, setReduceMotion] = useState(false);
 
@@ -246,6 +254,18 @@ export default function AddJob() {
         };
     }, []);
 
+    // Initialize pincode and area for edit mode (when backend returns these fields)
+    useEffect(() => {
+        if (addJob?.pincode) {
+            setPincode(addJob.pincode);
+            // Fetch areas for the pincode to populate dropdown
+            fetchAreasByPincode(addJob.pincode);
+        }
+        if (addJob?.area) {
+            setSelectedArea(addJob.area);
+        }
+    }, [addJob?.id]);
+
     const fetchAvailableFreeJob = async () => {
         try {
             const response: any = await axiosInstance.get(END_POINTS?.TRANSPORTER_ALL_JOBS(''));
@@ -256,6 +276,58 @@ export default function AddJob() {
             }
         } catch (error) {
             console.error("Error fetching jobs:", error);
+        }
+    };
+
+    // Fetch areas by pincode
+    const fetchAreasByPincode = async (pincodeValue: string) => {
+        if (pincodeValue.length !== 6) {
+            setPincodeAreas([]);
+            setPincodeError('');
+            return;
+        }
+        
+        setPincodeLoading(true);
+        setPincodeError('');
+        setPincodeAreas([]);
+        setSelectedArea(null);
+        
+        try {
+            const response = await fetch(`https://api.postalpincode.in/pincode/${pincodeValue}`);
+            const data = await response.json();
+            
+            if (data && data[0]) {
+                if (data[0].Status === 'Success' && data[0].PostOffice) {
+                    const areas = data[0].PostOffice.map((po: any) => ({
+                        label: po.Name,
+                        value: po.Name,
+                        district: po.District,
+                        state: po.State
+                    }));
+                    setPincodeAreas(areas);
+                } else {
+                    setPincodeError(t('invalidPincode') || 'Invalid pincode. No areas found.');
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching pincode data:', error);
+            setPincodeError(t('pincodeApiError') || 'Error fetching pincode data. Please try again.');
+        } finally {
+            setPincodeLoading(false);
+        }
+    };
+
+    // Handle pincode change
+    const handlePincodeChange = (text: string) => {
+        const numericText = text.replace(/[^0-9]/g, '').slice(0, 6);
+        setPincode(numericText);
+        
+        if (numericText.length === 6) {
+            fetchAreasByPincode(numericText);
+        } else {
+            setPincodeAreas([]);
+            setPincodeError('');
+            setSelectedArea(null);
         }
     };
 
@@ -625,6 +697,8 @@ export default function AddJob() {
         let data = new FormData();
         data.append('job_title', addJob?.job_title);
         data.append('job_location', addJob?.job_location);
+        data.append('pincode', addJob?.pincode || '');
+        data.append('area', addJob?.area || '');
         data.append('route', addJob?.route || '');
         data.append('vehicle_type', addJob?.vehicle_type);
         data.append('Required_Experience', addJob?.Required_Experience);
@@ -719,6 +793,61 @@ export default function AddJob() {
                             </Text>
                             <Ionicons name="chevron-down" size={20} color="#666" />
                         </TouchableOpacity>
+                        
+                        {/* Pincode Section */}
+                        <View style={styles.pincodeSection}>
+                            <Text style={[styles.conditionalLabel, { marginTop: 16 }]}>{t('enterPincode') || 'Enter Pincode'}</Text>
+                            <TextInput
+                                style={styles.amountInput}
+                                placeholder={t('enter6DigitPincode') || 'Enter 6 digit pincode'}
+                                placeholderTextColor="#999"
+                                value={pincode}
+                                onChangeText={handlePincodeChange}
+                                keyboardType="numeric"
+                                maxLength={6}
+                            />
+                            
+                            {/* Loading indicator */}
+                            {pincodeLoading && (
+                                <View style={styles.pincodeLoadingContainer}>
+                                    <ActivityIndicator size="small" color="#246BFD" />
+                                    <Text style={styles.pincodeLoadingText}>{t('fetchingAreas') || 'Fetching areas...'}</Text>
+                                </View>
+                            )}
+                            
+                            {/* Error message */}
+                            {pincodeError ? (
+                                <Text style={styles.pincodeErrorText}>{pincodeError}</Text>
+                            ) : null}
+                            
+                            {/* Area Dropdown */}
+                            {pincodeAreas.length > 0 && (
+                                <View style={{ marginTop: 12 }}>
+                                    <Text style={styles.conditionalLabel}>{t('selectArea') || 'Select Area'}</Text>
+                                    <Dropdown
+                                        style={styles.dropdown}
+                                        placeholderStyle={styles.dropdownPlaceholder}
+                                        selectedTextStyle={styles.dropdownSelectedText}
+                                        data={pincodeAreas}
+                                        maxHeight={200}
+                                        labelField="label"
+                                        valueField="value"
+                                        placeholder={t('selectArea') || 'Select Area'}
+                                        value={selectedArea}
+                                        onChange={item => {
+                                            setSelectedArea(item.value);
+                                            dispatch(jobAddAction({ 
+                                                ...addJob, 
+                                                pincode: pincode,
+                                                area: item.value,
+                                                area_district: item.district,
+                                                area_state: item.state
+                                            }));
+                                        }}
+                                    />
+                                </View>
+                            )}
+                        </View>
                     </View>
                 );
 
@@ -3347,11 +3476,47 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         fontSize: 16,
         color: '#333',
-        backgroundColor: '#FAFAFA',
+        backgroundColor: 'white',
     },
 
     // Summary card full width
     summaryCardFull: {
         flex: 1,
+    },
+
+    // Pincode styles
+    pincodeSection: {
+        marginTop: 8,
+    },
+    pincodeLoadingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 8,
+    },
+    pincodeLoadingText: {
+        marginLeft: 8,
+        fontSize: 14,
+        color: '#666',
+    },
+    pincodeErrorText: {
+        marginTop: 8,
+        fontSize: 14,
+        color: '#EF4444',
+    },
+    dropdown: {
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        backgroundColor: '#FFFFFF',
+    },
+    dropdownPlaceholder: {
+        fontSize: 16,
+        color: '#999',
+    },
+    dropdownSelectedText: {
+        fontSize: 16,
+        color: '#333',
     },
 });

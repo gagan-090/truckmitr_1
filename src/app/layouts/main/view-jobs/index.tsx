@@ -77,7 +77,9 @@ const AppleJobCard = ({ item, index, locations }: any) => {
 
     const _navigateEditJob = () => {
         dispatch(jobAddAction({ ...item }));
-        navigation.navigate(STACKS?.ADD_JOB);
+        // navigation.navigate(STACKS?.ADD_JOB);
+        navigation.navigate(STACKS?.JOB_SUMMARY);
+
     };
 
     const _sendDriverInvite = () => {
@@ -277,6 +279,8 @@ export default function AvailableJob() {
                 try {
                     const response: any = await axiosInstance.get(END_POINTS?.TRANSPORTER_ALL_JOBS(search));
                     if (response?.data?.status) {
+                        console.log('-------------response?.data?.data-----',response?.data?.data);
+                        
                         setjobList(response?.data?.data);
                     } else {
                         setjobList([]);

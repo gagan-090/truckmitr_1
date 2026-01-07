@@ -140,7 +140,10 @@ export default function MembershipCard() {
     const userName = user?.name?.toUpperCase() || 'MEMBER NAME';
     const uniqueId = user?.unique_id || 'TM0000000000000';
     const userLocation = user?.city?.toUpperCase() || user?.state?.toUpperCase() || 'INDIA';
-    const licenseType = user?.Type_of_License || 'HMV';
+    const isTransporterRole = user?.role === 'transporter';
+    const displayLabel = isTransporterRole ? 'TRANSPORT NAME' : (t('licenseType') || 'LICENSE TYPE');
+    // Assuming transport_name is available in user object, otherwise fallback to empty or handle accordingly
+    const displayValue = isTransporterRole ? (user?.Transport_Name || user?.transport_name || 'N/A')?.toUpperCase() : (user?.Type_of_License || 'HMV')?.toUpperCase();
     const profileImage = user?.images ? { uri: `${BASE_URL}public/${user?.images}` } : PROFILE_PLACEHOLDER;
 
     // Subscription details - Using utility function for consistency
@@ -399,14 +402,18 @@ export default function MembershipCard() {
                                             </Text>
                                             <Text style={{
                                                 color: 'rgba(255, 255, 255, 1)',
-                                                fontSize: responsiveFontSize(1.1),
+                                                fontSize: responsiveFontSize(1.3),
                                                 fontWeight: '900',
                                                 marginTop: 3,
                                                 textShadowColor: 'rgba(0,0,0,0.6)',
                                                 textShadowOffset: { width: 1, height: 1 },
                                                 textShadowRadius: 1,
                                             }}>
-                                                {t('licenseType') || 'LICENSE TYPE'}: <Text style={{ fontWeight: '800' }}>{licenseType}</Text>
+                                                {isTransporterRole ? (
+                                                    <Text style={{ fontWeight: '800', fontStyle: 'italic' }}>{displayValue}</Text>
+                                                ) : (
+                                                    <>{displayLabel}: <Text style={{ fontWeight: '800' }}>{displayValue}</Text></>
+                                                )}
                                             </Text>
                                         </View>
 

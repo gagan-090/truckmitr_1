@@ -1202,7 +1202,11 @@ export default function Profile() {
           const stateName = user?.state_name || getStateName(user?.states) || getStateName(user?.state) || '';
           const cityName = user?.city || '';
           const userLocation = (cityName && stateName ? `${cityName}, ${stateName}` : (cityName || stateName)).toUpperCase();
-          const licenseType = user?.Type_of_License || 'HMV';
+          const isTransporterRole = user?.role === 'transporter';
+          const displayLabel = isTransporterRole ? 'TRANSPORT NAME' : (t('licenseType') || 'LICENSE TYPE');
+          const displayValue = isTransporterRole ? (user?.Transport_Name || user?.transport_name || 'N/A')?.toUpperCase() : (user?.Type_of_License || 'HMV')?.toUpperCase();
+          const licenseType = user?.Type_of_License || 'HMV'; // Keeping for backward compatibility if needed elsewhere
+
           const profileImage = user?.images ? { uri: `${BASE_URL}public/${user?.images}` } : PROFILE_PLACEHOLDER;
 
           const startDate = subscriptionDetails?.start_at
@@ -1385,14 +1389,18 @@ export default function Profile() {
                               </Text>
                               <Text style={{
                                 color: 'rgba(255, 255, 255, 1)',
-                                fontSize: responsiveFontSize(1.1),
+                                fontSize: responsiveFontSize(1.3),
                                 fontWeight: '900',
                                 marginTop: 3,
                                 textShadowColor: 'rgba(0,0,0,0.6)',
                                 textShadowOffset: { width: 1, height: 1 },
                                 textShadowRadius: 1,
                               }}>
-                                {t('licenseType')}: <Text style={{ fontWeight: '800' }}>{licenseType}</Text>
+                                {isTransporterRole ? (
+                                  <Text style={{ fontWeight: '800', fontStyle: 'italic' }}>{displayValue}</Text>
+                                ) : (
+                                  <>{displayLabel}: <Text style={{ fontWeight: '800' }}>{displayValue}</Text></>
+                                )}
                               </Text>
                             </View>
 

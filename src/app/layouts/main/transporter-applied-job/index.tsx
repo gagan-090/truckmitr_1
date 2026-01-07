@@ -42,6 +42,7 @@ export default function TransporterAppliedJob() {
     const { shadow } = useShadow()
     const { responsiveHeight, responsiveWidth, responsiveFontSize } = useResponsiveScale();
     const navigation = useNavigation<NavigatorProp>();
+    const { user } = useSelector((state: any) => state?.user);
     const [loading, setloading] = useState(true)
     const [appliedJobList, setappliedJobList] = useState([])
     const [search, setsearch] = useState('')
@@ -357,7 +358,12 @@ export default function TransporterAppliedJob() {
             const formData = new FormData();
             formData.append('applyjobs_id', scheduleJob?.application_id);
             formData.append('job_id', scheduleJob?.job_id);
+            formData.append('transporter_id', user?.id || '');
+            formData.append('driver_id', scheduleJob?.driver_details?.driver_id || '');
             formData.append('interview_at', selectedDateTime.format('YYYY-MM-DD HH:mm:ss'));
+
+            console.log('----------formdata-------', formData);
+
 
             const response: any = await axiosInstance.post(END_POINTS.TRANSPORTER_SCHEDULE_INTERVIEW, formData);
             if (response?.data?.status) {

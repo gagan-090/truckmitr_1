@@ -734,111 +734,111 @@ export default function ProfileCompletion() {
     };
 
     const profilePayloadPreview = {
-    // ===== BASIC INFO =====
-    name: userEdit?.name || user?.name || '',
-    email: userEdit?.email || user?.email || '',
-    mobile: userEdit?.mobile || user?.mobile || '',
-    father_name: userEdit?.Father_Name || user?.Father_Name || '',
+        // ===== BASIC INFO =====
+        name: userEdit?.name || user?.name || '',
+        email: userEdit?.email || user?.email || '',
+        mobile: userEdit?.mobile || user?.mobile || '',
+        father_name: userEdit?.Father_Name || user?.Father_Name || '',
 
-    dob: userEdit?.DOB
-        ? moment(userEdit.DOB).format('DD-MM-YYYY')
-        : '',
+        dob: userEdit?.DOB
+            ? moment(userEdit.DOB).format('DD-MM-YYYY')
+            : '',
 
-    sex: userEdit?.Sex || '',
+        sex: userEdit?.Sex || '',
 
-    highest_education:
-        userEdit?.education ||
-        userEdit?.Highest_Education ||
-        '',
+        highest_education:
+            userEdit?.education ||
+            userEdit?.Highest_Education ||
+            '',
 
-    // ===== VEHICLE =====
-    vehicle_type: normalizeArrayField(userEdit?.vehicle_type), // Array for both roles
+        // ===== VEHICLE =====
+        vehicle_type: normalizeArrayField(userEdit?.vehicle_type), // Array for both roles
 
-    type_of_license: userEdit?.Type_of_License || '',
+        type_of_license: userEdit?.Type_of_License || '',
 
-    licence_endorsement:
-        userEdit?.endorsement?.split(', ').filter(Boolean) || [],
+        licence_endorsement:
+            userEdit?.endorsement?.split(', ').filter(Boolean) || [],
 
-    Driving_Experience:
-        ({
-            'less_than_1': '0',
-            '1-2': '1',
-            '3-5': '3',
-            '6-10': '6',
-            '10+': '10',
-        } as any)[userEdit?.Driving_Experience] ||
-        userEdit?.Driving_Experience ||
-        '0',
+        Driving_Experience:
+            ({
+                'less_than_1': '0',
+                '1-2': '1',
+                '3-5': '3',
+                '6-10': '6',
+                '10+': '10',
+            } as any)[userEdit?.Driving_Experience] ||
+            userEdit?.Driving_Experience ||
+            '0',
 
-    // ===== DOCUMENTS =====
-    Aadhar_Number: userEdit?.Aadhar_Number || '',
-    License_Number:
-        userEdit?.license_number ||
-        userEdit?.License_Number ||
-        '',
+        // ===== DOCUMENTS =====
+        Aadhar_Number: userEdit?.Aadhar_Number || '',
+        License_Number:
+            userEdit?.license_number ||
+            userEdit?.License_Number ||
+            '',
 
-    expiry_date_of_license:
-        userEdit?.Expiry_date_of_License
-            ? moment(userEdit.Expiry_date_of_License).format('DD-MM-YYYY')
-            : moment().add(5, 'years').format('DD-MM-YYYY'),
+        expiry_date_of_license:
+            userEdit?.Expiry_date_of_License
+                ? moment(userEdit.Expiry_date_of_License).format('DD-MM-YYYY')
+                : moment().add(5, 'years').format('DD-MM-YYYY'),
 
-    // ===== SALARY =====
-    current_monthly_income:
-        userEdit?.current_salary ||
-        userEdit?.Current_Monthly_Income ||
-        '',
+        // ===== SALARY =====
+        current_monthly_income:
+            userEdit?.current_salary ||
+            userEdit?.Current_Monthly_Income ||
+            '',
 
-    expected_monthly_income:
-        userEdit?.expected_salary ||
-        userEdit?.Expected_Monthly_Income ||
-        '',
+        expected_monthly_income:
+            userEdit?.expected_salary ||
+            userEdit?.Expected_Monthly_Income ||
+            '',
 
-    // ===== TAX =====
-    pan_number: userEdit?.pan || userEdit?.PAN_Number || '',
-    gst_number: userEdit?.gst || userEdit?.GST_Number || '',
+        // ===== TAX =====
+        pan_number: userEdit?.pan || userEdit?.PAN_Number || '',
+        gst_number: userEdit?.gst || userEdit?.GST_Number || '',
 
-    // ===== ADDRESS =====
-    address: userEdit?.address || savedSignupData?.address || '',
-    city: userEdit?.city || savedSignupData?.city || '',
-    pincode: userEdit?.pincode || savedSignupData?.pincode || '',
-    state:
-        userEdit?.state_id ||
-        userEdit?.states ||
-        savedSignupData?.state ||
-        '',
+        // ===== ADDRESS =====
+        address: userEdit?.address || savedSignupData?.address || '',
+        city: userEdit?.city || savedSignupData?.city || '',
+        pincode: userEdit?.pincode || savedSignupData?.pincode || '',
+        state:
+            userEdit?.state_id ||
+            userEdit?.states ||
+            savedSignupData?.state ||
+            '',
 
-    // ===== TRANSPORTER ONLY =====
-    ...(userRole === 'transporter'
-        ? {
-              transport_name:
-                  userEdit?.transport_name ||
-                  savedSignupData?.transport_name ||
-                  '',
+        // ===== TRANSPORTER ONLY =====
+        ...(userRole === 'transporter'
+            ? {
+                transport_name:
+                    userEdit?.transport_name ||
+                    savedSignupData?.transport_name ||
+                    '',
 
-              year_of_exp: userEdit?.year_of_exp || '',
+                year_of_exp: userEdit?.year_of_exp || '',
 
-              year_of_establishment:
-                  userEdit?.year_of_exp ||
-                  userEdit?.year_of_establishment ||
-                  userEdit?.establishment_year ||
-                  '',
+                year_of_establishment:
+                    userEdit?.year_of_exp ||
+                    userEdit?.year_of_establishment ||
+                    userEdit?.establishment_year ||
+                    '',
 
-              fleet_size: userEdit?.fleet_size || '',
-              average_km: userEdit?.avg_km_run || '',
-              registered_id: userEdit?.registered_id || '',
+                fleet_size: userEdit?.fleet_size || '',
+                average_km: userEdit?.avg_km_run || '',
+                registered_id: userEdit?.registered_id || '',
 
-              operational_segment:
-                  userEdit?.industry_segment
-                      ?.split(',')
-                      .filter(Boolean) || [],
+                operational_segment:
+                    userEdit?.industry_segment
+                        ?.split(',')
+                        .filter(Boolean) || [],
 
-              routes:
-                  userEdit?.operational_segment
-                      ?.split(',')
-                      .filter(Boolean) || [],
-          }
-        : {}),
-};
+                routes:
+                    userEdit?.operational_segment
+                        ?.split(',')
+                        .filter(Boolean) || [],
+            }
+            : {}),
+    };
 
 
 
@@ -962,6 +962,8 @@ export default function ProfileCompletion() {
                 // year_of_exp collected in UI should be saved as year_of_establishment in DB
                 formData.append('year_of_exp', userEdit?.year_of_exp || '');
                 formData.append('year_of_establishment', userEdit?.year_of_exp || userEdit?.year_of_establishment || userEdit?.establishment_year || '');
+                console.log('---------------year_of_establishment-', userEdit?.year_of_exp || userEdit?.year_of_establishment || userEdit?.establishment_year || '');
+
                 formData.append('fleet_size', userEdit?.fleet_size || '');
                 formData.append('average_km', userEdit?.avg_km_run || '');
                 formData.append('registered_id', userEdit?.registered_id || '');
