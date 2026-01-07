@@ -364,13 +364,13 @@ export default function ProfileEdit() {
                         'Refrigerator': 'refrigerator',
                         'Others': 'others'
                     };
-                    
+
                     const mappedValues = opSeg.map((item: string) => {
                         const mappedValue = mapping[item] || item.toLowerCase().replace(/\s+/g, '_');
                         console.log(`Mapping "${item}" -> "${mappedValue}"`);
                         return mappedValue;
                     }).filter(Boolean);
-                    
+
                     if (mappedValues.length > 0) {
                         console.log('Final mapped values:', mappedValues);
                         console.log('Joined string:', mappedValues.join(','));
@@ -1053,6 +1053,7 @@ export default function ProfileEdit() {
 
     const renderStepContent = () => {
         const step = STEPS[currentStep];
+        if (!step) return null;
 
         switch (step.id) {
             case 'personal_info':
