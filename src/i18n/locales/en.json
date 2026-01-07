@@ -63,6 +63,7 @@
   "stateRequired": "State is required",
   "vehicleType": "Vehicle Type",
   "drivingExperienceYears": "Driving Experience in Years",
+  "selectPhoto": "Photo Selected",
   "preferredLocation": "Preferred Location",
   "currentMonthlyIncome": "Current Monthly Income",
   "expectedMonthlyIncome": "Expected Monthly Income",
@@ -1045,6 +1046,7 @@
   "subLow": "Low",
   "subMedium": "Medium",
   "subHigh": "High",
+  "subPrice": "Price",
   "subMostPopular": "MOST POPULAR",
   "subWhatsIncluded": "What's Included:",
   "subOpeningPaymentGateway": "Opening Payment Gateway...",
@@ -2152,5 +2154,10 @@
   "transporterProBenefit": "Since you are a TruckMitr Transporter Pro subscriber, you can continue to post jobs and hire drivers directly through the app.",
   "noJobManagerWarning": "However, no dedicated Job Manager will be assigned for this job. You will manage shortlisting, calls, and hiring on your own using the in-app tools.",
   "upgradeTip": "👉 If you want priority support and faster hiring, you can upgrade this job to Premium or Super Premium at any time.",
-  "goBack": "Go Back"
+  "goBack": "Go Back",
+  "payNowButton": "Pay Now",
+  "subConsentAgree": "I agree to the",
+  "subAuthorizePayments": "and authorize recurring payments",
+  "subNoPlansAvailable": "No plans available",
+  "quarterly": "Quarterly"
 }

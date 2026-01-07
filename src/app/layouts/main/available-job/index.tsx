@@ -1,4 +1,6 @@
-import { ActivityIndicator, Text, TouchableOpacity, View, Animated, StyleSheet, Pressable } from 'react-native'
+import { ActivityIndicator, Text, TouchableOpacity, View, Animated, StyleSheet, Pressable, Easing } from 'react-native'
+
+
 import React, { useState, useRef, useEffect } from 'react'
 import { useColor, useResponsiveScale, useShadow } from '@truckmitr/src/app/hooks';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,13 +28,61 @@ import LinearGradient from 'react-native-linear-gradient';
 
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 
-// Job Card Component with animations
+// Job Card Component with clean sectioned design
 const JobCard = ({ item, expandedJobs, toggleExpand, checkBoxSelect, _onpressCheckBox, errors, loadingApplyJob, _applyJob, colors, responsiveFontSize, responsiveHeight, responsiveWidth, t, navigation }: any) => {
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const slideAnim = useRef(new Animated.Value(50)).current;
+    const glowAnim = useRef(new Animated.Value(0)).current;
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+    const shimmerAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
+        // Continuous glow animation for text
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(glowAnim, {
+                    toValue: 1,
+                    duration: 1000,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: false,
+                }),
+                Animated.timing(glowAnim, {
+                    toValue: 0,
+                    duration: 1000,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: false,
+                }),
+            ])
+        ).start();
+
+        // Pulse animation for badge scale
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulseAnim, {
+                    toValue: 1.05,
+                    duration: 800,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(pulseAnim, {
+                    toValue: 1,
+                    duration: 800,
+                    easing: Easing.inOut(Easing.ease),
+                    useNativeDriver: true,
+                }),
+            ])
+        ).start();
+
+        // Shimmer animation
+        Animated.loop(
+            Animated.timing(shimmerAnim, {
+                toValue: 1,
+                duration: 2000,
+                easing: Easing.linear,
+                useNativeDriver: true,
+            })
+        ).start();
+
         Animated.parallel([
             Animated.spring(scaleAnim, {
                 toValue: 1,
@@ -45,34 +95,161 @@ const JobCard = ({ item, expandedJobs, toggleExpand, checkBoxSelect, _onpressChe
                 duration: 400,
                 useNativeDriver: true,
             }),
-            Animated.timing(slideAnim, {
-                toValue: 0,
-                duration: 400,
-                useNativeDriver: true,
-            }),
         ]).start();
     }, []);
 
     const isExpanded = expandedJobs[item.id] || false;
-    const shortDescription = item?.Job_Description?.length > 200
-        ? item?.Job_Description.slice(0, 200) + "..."
+    const shortDescription = item?.Job_Description?.length > 150
+        ? item?.Job_Description.slice(0, 150) + "..."
         : item?.Job_Description;
 
-    let skills: string[] = [];
-    try {
-        const parsed = JSON.parse(item?.Preferred_Skills);
-        skills = Array.isArray(parsed) ? parsed : [parsed];
-    } catch (e) {
-        skills = [item?.Preferred_Skills];
-    }
+    const isSuperPremium = item?.subscription_plan_name === 'super_premium_job';
+    const isPremium = item?.subscription_plan_name === 'premium_job';
+
+    // Interpolate glow color
+    const glowColor = glowAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['#FFFFFF', '#FFD700']
+    });
+
+    const glowShadowRadius = glowAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [3, 12]
+    });
+
+    // Badge Component
+    const renderBadge = () => {
+        if (isSuperPremium) {
+            return (
+                <Animated.View style={{
+                    alignSelf: 'center',
+                    marginBottom: responsiveFontSize(1.5),
+                    transform: [{ scale: pulseAnim }],
+                }}>
+                    <View style={{
+                        shadowColor: colors.royalBlue,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.6,
+                        shadowRadius: 12,
+                        elevation: 12,
+                    }}>
+                        <LinearGradient
+                            colors={['#4A90D9', colors.royalBlue, '#1a5fb4', '#0d47a1']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                paddingHorizontal: responsiveFontSize(2.5),
+                                paddingVertical: responsiveFontSize(1.2),
+                                borderRadius: responsiveFontSize(3),
+                                borderWidth: 1.5,
+                                borderColor: '#4A90D9',
+                                overflow: 'hidden',
+                            }}>
+                            {/* Shimmer overlay */}
+                            <Animated.View
+                                style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    bottom: 0,
+                                    width: responsiveFontSize(8),
+                                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                                    transform: [{
+                                        translateX: shimmerAnim.interpolate({
+                                            inputRange: [0, 1],
+                                            outputRange: [-responsiveFontSize(15), responsiveFontSize(25)]
+                                        })
+                                    }, {
+                                        skewX: '-20deg'
+                                    }]
+                                }}
+                            />
+                            <Animated.View style={{
+                                shadowColor: '#FFD700',
+                                shadowOffset: { width: 0, height: 0 },
+                                shadowOpacity: 1,
+                                shadowRadius: glowShadowRadius,
+                            }}>
+                                <MaterialCommunityIcons name="crown" size={20} color="#FFD700" style={{ marginRight: responsiveFontSize(0.8) }} />
+                            </Animated.View>
+                            <Animated.Text style={{
+                                fontSize: responsiveFontSize(1.6),
+                                fontWeight: '800',
+                                color: glowColor,
+                                letterSpacing: 1.2,
+                                textShadowColor: '#FFD700',
+                                textShadowOffset: { width: 0, height: 0 },
+                                textShadowRadius: glowShadowRadius,
+                            }}>
+                                SUPER PREMIUM JOB
+                            </Animated.Text>
+                        </LinearGradient>
+                    </View>
+                </Animated.View>
+            );
+        } else if (isPremium) {
+            return (
+                <View style={{
+                    alignSelf: 'flex-end',
+                    marginBottom: responsiveFontSize(1.5),
+                    shadowColor: '#FFD700',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.4,
+                    shadowRadius: 8,
+                    elevation: 8,
+                }}>
+                    <LinearGradient
+                        colors={['#FFE066', '#FFD700', '#DAA520', '#B8860B']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingHorizontal: responsiveFontSize(2),
+                            paddingVertical: responsiveFontSize(1),
+                            borderRadius: responsiveFontSize(3),
+                            borderWidth: 1,
+                            borderColor: '#DAA520',
+                        }}>
+                        <MaterialCommunityIcons name="crown" size={18} color="#5C4300" style={{ marginRight: responsiveFontSize(0.6) }} />
+                        <Text style={{
+                            fontSize: responsiveFontSize(1.5),
+                            fontWeight: '800',
+                            color: '#5C4300',
+                            letterSpacing: 1,
+                            textShadowColor: 'rgba(255, 255, 255, 0.4)',
+                            textShadowOffset: { width: 0, height: 1 },
+                            textShadowRadius: 2,
+                        }}>
+                            PREMIUM JOB
+                        </Text>
+                    </LinearGradient>
+                </View>
+            );
+        } else {
+            return (
+                <View style={{
+                    alignSelf: 'center',
+                    marginBottom: responsiveFontSize(1.5),
+                }}>
+                    <Text style={{
+                        fontSize: responsiveFontSize(1.5),
+                        fontWeight: '600',
+                        color: colors.blackOpacity(0.4),
+                        letterSpacing: 1.5,
+                    }}>
+                        STANDARD JOB
+                    </Text>
+                </View>
+            );
+        }
+    };
 
     return (
         <Animated.View
             style={{
-                transform: [
-                    { scale: scaleAnim },
-                    { translateY: slideAnim }
-                ],
+                transform: [{ scale: scaleAnim }],
                 opacity: fadeAnim,
             }}
         >
@@ -81,358 +258,323 @@ const JobCard = ({ item, expandedJobs, toggleExpand, checkBoxSelect, _onpressChe
                 backgroundColor: colors.white,
                 marginBottom: responsiveHeight(2.5),
                 borderRadius: responsiveFontSize(2),
-                overflow: 'hidden',
-                shadowColor: colors.royalBlue,
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.12,
-                shadowRadius: 16,
-                elevation: 8,
+                shadowColor: colors.black,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 5,
             }]}>
-                {/* Gradient Header Accent */}
-                <LinearGradient
-                    colors={[colors.royalBlue + '15', colors.royalBlue + '05', 'transparent']}
-                    style={{ position: 'absolute', top: 0, left: 0, right: 0, height: responsiveHeight(15) }}
-                />
-
                 {/* Card Content */}
                 <View style={{ padding: responsiveFontSize(2.5) }}>
-                    {/* Title Section */}
-                    <View style={styles.titleSection}>
+
+                    {/* Badge */}
+                    {renderBadge()}
+
+                    {/* Title Section with Truck Icon */}
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: responsiveFontSize(1) }}>
+                        <Text style={{ fontSize: responsiveFontSize(3), marginRight: responsiveFontSize(1) }}>🚚</Text>
                         <View style={{ flex: 1 }}>
                             <Text style={{
-                                fontSize: responsiveFontSize(2.5),
+                                fontSize: responsiveFontSize(2.2),
                                 color: colors.black,
                                 fontWeight: '700',
-                                letterSpacing: -0.5,
-                                marginBottom: responsiveFontSize(0.5)
+                                lineHeight: responsiveFontSize(2.8),
                             }}>
                                 {item?.job_title}
                             </Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: responsiveFontSize(0.5) }}>
-                                <View style={{
-                                    backgroundColor: colors.royalBlue + '15',
-                                    paddingHorizontal: responsiveFontSize(1.2),
-                                    paddingVertical: responsiveFontSize(0.5),
-                                    borderRadius: responsiveFontSize(1),
-                                }}>
-                                    <Text style={{
-                                        fontSize: responsiveFontSize(1.4),
-                                        color: colors.royalBlue,
-                                        fontWeight: '600'
-                                    }}>
-                                        ID: {item?.job_id}
+                            <Text style={{
+                                fontSize: responsiveFontSize(1.6),
+                                color: colors.blackOpacity(0.5),
+                                marginTop: responsiveFontSize(0.3),
+                            }}>
+                                {item?.vehicle_type}
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Salary Section */}
+                    <View style={{ marginBottom: responsiveFontSize(1.5) }}>
+                        <Text style={{
+                            fontSize: responsiveFontSize(2),
+                            color: colors.black,
+                            fontWeight: '600',
+                        }}>
+                            Monthly Salary: <Text style={{ fontWeight: '700' }}>₹{item?.Salary_Range}</Text>
+                        </Text>
+                        {item?.Additional_Benefits && (
+                            <Text style={{
+                                fontSize: responsiveFontSize(1.6),
+                                color: colors.blackOpacity(0.6),
+                                marginTop: responsiveFontSize(0.5),
+                            }}>
+                                Additional Benefits: {item?.Additional_Benefits}
+                            </Text>
+                        )}
+                    </View>
+
+                    {/* Job Details Section */}
+                    <View style={{
+                        backgroundColor: colors.blackOpacity(0.02),
+                        borderRadius: responsiveFontSize(1.5),
+                        padding: responsiveFontSize(2),
+                        marginTop: responsiveFontSize(1),
+                    }}>
+                        {/* Section Header */}
+                        <View style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            marginBottom: responsiveFontSize(2),
+                        }}>
+                            <MaterialCommunityIcons name="briefcase-outline" size={20} color={colors.royalBlue} />
+                            <Text style={{
+                                fontSize: responsiveFontSize(2),
+                                fontWeight: '700',
+                                color: colors.royalBlue,
+                                marginLeft: responsiveFontSize(0.8),
+                            }}>
+                                {t('jobDetails') || 'Job Details'}
+                            </Text>
+                        </View>
+
+                        {/* Row 1: Job ID & Posted On */}
+                        <View style={{ flexDirection: 'row', marginBottom: responsiveFontSize(1.8) }}>
+                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                <MaterialCommunityIcons name="card-account-details-outline" size={16} color={colors.royalBlue} />
+                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
+                                    Job ID: <Text style={{ color: colors.black, fontWeight: '500' }}>{item?.job_id}</Text>
+                                </Text>
+                            </View>
+                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                <FontAwesome name="calendar" size={14} color={colors.royalBlue} />
+                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
+                                    Posted On: <Text style={{ color: colors.black, fontWeight: '500' }}>{moment(item?.Created_at).format("DD MMM YYYY")}</Text>
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Row 2: Location & Open Positions */}
+                        <View style={{ flexDirection: 'row', marginBottom: responsiveFontSize(1.8) }}>
+                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                <FontAwesome6 name="location-dot" size={14} color={colors.royalBlue} />
+                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
+                                    {t('location') || 'Location'}: <Text style={{ color: colors.black, fontWeight: '500' }}>{item?.job_location}</Text>
+                                </Text>
+                            </View>
+                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                <FontAwesome6 name="users" size={14} color={colors.royalBlue} />
+                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
+                                    Open Positions: <Text style={{ color: colors.black, fontWeight: '500' }}>{item?.number_of_drivers_required || '-'}</Text>
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Row 3: Experience Required & License Type */}
+                        <View style={{ flexDirection: 'row', marginBottom: responsiveFontSize(1.8) }}>
+                            <View style={{ flex: 1 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <FontAwesome name="star" size={14} color={colors.royalBlue} />
+                                    <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
+                                        Experience Required
                                     </Text>
                                 </View>
+                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.black, fontWeight: '500', marginLeft: responsiveFontSize(2.5), marginTop: responsiveFontSize(0.3) }}>
+                                    {item?.Required_Experience} Years
+                                </Text>
+                            </View>
+                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                <MaterialCommunityIcons name="license" size={16} color={colors.royalBlue} />
+                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
+                                    License Type: <Text style={{ color: colors.black, fontWeight: '500' }}>{item?.Type_of_License}</Text>
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Row 4: Industry & Vehicle Type */}
+                        <View style={{ flexDirection: 'row', marginBottom: responsiveFontSize(1.8) }}>
+                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                <MaterialCommunityIcons name="domain" size={16} color={colors.royalBlue} />
+                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
+                                    Industry: <Text style={{ color: colors.black, fontWeight: '500' }}>{item?.Industry || 'N/A'}</Text>
+                                </Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <MaterialCommunityIcons name="truck" size={16} color={colors.royalBlue} />
+                                    <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
+                                        {t('vehicleType') || 'Vehicle Type'}
+                                    </Text>
+                                </View>
+                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.black, fontWeight: '500', marginLeft: responsiveFontSize(2.5), marginTop: responsiveFontSize(0.3) }}>
+                                    {item?.vehicle_type}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Row 5: Application Deadline */}
+                        <View style={{ flexDirection: 'row' }}>
+                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                <FontAwesome name="calendar" size={14} color={colors.royalBlue} />
+                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
+                                    Application Deadline
+                                </Text>
+                            </View>
+                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                <FontAwesome name="calendar-check-o" size={14} color={colors.royalBlue} />
+                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.black, fontWeight: '500', marginLeft: responsiveFontSize(0.5) }}>
+                                    {item?.Application_Deadline || '-'}
+                                </Text>
                             </View>
                         </View>
                     </View>
 
-                    {/* Description */}
+                    {/* Job Description Section */}
                     <View style={{ marginTop: responsiveFontSize(2) }}>
                         <Text style={{
-                            fontSize: responsiveFontSize(1.85),
-                            color: colors.blackOpacity(.65),
-                            fontWeight: '400',
-                            lineHeight: responsiveFontSize(2.8),
-                            letterSpacing: 0.2
+                            fontSize: responsiveFontSize(1.8),
+                            fontWeight: '700',
+                            color: colors.royalBlue,
+                            marginBottom: responsiveFontSize(1),
+                        }}>
+                            {t('jobDescription') || 'Job Description'}
+                        </Text>
+                        <Text style={{
+                            fontSize: responsiveFontSize(1.7),
+                            color: colors.blackOpacity(0.7),
+                            lineHeight: responsiveFontSize(2.5),
                         }}>
                             {isExpanded ? item?.Job_Description : shortDescription}
                         </Text>
-
-                        {item?.Job_Description?.length > 200 && (
+                        {item?.Job_Description?.length > 150 && (
                             <Pressable
                                 onPress={() => toggleExpand(item.id)}
-                                style={({ pressed }) => [
-                                    styles.expandButton,
-                                    {
-                                        marginTop: responsiveFontSize(1.5),
-                                        opacity: pressed ? 0.6 : 1
-                                    }
-                                ]}
+                                style={{ flexDirection: 'row', alignItems: 'center', marginTop: responsiveFontSize(1) }}
                             >
                                 <Text style={{
-                                    fontSize: responsiveFontSize(1.75),
+                                    fontSize: responsiveFontSize(1.6),
                                     color: colors.royalBlue,
                                     fontWeight: '600',
-                                    marginRight: responsiveFontSize(0.5)
                                 }}>
-                                    {isExpanded ? t("showLess") : t("showMore")}
+                                    ▸ {isExpanded ? t("showLess") : t("readMore") || 'Read More'}
                                 </Text>
-                                <FontAwesome6
-                                    name={!isExpanded ? 'chevron-down' : 'chevron-up'}
-                                    size={12}
-                                    color={colors.royalBlue}
-                                />
                             </Pressable>
                         )}
                     </View>
 
-                    {/* Info Grid */}
-                    <View style={{ marginTop: responsiveFontSize(3) }}>
-                        {/* Salary & License */}
-                        <View style={styles.infoRow}>
-                            <InfoItem
-                                icon={<FontAwesome name='rupee' size={16} color={colors.royalBlue} />}
-                                label={t(`salary`)}
-                                value={item?.Salary_Range}
-                                colors={colors}
-                                responsiveFontSize={responsiveFontSize}
-                                flex={1.5}
-                            />
-                            <View style={{ width: responsiveFontSize(2) }} />
-                            <InfoItem
-                                icon={<MaterialCommunityIcons name='license' size={16} color={colors.royalBlue} />}
-                                label={t(`typeOfLicense`)}
-                                value={item?.Type_of_License}
-                                colors={colors}
-                                responsiveFontSize={responsiveFontSize}
-                                flex={1}
-                            />
-                        </View>
-
-                        {/* Location & No. of Jobs */}
-                        <View style={[styles.infoRow, { marginTop: responsiveFontSize(1.5) }]}>
-                            <InfoItem
-                                icon={<FontAwesome6 name='location-dot' size={16} color={colors.royalBlue} />}
-                                label={t(`location`)}
-                                value={item?.job_location}
-                                colors={colors}
-                                responsiveFontSize={responsiveFontSize}
-                                flex={1.5}
-                            />
-                            <View style={{ width: responsiveFontSize(2) }} />
-                            <InfoItem
-                                icon={<FontAwesome6 name='business-time' size={16} color={colors.royalBlue} />}
-                                label={t(`noOfJobs`)}
-                                value={item?.Job_Management}
-                                colors={colors}
-                                responsiveFontSize={responsiveFontSize}
-                                flex={1}
-                            />
-                        </View>
-
-                        {/* Experience & Vehicle Type */}
-                        <View style={[styles.infoRow, { marginTop: responsiveFontSize(1.5) }]}>
-                            <InfoItem
-                                icon={<FontAwesome name='trophy' size={16} color={colors.royalBlue} />}
-                                label={t(`experience`)}
-                                value={item?.Required_Experience}
-                                colors={colors}
-                                responsiveFontSize={responsiveFontSize}
-                                flex={1.5}
-                            />
-                            <View style={{ width: responsiveFontSize(2) }} />
-                            <InfoItem
-                                icon={<FontAwesome6 name='car-rear' size={16} color={colors.royalBlue} />}
-                                label={t(`vehicleType`)}
-                                value={item?.vehicle_type}
-                                colors={colors}
-                                responsiveFontSize={responsiveFontSize}
-                                flex={1}
-                            />
-                        </View>
-
-                        {/* Dates */}
-                        <View style={[styles.infoRow, { marginTop: responsiveFontSize(1.5) }]}>
-                            <InfoItem
-                                icon={<FontAwesome name='calendar-o' size={16} color={colors.royalBlue} />}
-                                label={t(`postDate`)}
-                                value={moment(item?.Created_at).format("DD-MM-YYYY")}
-                                colors={colors}
-                                responsiveFontSize={responsiveFontSize}
-                                flex={1.5}
-                            />
-                            <View style={{ width: responsiveFontSize(2) }} />
-                            <InfoItem
-                                icon={<FontAwesome name='calendar-minus-o' size={16} color={colors.royalBlue} />}
-                                label={t(`lastDate`)}
-                                value={item?.Application_Deadline}
-                                colors={colors}
-                                responsiveFontSize={responsiveFontSize}
-                                flex={1}
-                            />
-                        </View>
-
-                        {/* Skills - Full Width */}
-                        {skills?.length > 0 && skills[0] && (
-                            <View style={{
-                                marginTop: responsiveFontSize(2),
-                                backgroundColor: colors.royalBlue + '08',
-                                borderRadius: responsiveFontSize(1.5),
-                                padding: responsiveFontSize(1.8),
-                                borderWidth: 1,
-                                borderColor: colors.royalBlue + '15'
-                            }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: responsiveFontSize(1) }}>
-                                    <FontAwesome6 name='child-reaching' size={16} color={colors.royalBlue} />
-                                    <Text style={{
-                                        color: colors.royalBlue,
-                                        fontSize: responsiveFontSize(1.7),
-                                        fontWeight: '600',
-                                        marginLeft: responsiveFontSize(1)
-                                    }}>
-                                        {t(`preferredSkills`)}
-                                    </Text>
-                                </View>
-                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: responsiveFontSize(1) }}>
-                                    {skills.map((skill, index) => (
-                                        skill && (
-                                            <View key={index} style={{
-                                                backgroundColor: colors.white,
-                                                paddingHorizontal: responsiveFontSize(1.5),
-                                                paddingVertical: responsiveFontSize(0.7),
-                                                borderRadius: responsiveFontSize(1.2),
-                                                borderWidth: 1,
-                                                borderColor: colors.royalBlue + '25'
-                                            }}>
-                                                <Text style={{
-                                                    color: colors.royalBlue,
-                                                    fontSize: responsiveFontSize(1.6),
-                                                    fontWeight: '500'
-                                                }}>
-                                                    {skill}
-                                                </Text>
-                                            </View>
-                                        )
-                                    ))}
-                                </View>
-                            </View>
-                        )}
-                    </View>
-
-                    {/* Divider */}
-                    <View style={{
-                        height: 1,
-                        backgroundColor: colors.blackOpacity(.08),
-                        marginVertical: responsiveFontSize(3)
-                    }} />
-
                     {/* Consent Checkbox */}
                     <Pressable
                         onPress={() => _onpressCheckBox(item.id)}
-                        style={({ pressed }) => [
-                            styles.consentContainer,
-                            {
-                                backgroundColor: checkBoxSelect[item.id]
-                                    ? colors.royalBlue + '08'
-                                    : colors.blackOpacity(.02),
-                                borderRadius: responsiveFontSize(1.5),
-                                padding: responsiveFontSize(1.8),
-                                borderWidth: 1.5,
-                                borderColor: checkBoxSelect[item.id]
-                                    ? colors.royalBlue + '30'
-                                    : colors.blackOpacity(.08),
-                                opacity: pressed ? 0.7 : 1
-                            }
-                        ]}
+                        style={({ pressed }) => [{
+                            flexDirection: 'row',
+                            alignItems: 'flex-start',
+                            backgroundColor: colors.blackOpacity(0.03),
+                            borderRadius: responsiveFontSize(1.2),
+                            padding: responsiveFontSize(1.5),
+                            marginTop: responsiveFontSize(2),
+                            opacity: pressed ? 0.7 : 1,
+                        }]}
                     >
                         <MaterialCommunityIcons
                             name={checkBoxSelect[item.id] ? 'checkbox-marked' : 'checkbox-blank-outline'}
-                            size={26}
+                            size={22}
                             color={colors.royalBlue}
-                            style={{ marginRight: responsiveFontSize(1.5) }}
+                            style={{ marginRight: responsiveFontSize(1), marginTop: 2 }}
                         />
                         <Text style={{
-                            color: colors.blackOpacity(0.75),
-                            fontSize: responsiveFontSize(1.7),
+                            color: colors.blackOpacity(0.7),
+                            fontSize: responsiveFontSize(1.5),
                             flex: 1,
-                            lineHeight: responsiveFontSize(2.5),
-                            fontWeight: '400'
+                            lineHeight: responsiveFontSize(2.2),
                         }}>
-                            {t(`iAgreeToTruckMitr`)}
+                            I agree to{' '}
                             <Text
                                 onPress={() => navigation.navigate(STACKS?.DRIVER_CONSENT)}
-                                style={{
-                                    color: colors.royalBlue,
-                                    fontWeight: '600',
-                                    textDecorationLine: 'underline'
-                                }}
+                                style={{ color: colors.royalBlue, fontWeight: '600' }}
                             >
-                                {' '}{t(`driverConsent`)}
+                                TruckMitr's terms & conditions
                             </Text>
-                            {t(`applyJobPolicy`)}
+                            {' '}and allow my details to be shared with the employer or TruckMitr team for job assistance.
                         </Text>
                     </Pressable>
 
                     {/* Error Message */}
                     {errors[item.id]?.checkBox && (
-                        <View style={{
-                            marginTop: responsiveFontSize(1.5),
-                            backgroundColor: colors.error + '10',
-                            padding: responsiveFontSize(1.5),
-                            borderRadius: responsiveFontSize(1),
-                            borderLeftWidth: 3,
-                            borderLeftColor: colors.error
+                        <Text style={{
+                            color: colors.error || 'red',
+                            fontSize: responsiveFontSize(1.4),
+                            marginTop: responsiveFontSize(1),
                         }}>
-                            <Text style={{
-                                color: colors.error,
-                                fontSize: responsiveFontSize(1.6),
-                                fontWeight: '500'
-                            }}>
-                                {errors[item.id]?.checkBox}
-                            </Text>
-                        </View>
+                            {errors[item.id]?.checkBox}
+                        </Text>
                     )}
-
-                    {/* Apply Button - Full Width */}
-                    <Pressable
-                        onPress={() => _applyJob(item?.id)}
-                        disabled={loadingApplyJob === item?.id}
-                        style={({ pressed }) => [
-                            {
-                                marginTop: responsiveFontSize(2.5),
-                                height: responsiveFontSize(6.5),
-                                borderRadius: responsiveFontSize(1.5),
-                                overflow: 'hidden',
-                                width: '100%',
-                                opacity: pressed ? 0.85 : 1,
-                                transform: [{ scale: pressed ? 0.98 : 1 }]
-                            }
-                        ]}
-                    >
-                        <LinearGradient
-                            colors={[colors.royalBlue, colors.royalBlue + 'DD']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={{
-                                flex: 1,
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                shadowColor: colors.royalBlue,
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.3,
-                                shadowRadius: 8,
-                                elevation: 6,
-                            }}
-                        >
-                            {loadingApplyJob === item?.id ? (
-                                <ActivityIndicator color={colors.white} size="small" />
-                            ) : (
-                                <>
-                                    <Text style={{
-                                        color: colors.white,
-                                        fontSize: responsiveFontSize(2.1),
-                                        fontWeight: '600',
-                                        letterSpacing: 0.5
-                                    }}>
-                                        {t(`apply`)}
-                                    </Text>
-                                    <Ionicons
-                                        name='send'
-                                        size={18}
-                                        color={colors.white}
-                                        style={{ marginLeft: responsiveFontSize(1.2) }}
-                                    />
-                                </>
-                            )}
-                        </LinearGradient>
-                    </Pressable>
                 </View>
+
+                {/* Apply Button */}
+                <Pressable
+                    onPress={() => _applyJob(item?.id)}
+                    disabled={loadingApplyJob === item?.id}
+                    style={({ pressed }) => [{
+                        height: responsiveFontSize(6),
+                        backgroundColor: colors.royalBlue,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexDirection: 'row',
+                        opacity: pressed ? 0.9 : 1,
+                    }]}
+                >
+                    {loadingApplyJob === item?.id ? (
+                        <ActivityIndicator color={colors.white} size="small" />
+                    ) : (
+                        <>
+                            <Text style={{
+                                color: colors.white,
+                                fontSize: responsiveFontSize(2),
+                                fontWeight: '600',
+                            }}>
+                                Apply Now
+                            </Text>
+                            <Ionicons
+                                name='chevron-forward'
+                                size={20}
+                                color={colors.white}
+                                style={{ marginLeft: responsiveFontSize(0.5) }}
+                            />
+                        </>
+                    )}
+                </Pressable>
             </View>
         </Animated.View>
     );
 };
+
+// Detail Item Component for Job Details grid - improved alignment
+const DetailItem = ({ icon, label, value, colors, responsiveFontSize }: any) => (
+    <View style={{ flex: 1, paddingVertical: responsiveFontSize(0.8) }}>
+        {/* Label Row with Icon */}
+        <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: responsiveFontSize(0.5),
+        }}>
+            <View style={{ marginRight: responsiveFontSize(0.6) }}>{icon}</View>
+            <Text style={{
+                fontSize: responsiveFontSize(1.35),
+                color: colors.royalBlue,
+                fontWeight: '600',
+            }}>
+                {label}
+            </Text>
+        </View>
+        {/* Value */}
+        <Text style={{
+            fontSize: responsiveFontSize(1.55),
+            color: colors.black,
+            fontWeight: '500',
+            paddingLeft: responsiveFontSize(2.4),
+        }} numberOfLines={2}>
+            {value || '-'}
+        </Text>
+    </View>
+);
 
 // Info Item Component
 const InfoItem = ({ icon, label, value, colors, responsiveFontSize, flex }: any) => (
@@ -628,7 +770,14 @@ export default function AvailableJob() {
                     <FlatList
                         showsHorizontalScrollIndicator={false}
                         showsVerticalScrollIndicator={false}
-                        data={item?.data}
+                        data={[...item.data].sort((a: any, b: any) => {
+                            const getPriority = (plan: string) => {
+                                if (plan === 'super_premium_job') return 3;
+                                if (plan === 'premium_job') return 2;
+                                return 1;
+                            };
+                            return getPriority(b.subscription_plan_name) - getPriority(a.subscription_plan_name);
+                        })}
                         renderItem={({ item: jobItem }: any) => (
                             <JobCard
                                 item={jobItem}

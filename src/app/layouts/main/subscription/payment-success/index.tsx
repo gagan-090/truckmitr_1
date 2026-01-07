@@ -57,8 +57,8 @@ const COLORS = {
     border: '#E2E8F0',
 };
 
-// Plan tier configurations with benefits
-const TIER_CONFIG: Record<string, {
+// Plan tier configurations with benefits - DRIVER plans
+const DRIVER_TIER_CONFIG: Record<number, {
     color: string;
     gradient: string[];
     icon: string;
@@ -67,65 +67,127 @@ const TIER_CONFIG: Record<string, {
     noteKeys: string[];
     ctaKey: string;
 }> = {
-    'JOB READY': {
-        color: '#475569',
-        gradient: ['#475569', '#64748B'],
+    99: {
+        color: '#F59E0B',
+        gradient: ['#F59E0B', '#FBBF24'],
         icon: '🚛',
         label: 'Job Ready',
         benefitKeys: [
-            'subBenefitCreateProfile',
-            'subBenefitBrowseJobs',
-            'subBenefitContactTransporters',
+            'subBenefitCreateProfileDrive',
+            'subBrowse5Jobs',
+            'subBenefitContactInApp',
             'subBenefitBasicTraining',
             'subBenefitStayJobReady',
         ],
         noteKeys: [
-            'subNoteNoVerification',
-            'subNoteChooseJobs',
+            'subFooterNoVerification',
+            'subFooterChooseJobs',
         ],
-        ctaKey: 'subIdealLowPayment',
+        ctaKey: 'subJobReadyTagline',
     },
-    'VERIFIED': {
-        color: '#1E3A8A',
-        gradient: ['#1E3A8A', '#3B82F6'],
+    199: {
+        color: '#10B981',
+        gradient: ['#10B981', '#34D399'],
         icon: '✅',
         label: 'Verified',
         benefitKeys: [
-            'subBenefitEverythingJobReady',
+            'subBenefitCreateProfileDrive',
+            'subBrowse20Jobs',
             'subBenefitOneTimeVerification',
             'subBenefitVerifiedBadge',
             'subBenefitHigherTrust',
             'subBenefitBetterShortlisting',
-            'subBenefitTruckMitrSupport',
+            'subBenefitSupportTruckMitr',
         ],
         noteKeys: [
-            'subNoteVerificationAfterUpload',
-            'subNoteMayRequireOTP',
-            'subNoteNoGuarantee',
+            'subFooterVerifyAfterUpload',
+            'subFooterOtpVerify',
+            'subFooterNoJobGuarantee',
         ],
-        ctaKey: 'subRecommendedSerious',
+        ctaKey: 'subVerifiedTagline',
     },
-    'TRUSTED': {
-        color: '#D97706',
-        gradient: ['#D97706', '#F59E0B'],
+    499: {
+        color: '#2563EB',
+        gradient: ['#2563EB', '#60A5FA'],
         icon: '🛡️',
         label: 'Trusted',
         benefitKeys: [
-            'subBenefitEverythingVerified',
-            'subBenefitCourtCheck',
-            'subBenefitAddressVerify',
-            'subBenefitHomePhotoVerify',
+            'subBenefitCreateProfileDrive',
+            'subBrowseUnlimitedJobs',
+            'subBenefitDigitalCourtCheck',
+            'subBenefitDigitalAddressVerify',
+            'subBenefitHomePhotoGeo',
             'subBenefitTrustedBadge',
             'subBenefitHighestCredibility',
             'subBenefitPriorityPremium',
         ],
         noteKeys: [
-            'subNoteDigitallyProcessed',
-            'subNoteFollowInstructions',
-            'subNoteImprovesConfidence',
+            'subFooterDigitalProcess',
+            'subFooterFollowInstructions',
+            'subFooterImproveConfidence',
         ],
-        ctaKey: 'subBestLongTerm',
+        ctaKey: 'subTrustedTagline',
     },
+};
+
+// Plan tier configurations with benefits - TRANSPORTER plans
+const TRANSPORTER_TIER_CONFIG: Record<number, {
+    color: string;
+    gradient: string[];
+    icon: string;
+    label: string;
+    benefitKeys: string[];
+    noteKeys: string[];
+    ctaKey: string;
+}> = {
+    99: {
+        color: '#F59E0B',
+        gradient: ['#F59E0B', '#FBBF24'],
+        icon: '🚛',
+        label: 'Legacy Transporter',
+        benefitKeys: [
+            'transporterFeatureVerifiedDrivers',
+            'transporterFeatureSmartHiring',
+            'transporterFeatureInAppCall',
+            'transporterFeatureFullAccess',
+        ],
+        noteKeys: [
+            'subTransporterConsentText',
+        ],
+        ctaKey: 'transporterTagline',
+    },
+    499: {
+        color: '#8B5CF6',
+        gradient: ['#8B5CF6', '#A78BFA'],
+        icon: '👑',
+        label: 'Transporter Pro',
+        benefitKeys: [
+            'transporterFeatureVerifiedDrivers',
+            'transporterFeatureSmartHiring',
+            'transporterFeatureInAppCall',
+            'transporterFeatureFullAccess',
+            'transporterBenefit1',
+            'transporterBenefit2',
+        ],
+        noteKeys: [
+            'subTransporterConsentText',
+        ],
+        ctaKey: 'transporterTagline',
+    },
+};
+
+// Helper function to get tier config based on role and amount
+const getTierConfig = (isDriver: boolean, amount: number) => {
+    if (isDriver) {
+        // For drivers: Map exact amounts or fallback to closest tier
+        if (amount <= 99) return DRIVER_TIER_CONFIG[99];
+        if (amount <= 199) return DRIVER_TIER_CONFIG[199];
+        return DRIVER_TIER_CONFIG[499];
+    } else {
+        // For transporters: Map to transporter tiers
+        if (amount <= 99 || amount === 100 || amount === 1) return TRANSPORTER_TIER_CONFIG[99];
+        return TRANSPORTER_TIER_CONFIG[499];
+    }
 };
 
 export default function PaymentSuccess() {
@@ -149,7 +211,7 @@ export default function PaymentSuccess() {
     const planName = plan?.name || (isDriver ? 'VERIFIED' : 'STANDARD');
     const originalPrice = plan?.price === 99 ? 249 : plan?.price === 199 ? 499 : plan?.price === 499 ? 999 : 499;
 
-    const tierConfig = TIER_CONFIG[planName] || TIER_CONFIG['VERIFIED'];
+    const tierConfig = getTierConfig(isDriver, planPrice);
 
     // Check if driver should verify their license (for 199 or 499 plans)
     const showDLVerification = isDriver && (planPrice === 199 || planPrice === 499);
@@ -321,7 +383,7 @@ export default function PaymentSuccess() {
                         <View style={[styles.sectionDot, { backgroundColor: COLORS.success }]} />
                         <Text style={styles.benefitsTitle}>{t('subYourBenefits')}</Text>
                     </View>
-                    {tierConfig.benefitKeys.map((key, idx) => (
+                    {tierConfig.benefitKeys.map((key: string, idx: number) => (
                         <BenefitItem key={idx} text={t(key)} />
                     ))}
 
@@ -341,7 +403,7 @@ export default function PaymentSuccess() {
                         <View style={[styles.sectionDot, { backgroundColor: COLORS.gold }]} />
                         <Text style={styles.notesTitle}>{t('subPleaseNote')}</Text>
                     </View>
-                    {tierConfig.noteKeys.map((key, idx) => (
+                    {tierConfig.noteKeys.map((key: string, idx: number) => (
                         <NoteItem key={idx} text={t(key)} />
                     ))}
                 </Animated.View>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View, Text, ScrollView, TouchableOpacity, Linking, TextInput, ActivityIndicator } from 'react-native';
 import DatePicker from 'react-native-date-picker';
@@ -37,6 +37,22 @@ const CourtCheckInfo = () => {
     const [showStayFromPicker, setShowStayFromPicker] = useState(false);
     const [showStayToPicker, setShowStayToPicker] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [courtCheckData, setCourtCheckData] = useState<any>(null);
+
+    useEffect(() => {
+        const getCourtCheckStatus = async () => {
+            if (!user?.id) return;
+            try {
+                const res: any = await axiosInstance.get(END_POINTS.COURT_CASE(user.id));
+                if (res?.data?.status === 1) {
+                    setCourtCheckData(res.data);
+                }
+            } catch (err) {
+                console.log('Court check status error', err);
+            }
+        };
+        getCourtCheckStatus();
+    }, [user?.id, refreshKey]);
 
     // Check if subscription is active (₹499 plan for Court Check)
     const checkSubscriptionActive = () => {
@@ -227,102 +243,132 @@ const CourtCheckInfo = () => {
                     </Text>
                 </View>
 
-                {/* 📝 Required Details - Input Form */}
-                <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: '700', color: '#001F3F', marginBottom: 12 }}>{t('requiredDetails')}</Text>
-                <View style={{ marginBottom: responsiveHeight(2) }}>
-                    <View style={{ marginBottom: 18 }}>
-                        <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600', marginBottom: 8 }}>{t('fullName')}</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 14 }}>
-                            <Ionicons name="person-outline" size={22} color="#64748B" style={{ marginRight: 12 }} />
-                            <TextInput
-                                style={{ flex: 1, paddingVertical: 14, fontSize: responsiveFontSize(1.8), color: '#0F172A' }}
-                                placeholder={t('enterFullName')}
-                                placeholderTextColor="#94A3B8"
-                                value={fullName}
-                                onChangeText={setFullName}
-                            />
+                {/* 📋 Court Check Status - Display if data exists */}
+                {courtCheckData ? (
+                    <View style={{ backgroundColor: colors.white, borderRadius: 12, padding: responsiveWidth(4), marginBottom: responsiveHeight(2), ...shadow, shadowColor: 'rgba(0,0,0,0.06)' }}>
+                        <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: '700', color: '#001F3F', marginBottom: 12 }}>{t('caseDetails') || 'Case Details'}</Text>
+
+                        <View style={{ marginBottom: 16 }}>
+                            <Text style={{ fontSize: responsiveFontSize(1.6), color: '#64748B', marginBottom: 4 }}>{t('verificationStatus') || 'Verification Status'}</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: courtCheckData.verified ? '#10B981' : '#F59E0B', marginRight: 8 }} />
+                                <Text style={{ fontSize: responsiveFontSize(1.8), fontWeight: '600', color: courtCheckData.verified ? '#059669' : '#D97706' }}>
+                                    {courtCheckData.verified ? (t('verified') || 'Verified') : (t('pending') || 'Pending')}
+                                </Text>
+                            </View>
+                        </View>
+
+                        <View style={{ marginBottom: 16 }}>
+                            <Text style={{ fontSize: responsiveFontSize(1.6), color: '#64748B', marginBottom: 4 }}>{t('reportStatus') || 'Report'}</Text>
+                            <Text style={{ fontSize: responsiveFontSize(1.8), fontWeight: '600', color: '#0F172A' }}>{courtCheckData.report}</Text>
+                        </View>
+
+                        <View style={{ marginBottom: 4 }}>
+                            <Text style={{ fontSize: responsiveFontSize(1.6), color: '#64748B', marginBottom: 4 }}>{t('verifyId') || 'Verify ID'}</Text>
+                            <Text style={{ fontSize: responsiveFontSize(1.8), fontWeight: '600', color: '#0F172A' }}>{courtCheckData.verify_id}</Text>
                         </View>
                     </View>
+                ) : (
+                    <>
+                        {/* 📝 Required Details - Input Form */}
+                        <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: '700', color: '#001F3F', marginBottom: 12 }}>{t('requiredDetails')}</Text>
+                        <View style={{ marginBottom: responsiveHeight(2) }}>
+                            <View style={{ marginBottom: 18 }}>
+                                <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600', marginBottom: 8 }}>{t('fullName')}</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 14 }}>
+                                    <Ionicons name="person-outline" size={22} color="#64748B" style={{ marginRight: 12 }} />
+                                    <TextInput
+                                        style={{ flex: 1, paddingVertical: 14, fontSize: responsiveFontSize(1.8), color: '#0F172A' }}
+                                        placeholder={t('enterFullName')}
+                                        placeholderTextColor="#94A3B8"
+                                        value={fullName}
+                                        onChangeText={setFullName}
+                                    />
+                                </View>
+                            </View>
 
-                    <View style={{ marginBottom: 18 }}>
-                        <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600', marginBottom: 8 }}>{t('dateOfBirth')}</Text>
-                        <TouchableOpacity
-                            onPress={() => setShowDobPicker(true)}
-                            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 14, paddingVertical: 14 }}
-                        >
-                            <Ionicons name="calendar-outline" size={22} color="#64748B" style={{ marginRight: 12 }} />
-                            <Text style={{ flex: 1, fontSize: responsiveFontSize(1.8), color: dob ? '#0F172A' : '#94A3B8' }}>
-                                {dob ? formatDate(dob) : 'dd-mm-yyyy'}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
+                            <View style={{ marginBottom: 18 }}>
+                                <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600', marginBottom: 8 }}>{t('dateOfBirth')}</Text>
+                                <TouchableOpacity
+                                    onPress={() => setShowDobPicker(true)}
+                                    style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 14, paddingVertical: 14 }}
+                                >
+                                    <Ionicons name="calendar-outline" size={22} color="#64748B" style={{ marginRight: 12 }} />
+                                    <Text style={{ flex: 1, fontSize: responsiveFontSize(1.8), color: dob ? '#0F172A' : '#94A3B8' }}>
+                                        {dob ? formatDate(dob) : 'dd-mm-yyyy'}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
 
-                    <View style={{ marginBottom: 18 }}>
-                        <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600', marginBottom: 8 }}>{t('address')}</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 14 }}>
-                            <Ionicons name="home-outline" size={22} color="#64748B" style={{ marginRight: 12 }} />
-                            <TextInput
-                                style={{ flex: 1, paddingVertical: 14, fontSize: responsiveFontSize(1.8), color: '#0F172A' }}
-                                placeholder={t('enterCompleteAddress')}
-                                placeholderTextColor="#94A3B8"
-                                value={address}
-                                onChangeText={setAddress}
-                            />
+                            <View style={{ marginBottom: 18 }}>
+                                <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600', marginBottom: 8 }}>{t('address')}</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 14 }}>
+                                    <Ionicons name="home-outline" size={22} color="#64748B" style={{ marginRight: 12 }} />
+                                    <TextInput
+                                        style={{ flex: 1, paddingVertical: 14, fontSize: responsiveFontSize(1.8), color: '#0F172A' }}
+                                        placeholder={t('enterCompleteAddress')}
+                                        placeholderTextColor="#94A3B8"
+                                        value={address}
+                                        onChangeText={setAddress}
+                                    />
+                                </View>
+                            </View>
+
+                            <View style={{ marginBottom: 18 }}>
+                                <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600', marginBottom: 8 }}>{t('periodOfStay') || 'Period of Stay'}</Text>
+
+                                {/* From Date */}
+                                <TouchableOpacity
+                                    onPress={() => setShowStayFromPicker(true)}
+                                    style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 14, paddingVertical: 14, marginBottom: 10 }}
+                                >
+                                    <Ionicons name="calendar-outline" size={22} color="#64748B" style={{ marginRight: 12 }} />
+                                    <Text style={{ flex: 1, fontSize: responsiveFontSize(1.8), color: stayFromDate ? '#0F172A' : '#94A3B8' }}>
+                                        {stayFromDate ? `${t('from') || 'From'}: ${formatDate(stayFromDate)}` : `${t('from') || 'From'}: ${t('selectDate') || 'Select Date'}`}
+                                    </Text>
+                                </TouchableOpacity>
+
+                                {/* To Date */}
+                                <TouchableOpacity
+                                    onPress={() => setShowStayToPicker(true)}
+                                    style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 14, paddingVertical: 14 }}
+                                >
+                                    <Ionicons name="calendar-outline" size={22} color="#64748B" style={{ marginRight: 12 }} />
+                                    <Text style={{ flex: 1, fontSize: responsiveFontSize(1.8), color: stayToDate ? '#0F172A' : '#94A3B8' }}>
+                                        {stayToDate ? `${t('to') || 'To'}: ${formatDate(stayToDate)}` : `${t('to') || 'To'}: ${t('selectDate') || 'Select Date'}`}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={{ marginBottom: 18 }}>
+                                <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600', marginBottom: 8 }}>{t('fathersName')}</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 14 }}>
+                                    <Ionicons name="people-outline" size={22} color="#64748B" style={{ marginRight: 12 }} />
+                                    <TextInput
+                                        style={{ flex: 1, paddingVertical: 14, fontSize: responsiveFontSize(1.8), color: '#0F172A' }}
+                                        placeholder={t('enterFatherName')}
+                                        placeholderTextColor="#94A3B8"
+                                        value={fathersName}
+                                        onChangeText={setFathersName}
+                                    />
+                                </View>
+                            </View>
                         </View>
-                    </View>
 
-                    <View style={{ marginBottom: 18 }}>
-                        <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600', marginBottom: 8 }}>{t('periodOfStay') || 'Period of Stay'}</Text>
-
-                        {/* From Date */}
-                        <TouchableOpacity
-                            onPress={() => setShowStayFromPicker(true)}
-                            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 14, paddingVertical: 14, marginBottom: 10 }}
-                        >
-                            <Ionicons name="calendar-outline" size={22} color="#64748B" style={{ marginRight: 12 }} />
-                            <Text style={{ flex: 1, fontSize: responsiveFontSize(1.8), color: stayFromDate ? '#0F172A' : '#94A3B8' }}>
-                                {stayFromDate ? `${t('from') || 'From'}: ${formatDate(stayFromDate)}` : `${t('from') || 'From'}: ${t('selectDate') || 'Select Date'}`}
-                            </Text>
-                        </TouchableOpacity>
-
-                        {/* To Date */}
-                        <TouchableOpacity
-                            onPress={() => setShowStayToPicker(true)}
-                            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 14, paddingVertical: 14 }}
-                        >
-                            <Ionicons name="calendar-outline" size={22} color="#64748B" style={{ marginRight: 12 }} />
-                            <Text style={{ flex: 1, fontSize: responsiveFontSize(1.8), color: stayToDate ? '#0F172A' : '#94A3B8' }}>
-                                {stayToDate ? `${t('to') || 'To'}: ${formatDate(stayToDate)}` : `${t('to') || 'To'}: ${t('selectDate') || 'Select Date'}`}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={{ marginBottom: 18 }}>
-                        <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600', marginBottom: 8 }}>{t('fathersName')}</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 14 }}>
-                            <Ionicons name="people-outline" size={22} color="#64748B" style={{ marginRight: 12 }} />
-                            <TextInput
-                                style={{ flex: 1, paddingVertical: 14, fontSize: responsiveFontSize(1.8), color: '#0F172A' }}
-                                placeholder={t('enterFatherName')}
-                                placeholderTextColor="#94A3B8"
-                                value={fathersName}
-                                onChangeText={setFathersName}
-                            />
+                        {/* 🔄 Verification Process - Stepper */}
+                        <View style={{ backgroundColor: colors.white, borderRadius: 12, padding: responsiveWidth(4), marginBottom: responsiveHeight(2), ...shadow, shadowColor: 'rgba(0,0,0,0.06)' }}>
+                            <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: '700', color: '#001F3F', marginBottom: 18 }}>{t('verificationProcess')}</Text>
+                            <ProcessStep number="1" text={t('enterRequiredDetails')} />
+                            <ProcessStep number="2" text={t('verificationStarts')} />
+                            <ProcessStep number="3" text={t('statusShown')} isLast />
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 18, backgroundColor: '#E0F2FE', padding: 12, borderRadius: 10 }}>
+                                <Ionicons name="time-outline" size={18} color="#0369A1" style={{ marginRight: 8 }} />
+                                <Text style={{ color: '#075985', fontWeight: '600', fontSize: responsiveFontSize(1.6) }}>{t('verificationTakes72Hours')}</Text>
+                            </View>
                         </View>
-                    </View>
-                </View>
-
-                {/* 🔄 Verification Process - Stepper */}
-                <View style={{ backgroundColor: colors.white, borderRadius: 12, padding: responsiveWidth(4), marginBottom: responsiveHeight(2), ...shadow, shadowColor: 'rgba(0,0,0,0.06)' }}>
-                    <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: '700', color: '#001F3F', marginBottom: 18 }}>{t('verificationProcess')}</Text>
-                    <ProcessStep number="1" text={t('enterRequiredDetails')} />
-                    <ProcessStep number="2" text={t('verificationStarts')} />
-                    <ProcessStep number="3" text={t('statusShown')} isLast />
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 18, backgroundColor: '#E0F2FE', padding: 12, borderRadius: 10 }}>
-                        <Ionicons name="time-outline" size={18} color="#0369A1" style={{ marginRight: 8 }} />
-                        <Text style={{ color: '#075985', fontWeight: '600', fontSize: responsiveFontSize(1.6) }}>{t('verificationTakes72Hours')}</Text>
-                    </View>
-                </View>
+                    </>
+                )
+                }
 
                 {/* 🔐 Data Security */}
                 <View style={{ backgroundColor: '#F0FDF4', borderRadius: 12, padding: responsiveWidth(4), marginBottom: responsiveHeight(2), flexDirection: 'row', alignItems: 'center' }}>
@@ -343,25 +389,30 @@ const CourtCheckInfo = () => {
                     <Text style={{ fontSize: responsiveFontSize(1.6), color: '#64748B' }}>{t('needHelp')} <Text style={{ fontWeight: '600', color: '#2563EB' }}>{t('contactTruckMitrSupport')}</Text></Text>
                 </TouchableOpacity>
 
-            </ScrollView>
+            </ScrollView >
+
 
             {/* 📌 Sticky CTA Button */}
-            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: responsiveWidth(4), backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: '#E5E7EB', ...shadow }}>
-                <TouchableOpacity
-                    onPress={_startCourtCheck}
-                    disabled={loading}
-                    style={{ backgroundColor: loading ? '#94A3B8' : colors.royalBlue, paddingVertical: responsiveHeight(2), borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}
-                >
-                    {loading ? (
-                        <>
-                            <ActivityIndicator size="small" color={colors.white} style={{ marginRight: 8 }} />
-                            <Text style={{ color: colors.white, fontSize: responsiveFontSize(2.0), fontWeight: 'bold' }}>{t('submitting') || 'Submitting...'}</Text>
-                        </>
-                    ) : (
-                        <Text style={{ color: colors.white, fontSize: responsiveFontSize(2.0), fontWeight: 'bold' }}>{t('startCourtCheck')}</Text>
-                    )}
-                </TouchableOpacity>
-            </View>
+            {
+                !courtCheckData && (
+                    <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: responsiveWidth(4), backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: '#E5E7EB', ...shadow }}>
+                        <TouchableOpacity
+                            onPress={_startCourtCheck}
+                            disabled={loading}
+                            style={{ backgroundColor: loading ? '#94A3B8' : colors.royalBlue, paddingVertical: responsiveHeight(2), borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}
+                        >
+                            {loading ? (
+                                <>
+                                    <ActivityIndicator size="small" color={colors.white} style={{ marginRight: 8 }} />
+                                    <Text style={{ color: colors.white, fontSize: responsiveFontSize(2.0), fontWeight: 'bold' }}>{t('submitting') || 'Submitting...'}</Text>
+                                </>
+                            ) : (
+                                <Text style={{ color: colors.white, fontSize: responsiveFontSize(2.0), fontWeight: 'bold' }}>{t('startCourtCheck')}</Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                )
+            }
 
             {/* Date Pickers using react-native-date-picker */}
             <DatePicker
@@ -418,7 +469,7 @@ const CourtCheckInfo = () => {
                     setShowStayToPicker(false);
                 }}
             />
-        </View>
+        </View >
     );
 };
 
