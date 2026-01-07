@@ -2950,10 +2950,16 @@ export default function AddJob() {
                                                     ₹{totalAmount?.toLocaleString()}
                                                 </Text>
                                             </View>
-                                            <View style={[
-                                                jobPremiumStyles.payButton,
-                                                isSuperPremium && jobPremiumStyles.payButtonPremium
-                                            ]}>
+                                            <LinearGradient
+                                                colors={isSuperPremium ? ['#F59E0B', '#D97706'] : ['#2563EB', '#1D4ED8']}
+                                                start={{ x: 0, y: 0 }}
+                                                end={{ x: 1, y: 0 }}
+                                                style={[
+                                                    jobPremiumStyles.payButton,
+                                                    isSuperPremium && jobPremiumStyles.payButtonPremium,
+                                                    { borderWidth: 0 } // Ensure no border on gradient
+                                                ]}
+                                            >
                                                 {jobPremiumLoading && selectedPremiumPlan?.id === plan.id ? (
                                                     <ActivityIndicator size="small" color="#FFF" />
                                                 ) : (
@@ -2964,7 +2970,7 @@ export default function AddJob() {
                                                         <Ionicons name="arrow-forward" size={16} color="#FFF" />
                                                     </>
                                                 )}
-                                            </View>
+                                            </LinearGradient>
                                         </View>
                                     </TouchableOpacity>
                                 );
@@ -4068,69 +4074,81 @@ const jobPremiumStyles = StyleSheet.create({
     },
     planCard: {
         backgroundColor: '#FFFFFF',
-        borderRadius: 14,
-        padding: 14,
-        marginBottom: 10,
-        borderWidth: 1.5,
-        borderColor: '#E5E7EB',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
-        elevation: 3,
+        borderRadius: 20,
+        padding: 20,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#EEF2F6', // Very subtle border
+        shadowColor: '#1A1A2E',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 4,
     },
     planCardPremium: {
-        borderColor: '#F5A623',
-        borderWidth: 2,
-        backgroundColor: '#FFFBF5',
+        borderColor: '#F59E0B', // Gold/Amber
+        borderWidth: 1.5,
+        backgroundColor: '#FFFCF5', // Very subtle warm tint
+        shadowColor: '#F59E0B',
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
+        elevation: 6,
     },
     planCardSelected: {
-        opacity: 0.7,
+        // opacity: 0.7, // Removed opacity change to keep it looking premium always
     },
     recommendedBadge: {
         position: 'absolute',
-        top: -8,
-        right: 12,
-        backgroundColor: '#F5A623',
-        paddingHorizontal: 10,
-        paddingVertical: 3,
-        borderRadius: 10,
+        top: -12,
+        right: 16,
+        backgroundColor: '#F59E0B',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 20,
+        shadowColor: '#F59E0B',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
     },
     recommendedText: {
         color: '#FFFFFF',
-        fontSize: 9,
+        fontSize: 10,
         fontWeight: '700',
         letterSpacing: 0.5,
+        textTransform: 'uppercase',
     },
     planHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: 16,
     },
     planIconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 10,
+        width: 48,
+        height: 48,
+        borderRadius: 14,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 12,
+        marginRight: 16,
+        backgroundColor: '#F3F4F6', // Default subtle gray
     },
     planInfo: {
         flex: 1,
     },
     planName: {
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: '700',
-        color: '#1A1A2E',
-        marginBottom: 2,
+        color: '#111827', // Darker gray/black
+        marginBottom: 4,
+        letterSpacing: -0.3,
     },
     planDescription: {
-        fontSize: 12,
+        fontSize: 13,
         color: '#6B7280',
-        lineHeight: 16,
+        lineHeight: 18,
     },
     planPricePerHiring: {
-        fontSize: 13,
+        fontSize: 14,
         color: '#6B7280',
         fontWeight: '500',
     },
@@ -4138,113 +4156,125 @@ const jobPremiumStyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginTop: 10,
-        paddingTop: 10,
+        marginTop: 16,
+        paddingTop: 16,
         borderTopWidth: 1,
-        borderTopColor: '#F0F0F0',
+        borderTopColor: '#F3F4F6', // Lighter divider
     },
     planPrice: {
-        fontSize: 22,
+        fontSize: 24,
         fontWeight: '800',
-        color: '#246BFD',
+        color: '#2563EB', // Royal Blue
+        letterSpacing: -0.5,
     },
     calculationText: {
-        fontSize: 11,
-        color: '#6B7280',
-        marginBottom: 1,
+        fontSize: 12,
+        color: '#9CA3AF',
+        marginBottom: 4,
+        fontWeight: '500',
     },
     payButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#246BFD',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 10,
-        gap: 4,
+        backgroundColor: '#2563EB',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 12,
+        gap: 8,
+        shadowColor: '#2563EB',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 4,
     },
     payButtonPremium: {
-        backgroundColor: '#F5A623',
+        backgroundColor: '#F59E0B',
+        shadowColor: '#F59E0B',
     },
     payButtonText: {
         color: '#FFFFFF',
         fontSize: 14,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     driverCountBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#E8F0FE',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 16,
+        backgroundColor: '#EFF6FF', // Light Blue
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 12,
         gap: 6,
     },
     driverCountText: {
         fontSize: 12,
-        color: '#246BFD',
-        fontWeight: '600',
+        color: '#2563EB',
+        fontWeight: '700',
     },
     guaranteeBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#E6F9F0',
-        borderWidth: 1,
-        borderColor: '#10B981',
-        borderRadius: 6,
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        marginBottom: 10,
-        gap: 6,
+        backgroundColor: '#ECFDF5', // Light Green
+        // borderWidth: 1, // Remove border for cleaner look
+        // borderColor: '#10B981',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        marginBottom: 14,
+        gap: 8,
     },
     guaranteeText: {
-        fontSize: 11,
-        color: '#10B981',
+        fontSize: 12,
+        color: '#059669', // Darker Green for better contrast
         fontWeight: '600',
         flex: 1,
     },
     bestForContainer: {
         backgroundColor: '#F9FAFB',
-        borderRadius: 6,
-        paddingHorizontal: 10,
-        paddingVertical: 8,
-        marginTop: 8,
+        borderRadius: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        marginTop: 12,
     },
     bestForLabel: {
-        fontSize: 10,
+        fontSize: 11,
         color: '#6B7280',
-        fontWeight: '600',
-        marginBottom: 2,
+        fontWeight: '700',
+        marginBottom: 4,
+        textTransform: 'uppercase',
     },
     bestForText: {
-        fontSize: 11,
+        fontSize: 12,
         color: '#374151',
         fontWeight: '500',
         fontStyle: 'italic',
+        lineHeight: 18,
     },
     featuresContainer: {
-        marginTop: 0,
+        marginTop: 4,
     },
     featureRow: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        marginBottom: 4,
-        gap: 6,
+        marginBottom: 8,
+        gap: 10,
     },
     featureText: {
-        fontSize: 12,
-        color: '#374151',
+        fontSize: 13,
+        color: '#4B5563', // Gray 600
         flex: 1,
-        lineHeight: 16,
+        lineHeight: 18,
+        fontWeight: '400',
     },
     skipButton: {
         alignItems: 'center',
-        paddingVertical: 12,
-        marginTop: 0,
+        paddingVertical: 14,
+        marginTop: 4,
         marginBottom: 30,
     },
     skipButtonText: {
         fontSize: 14,
-        color: '#6B7280',
+        color: '#9CA3AF', // Gray 400
+        fontWeight: '500',
         textDecorationLine: 'underline',
     },
     // Confirmation Dialog Styles

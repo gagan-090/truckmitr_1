@@ -973,19 +973,23 @@ const Home = React.forwardRef((props, ref) => {
                                     <Text style={{ fontSize: responsiveFontSize(1.0), color: 'green', fontWeight: '700' }}>{`${profileCompletion}%`}</Text>
                                 </View>
                             </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: responsiveFontSize(1.5), gap: 2 }}>
-                                {Array.from({ length: 5 }).map((_, i) => (
-                                    <FontAwesome
-                                        key={i}
-                                        name={i < (star_rating || 0) ? 'star' : 'star-o'}
-                                        size={responsiveFontSize(1.6)}
-                                        color={i < (star_rating || 0) ? '#FFD700' : colors.blackOpacity(0.2)}
-                                    />
-                                ))}
-                            </View>
-                            <View style={{ marginTop: 2, backgroundColor: colors.white, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
-                                <Text style={{ fontSize: responsiveFontSize(1.2), color: colors.royalBlue, fontFamily: 'Inter-Bold', textAlign: 'center' }}>{rank || 'N/A'} 🏆</Text>
-                            </View>
+                            {!isTransporter && (
+                                <>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: responsiveFontSize(1.5), gap: 2 }}>
+                                        {Array.from({ length: 5 }).map((_, i) => (
+                                            <FontAwesome
+                                                key={i}
+                                                name={i < (star_rating || 0) ? 'star' : 'star-o'}
+                                                size={responsiveFontSize(1.6)}
+                                                color={i < (star_rating || 0) ? '#FFD700' : colors.blackOpacity(0.2)}
+                                            />
+                                        ))}
+                                    </View>
+                                    <View style={{ marginTop: 2, backgroundColor: colors.white, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
+                                        <Text style={{ fontSize: responsiveFontSize(1.2), color: colors.royalBlue, fontFamily: 'Inter-Bold', textAlign: 'center' }}>{rank || 'N/A'} 🏆</Text>
+                                    </View>
+                                </>
+                            )}
                         </TouchableOpacity>
                     </View>
                     {/*  */}
