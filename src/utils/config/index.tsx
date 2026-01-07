@@ -81,6 +81,7 @@ export const END_POINTS = {
     DRIVERVERIFICATIONPAYMENTCAPTURE: `api/driver-verification/payment/capture`,
     DRIVERVERIFICATIONDLVERIFICATION: (user_id: any, dl_number: any) => `api/kyc/dl-verification?user_id=${user_id}&dl_number=${dl_number}`,
     DRIVERVERIFICATIONPANVERIFICATION: (user_id: any, pan_number: any) => `api/kyc/pan-verification?user_id=${user_id}&pan=${pan_number}`,
+    SUBSCRIPTION_ORDER: `api/subscription/order`,
 
     // Transporter Verification Endpoints
     TRANSPORTER_BULK_VERIFICATION: `api/driver-verification/transporter-bulk-verification`,

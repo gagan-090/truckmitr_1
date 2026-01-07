@@ -14,6 +14,7 @@ import {
     TouchableWithoutFeedback,
     AccessibilityInfo,
     FlatList,
+    SafeAreaView,
 } from 'react-native';
 import Animated, {
     useSharedValue,
@@ -45,8 +46,9 @@ import Feather from 'react-native-vector-icons/Feather';
 import { Calendar } from 'react-native-calendars';
 import moment from 'moment';
 import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
-import { END_POINTS } from '@truckmitr/src/utils/config';
+import { END_POINTS, STATICS } from '@truckmitr/src/utils/config';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
+import RazorpayCheckout from 'react-native-razorpay';
 import { jobAddAction, subscriptionModalAction } from '@truckmitr/src/redux/actions/user.action';
 import LinearGradient from 'react-native-linear-gradient';
 
@@ -145,7 +147,7 @@ export default function AddJob() {
     const safeAreaInsets = useSafeAreaInsets();
     const navigation = useNavigation<NavigatorProp>();
     const { addJob } = useSelector((state: any) => state?.job);
-    const { isTransporter, subscriptionDetails, subscriptionModal } = useSelector((state: any) => state?.user);
+    const { isTransporter, subscriptionDetails, subscriptionModal, user } = useSelector((state: any) => state?.user);
 
     const [currentStep, setCurrentStep] = useState(0);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -159,6 +161,14 @@ export default function AddJob() {
     const [showSecondJobPopup, setShowSecondJobPopup] = useState<boolean>(false);
     const [calendarMonth, setCalendarMonth] = useState(moment().format('YYYY-MM-DD'));
     const [yearPickerOpen, setYearPickerOpen] = useState(false);
+
+    // ===== JOB PREMIUM PAYMENT MODAL STATE =====
+    const [jobPremiumModalVisible, setJobPremiumModalVisible] = useState(false);
+    const [jobPremiumPlans, setJobPremiumPlans] = useState<any[]>([]);
+    const [jobPremiumLoading, setJobPremiumLoading] = useState(false);
+    const [postedJobId, setPostedJobId] = useState<string | null>(null);
+    const [selectedPremiumPlan, setSelectedPremiumPlan] = useState<any>(null);
+    const [showSkipConfirmDialog, setShowSkipConfirmDialog] = useState(false);
 
     // ===== ACCESSIBILITY: REDUCED MOTION SUPPORT =====
     const [reduceMotion, setReduceMotion] = useState(false);
@@ -241,6 +251,12 @@ export default function AddJob() {
         };
         fetchData();
         fetchAvailableFreeJob();
+
+        // Initialize addJob if it's null (for new job posting)
+        if (!addJob) {
+            dispatch(jobAddAction({}));
+        }
+
         return () => {
             dispatch(jobAddAction(null));
         };
@@ -653,22 +669,36 @@ export default function AddJob() {
                 : await axiosInstance.post(END_POINTS.TRANSPORTER_ADD_JOB, data);
 
             if (response?.data?.status) {
-                setShowSuccess(true);
-                setTimeout(() => {
-                    navigation.dispatch(
-                        CommonActions.reset({
-                            index: 1,
-                            routes: [
-                                {
-                                    name: STACKS.BOTTOM_TAB,
-                                    state: { index: 0, routes: [{ name: STACKS.HOME }] },
-                                },
-                                { name: STACKS.VIEW_JOBS },
-                            ],
-                        })
-                    );
-                    dispatch(jobAddAction(null));
-                }, 2500);
+                // Get the job ID from response
+                const jobId = response?.data?.data?.unique_id || response?.data?.data?.id || response?.data?.job_id || addJob?.id;
+                console.log('Job posted successfully, job ID:', jobId);
+
+                // Save job ID and fetch premium plans
+                if (jobId && !addJob?.id) {
+                    // Only show payment modal for new jobs (not edits)
+                    setPostedJobId(jobId);
+                    await fetchJobPremiumPlans();
+                    setFinishing(false);
+                    setJobPremiumModalVisible(true);
+                } else {
+                    // For edits, just show success and navigate
+                    setShowSuccess(true);
+                    setTimeout(() => {
+                        navigation.dispatch(
+                            CommonActions.reset({
+                                index: 1,
+                                routes: [
+                                    {
+                                        name: STACKS.BOTTOM_TAB,
+                                        state: { index: 0, routes: [{ name: STACKS.HOME }] },
+                                    },
+                                    { name: STACKS.VIEW_JOBS },
+                                ],
+                            })
+                        );
+                        dispatch(jobAddAction(null));
+                    }, 2500);
+                }
             } else {
                 showToast(response?.data?.message);
             }
@@ -676,8 +706,186 @@ export default function AddJob() {
             console.log('Add job error:', JSON.stringify(error));
             showToast(t('somethingWentWrong') || 'Something went wrong');
         } finally {
-            setFinishing(false);
+            if (!postedJobId) {
+                setFinishing(false);
+            }
         }
+    };
+
+    // Fetch job premium plans from API
+    const fetchJobPremiumPlans = async () => {
+        try {
+            const response = await axiosInstance.get(END_POINTS.SUBSCRIPTION_PLANS('transporter'));
+            console.log('Job Premium Plans API response:', JSON.stringify(response?.data, null, 2));
+
+            // Handle different API response structures
+            let allPlans: any[] = [];
+
+            if (response?.data && Array.isArray(response.data)) {
+                allPlans = response.data;
+            } else if (response?.data?.data && Array.isArray(response.data.data)) {
+                allPlans = response.data.data;
+            } else if (response?.data?.plans && Array.isArray(response.data.plans)) {
+                allPlans = response.data.plans;
+            }
+
+            console.log('All plans from API:', allPlans.map((p: any) => ({ id: p.id, name: p.name, amount: p.amount })));
+
+            // Filter for premium_job and super_premium_job plans
+            const jobPlans = allPlans.filter((plan: any) =>
+                plan.name === 'premium_job' || plan.name === 'super_premium_job'
+            );
+
+            // Sort so premium_job comes first (₹1,999), then super_premium_job (₹2,999)
+            jobPlans.sort((a: any, b: any) => a.amount - b.amount);
+
+            console.log('Filtered job premium plans:', jobPlans);
+            setJobPremiumPlans(jobPlans);
+        } catch (error) {
+            console.log('Error fetching job premium plans:', error);
+        }
+    };
+
+    // Handle job premium payment
+    const handleJobPremiumPayment = async (plan: any) => {
+        try {
+            setJobPremiumLoading(true);
+            setSelectedPremiumPlan(plan);
+
+            // Create subscription order with job_id
+            const orderPayload = {
+                plan_id: plan.id,
+                number_of_drivers: parseInt(addJob?.Job_Management) || 1,
+                job_id: postedJobId
+            };
+
+            console.log('Creating job premium order with payload:', orderPayload);
+
+            const orderResponse = await axiosInstance.post(END_POINTS.SUBSCRIPTION_ORDER, orderPayload);
+            console.log('Subscription order response:', JSON.stringify(orderResponse?.data, null, 2));
+
+            if (orderResponse?.data?.success || orderResponse?.data?.status) {
+                const orderId = orderResponse?.data?.order_id ||
+                    orderResponse?.data?.data?.order_id ||
+                    orderResponse?.data?.id ||
+                    orderResponse?.data?.data?.id;
+
+                if (orderId) {
+                    await openRazorpayCheckout(orderId, plan);
+                } else {
+                    throw new Error('Order ID not found in response');
+                }
+            } else {
+                throw new Error(orderResponse?.data?.message || 'Failed to create order');
+            }
+        } catch (error: any) {
+            console.log('Job premium payment error:', error);
+            showToast(error?.response?.data?.message || error?.message || t('somethingWentWrong'));
+            setJobPremiumLoading(false);
+        }
+    };
+
+    // Open Razorpay checkout
+    const openRazorpayCheckout = async (orderId: string, plan: any) => {
+        // Format mobile number
+        const rawMobile = String(user?.mobile || '').replace(/\D/g, '');
+        const mobileNumber = rawMobile.length >= 10 ? rawMobile.slice(-10) : rawMobile;
+
+        // Get email
+        const userEmail = user?.email || `user${user?.id}@truckmitr.com`;
+
+        const options = {
+            description: plan.name === 'premium_job' ? 'Premium Job Listing' : 'Semi-Premium Job Listing',
+            image: 'https://truckmitr.com/public/front/assets/images/logotrick.png',
+            currency: 'INR',
+            key: STATICS?.RAYZORPAY_KEY_ID,
+            amount: plan.amount * 100, // Amount in paise
+            order_id: orderId,
+            name: 'TruckMitr',
+            notes: {
+                user_id: Number(user?.id) || 0,
+                plan_id: Number(plan.id),
+                job_id: postedJobId
+            },
+            prefill: {
+                email: userEmail,
+                contact: mobileNumber,
+                name: user?.name || ''
+            },
+            send_sms_hash: true,
+            retry: {
+                enabled: false,
+            },
+            modal: {
+                confirm_close: false,
+                animation: true,
+            },
+            theme: { color: '#246BFD' },
+        } as any;
+
+        console.log('Opening Razorpay checkout with options:', { orderId, amount: plan.amount });
+
+        try {
+            const paymentData = await RazorpayCheckout.open(options);
+            console.log('=== RAZORPAY SUCCESS ===');
+            console.log('Payment data:', JSON.stringify(paymentData, null, 2));
+
+            setJobPremiumLoading(false);
+            setJobPremiumModalVisible(false);
+
+            // Show success screen (same as standard job posting)
+            setShowSuccess(true);
+
+            // Navigate after showing success animation
+            setTimeout(() => {
+                navigation.dispatch(
+                    CommonActions.reset({
+                        index: 1,
+                        routes: [
+                            {
+                                name: STACKS.BOTTOM_TAB,
+                                state: { index: 0, routes: [{ name: STACKS.HOME }] },
+                            },
+                            { name: STACKS.VIEW_JOBS },
+                        ],
+                    })
+                );
+                dispatch(jobAddAction(null));
+            }, 2500);
+        } catch (error: any) {
+            console.log('=== RAZORPAY ERROR ===');
+            console.log('Error:', JSON.stringify(error, null, 2));
+
+            setJobPremiumLoading(false);
+            showToast(t('paymentFailed') || 'Payment failed. Please try again.');
+        }
+    };
+
+    // Show confirmation dialog when user wants to skip premium
+    const handleSkipPremium = () => {
+        setShowSkipConfirmDialog(true);
+    };
+
+    // Confirm and post as standard job
+    const confirmPostAsStandardJob = () => {
+        setShowSkipConfirmDialog(false);
+        setJobPremiumModalVisible(false);
+        setShowSuccess(true);
+        setTimeout(() => {
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 1,
+                    routes: [
+                        {
+                            name: STACKS.BOTTOM_TAB,
+                            state: { index: 0, routes: [{ name: STACKS.HOME }] },
+                        },
+                        { name: STACKS.VIEW_JOBS },
+                    ],
+                })
+            );
+            dispatch(jobAddAction(null));
+        }, 2500);
     };
 
     const renderStepContent = () => {
@@ -729,7 +937,7 @@ export default function AddJob() {
                         <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
                             {t('routeHintDetail') || 'Enter the route for this job (e.g., Delhi to Mumbai)'}
                         </Text>
-                        
+
                         {/* Single Route Input */}
                         <TextInput
                             style={[styles.classicInput, styles.largeInput]}
@@ -878,7 +1086,7 @@ export default function AddJob() {
                                     {t('yes') || 'Yes'}
                                 </Text>
                             </TouchableOpacity>
-                            
+
                             <TouchableOpacity
                                 style={[
                                     styles.radioOption,
@@ -936,7 +1144,7 @@ export default function AddJob() {
                                         {t('yes') || 'Yes'}
                                     </Text>
                                 </TouchableOpacity>
-                                
+
                                 {/* Conditional Amount Input - Below Yes */}
                                 {addJob?.food_allowance_provided === 'yes' && (
                                     <View style={styles.conditionalInputInline}>
@@ -952,7 +1160,7 @@ export default function AddJob() {
                                     </View>
                                 )}
                             </View>
-                            
+
                             <TouchableOpacity
                                 style={[
                                     styles.radioOption,
@@ -1010,7 +1218,7 @@ export default function AddJob() {
                                         {t('yes') || 'Yes'}
                                     </Text>
                                 </TouchableOpacity>
-                                
+
                                 {/* Conditional Amount Input - Below Yes */}
                                 {addJob?.trip_incentive_provided === 'yes' && (
                                     <View style={styles.conditionalInputInline}>
@@ -1026,7 +1234,7 @@ export default function AddJob() {
                                     </View>
                                 )}
                             </View>
-                            
+
                             <TouchableOpacity
                                 style={[
                                     styles.radioOption,
@@ -1083,7 +1291,7 @@ export default function AddJob() {
                                     {t('yes') || 'Yes'}
                                 </Text>
                             </TouchableOpacity>
-                            
+
                             <TouchableOpacity
                                 style={[
                                     styles.radioOption,
@@ -1141,7 +1349,7 @@ export default function AddJob() {
                                         {t('yes') || 'Yes'}
                                     </Text>
                                 </TouchableOpacity>
-                                
+
                                 {/* Conditional Mileage Input - Below Yes */}
                                 {addJob?.mileage_required === 'yes' && (
                                     <View style={styles.conditionalInputInline}>
@@ -1157,7 +1365,7 @@ export default function AddJob() {
                                     </View>
                                 )}
                             </View>
-                            
+
                             <TouchableOpacity
                                 style={[
                                     styles.radioOption,
@@ -1215,7 +1423,7 @@ export default function AddJob() {
                                         {t('yes') || 'Yes'}
                                     </Text>
                                 </TouchableOpacity>
-                                
+
                                 {/* Conditional Amount Input - Below Yes */}
                                 {addJob?.fastag_provided === 'yes' && (
                                     <View style={styles.conditionalInputInline}>
@@ -1231,7 +1439,7 @@ export default function AddJob() {
                                     </View>
                                 )}
                             </View>
-                            
+
                             <TouchableOpacity
                                 style={[
                                     styles.radioOption,
@@ -1610,7 +1818,7 @@ export default function AddJob() {
                                 </View>
                                 <Text style={styles.summaryCardValue}>{addJob?.job_location || '-'}</Text>
                             </View>
-                            
+
                             {/* Route Card */}
                             <View style={[styles.summaryCard, styles.summaryCardHalf]}>
                                 <View style={styles.summaryCardHeader}>
@@ -1696,11 +1904,11 @@ export default function AddJob() {
                                     <Text style={styles.summaryCardTitle}>{t('foodAllowance') || 'Food Allowance'}</Text>
                                 </View>
                                 <Text style={styles.summaryCardValue}>
-                                    {addJob?.food_allowance_provided === 'yes' 
-                                        ? `${t('yes') || 'Yes'}${addJob?.food_allowance_amount ? ` - ₹${addJob.food_allowance_amount}` : ''}` 
-                                        : addJob?.food_allowance_provided === 'no' 
-                                        ? (t('no') || 'No') 
-                                        : '-'}
+                                    {addJob?.food_allowance_provided === 'yes'
+                                        ? `${t('yes') || 'Yes'}${addJob?.food_allowance_amount ? ` - ₹${addJob.food_allowance_amount}` : ''}`
+                                        : addJob?.food_allowance_provided === 'no'
+                                            ? (t('no') || 'No')
+                                            : '-'}
                                 </Text>
                             </View>
                         </View>
@@ -1715,11 +1923,11 @@ export default function AddJob() {
                                     <Text style={styles.summaryCardTitle}>{t('tripIncentive') || 'Trip Incentive'}</Text>
                                 </View>
                                 <Text style={styles.summaryCardValue}>
-                                    {addJob?.trip_incentive_provided === 'yes' 
-                                        ? `${t('yes') || 'Yes'}${addJob?.trip_incentive_amount ? ` - ₹${addJob.trip_incentive_amount}` : ''}` 
-                                        : addJob?.trip_incentive_provided === 'no' 
-                                        ? (t('no') || 'No') 
-                                        : '-'}
+                                    {addJob?.trip_incentive_provided === 'yes'
+                                        ? `${t('yes') || 'Yes'}${addJob?.trip_incentive_amount ? ` - ₹${addJob.trip_incentive_amount}` : ''}`
+                                        : addJob?.trip_incentive_provided === 'no'
+                                            ? (t('no') || 'No')
+                                            : '-'}
                                 </Text>
                             </View>
                         </View>
@@ -1749,11 +1957,11 @@ export default function AddJob() {
                                     <Text style={styles.summaryCardTitle}>{t('mileageRequired') || 'Mileage Required'}</Text>
                                 </View>
                                 <Text style={styles.summaryCardValue}>
-                                    {addJob?.mileage_required === 'yes' 
-                                        ? `${t('yes') || 'Yes'}${addJob?.mileage_amount ? ` - ${addJob.mileage_amount} km/l` : ''}` 
-                                        : addJob?.mileage_required === 'no' 
-                                        ? (t('no') || 'No') 
-                                        : '-'}
+                                    {addJob?.mileage_required === 'yes'
+                                        ? `${t('yes') || 'Yes'}${addJob?.mileage_amount ? ` - ${addJob.mileage_amount} km/l` : ''}`
+                                        : addJob?.mileage_required === 'no'
+                                            ? (t('no') || 'No')
+                                            : '-'}
                                 </Text>
                             </View>
                         </View>
@@ -1768,11 +1976,11 @@ export default function AddJob() {
                                     <Text style={styles.summaryCardTitle}>{t('fastagRoadKharcha') || 'FASTag/Road Kharcha'}</Text>
                                 </View>
                                 <Text style={styles.summaryCardValue}>
-                                    {addJob?.fastag_provided === 'yes' 
-                                        ? `${t('yes') || 'Yes'}${addJob?.fastag_amount ? ` - ₹${addJob.fastag_amount}` : ''}` 
-                                        : addJob?.fastag_provided === 'no' 
-                                        ? (t('no') || 'No') 
-                                        : '-'}
+                                    {addJob?.fastag_provided === 'yes'
+                                        ? `${t('yes') || 'Yes'}${addJob?.fastag_amount ? ` - ₹${addJob.fastag_amount}` : ''}`
+                                        : addJob?.fastag_provided === 'no'
+                                            ? (t('no') || 'No')
+                                            : '-'}
                                 </Text>
                             </View>
                         </View>
@@ -2159,7 +2367,7 @@ export default function AddJob() {
                                 <Ionicons name="close" size={24} color="#333" />
                             </TouchableOpacity>
                         </View>
-                        
+
                         {/* Search Input */}
                         <TextInput
                             style={styles.searchInput}
@@ -2168,37 +2376,37 @@ export default function AddJob() {
                             value={locationSearchQuery}
                             onChangeText={setLocationSearchQuery}
                         />
-                        
+
                         <ScrollView style={{ flex: 1, marginTop: 10 }} showsVerticalScrollIndicator={true}>
                             {locationsList
-                                .filter(location => 
+                                .filter(location =>
                                     location.name.toLowerCase().includes(locationSearchQuery.toLowerCase())
                                 )
                                 .map((location) => (
-                                <TouchableOpacity
-                                    key={location.id}
-                                    style={[
-                                        styles.modalItem,
-                                        addJob?.job_location === location.name && styles.modalItemSelected
-                                    ]}
-                                    onPress={() => {
-                                        dispatch(jobAddAction({ ...addJob, job_location: location.name }));
-                                        setLocationModalOpen(false);
-                                        setLocationSearchQuery('');
-                                    }}
-                                >
-                                    <Ionicons name="location-outline" size={20} color={addJob?.job_location === location.name ? "#246BFD" : "#666"} />
-                                    <Text style={[
-                                        styles.modalItemText,
-                                        addJob?.job_location === location.name && { color: '#246BFD', fontWeight: '600' }
-                                    ]}>
-                                        {location.name}
-                                    </Text>
-                                    {addJob?.job_location === location.name && (
-                                        <Ionicons name="checkmark-circle" size={20} color="#246BFD" />
-                                    )}
-                                </TouchableOpacity>
-                            ))}
+                                    <TouchableOpacity
+                                        key={location.id}
+                                        style={[
+                                            styles.modalItem,
+                                            addJob?.job_location === location.name && styles.modalItemSelected
+                                        ]}
+                                        onPress={() => {
+                                            dispatch(jobAddAction({ ...addJob, job_location: location.name }));
+                                            setLocationModalOpen(false);
+                                            setLocationSearchQuery('');
+                                        }}
+                                    >
+                                        <Ionicons name="location-outline" size={20} color={addJob?.job_location === location.name ? "#246BFD" : "#666"} />
+                                        <Text style={[
+                                            styles.modalItemText,
+                                            addJob?.job_location === location.name && { color: '#246BFD', fontWeight: '600' }
+                                        ]}>
+                                            {location.name}
+                                        </Text>
+                                        {addJob?.job_location === location.name && (
+                                            <Ionicons name="checkmark-circle" size={20} color="#246BFD" />
+                                        )}
+                                    </TouchableOpacity>
+                                ))}
                         </ScrollView>
                     </View>
                 </View>
@@ -2289,7 +2497,7 @@ export default function AddJob() {
 
                     {/* Location List */}
                     <FlatList
-                        data={locationsList.filter(location => 
+                        data={locationsList.filter(location =>
                             location.name.toLowerCase().includes(locationSearchQuery.toLowerCase())
                         )}
                         keyExtractor={(item) => item.id.toString()}
@@ -2409,7 +2617,292 @@ export default function AddJob() {
                     </View>
                 </View>
             </Modal>
-        </Animated.View>
+
+            {/* Job Premium Payment Modal */}
+            <Modal
+                visible={jobPremiumModalVisible}
+                transparent={false}
+                animationType="slide"
+                onRequestClose={() => { }}
+                statusBarTranslucent={true}
+            >
+                <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+                <SafeAreaView style={jobPremiumStyles.overlay}>
+                    <View style={jobPremiumStyles.container}>
+                        {/* Slim Header */}
+                        <View style={jobPremiumStyles.header}>
+                            <View style={jobPremiumStyles.headerIcon}>
+                                <MaterialCommunityIcons name="briefcase-check" size={22} color="#246BFD" />
+                            </View>
+                            <Text style={jobPremiumStyles.headerTitle}>
+                                {t('chooseHiringPlan') || 'Choose Your Hiring Plan'}
+                            </Text>
+                            <View style={jobPremiumStyles.driverCountBadge}>
+                                <Ionicons name="people" size={14} color="#246BFD" />
+                                <Text style={jobPremiumStyles.driverCountText}>
+                                    {parseInt(addJob?.Job_Management) || 1}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Plans */}
+                        <ScrollView
+                            style={jobPremiumStyles.plansContainer}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ paddingBottom: 20 }}
+                        >
+                            {jobPremiumPlans.map((plan, index) => {
+                                const isSuperPremium = plan.name === 'super_premium_job';
+                                const driverCount = parseInt(addJob?.Job_Management) || 1;
+                                const totalAmount = plan.amount * driverCount;
+                                const hiringDays = isSuperPremium ? 4 : 7;
+
+                                return (
+                                    <TouchableOpacity
+                                        key={plan.id}
+                                        activeOpacity={0.8}
+                                        onPress={() => handleJobPremiumPayment(plan)}
+                                        disabled={jobPremiumLoading}
+                                        style={[
+                                            jobPremiumStyles.planCard,
+                                            isSuperPremium && jobPremiumStyles.planCardPremium,
+                                            selectedPremiumPlan?.id === plan.id && jobPremiumLoading && jobPremiumStyles.planCardSelected
+                                        ]}
+                                    >
+                                        {isSuperPremium && (
+                                            <View style={jobPremiumStyles.recommendedBadge}>
+                                                <Text style={jobPremiumStyles.recommendedText}>
+                                                    {t('urgentHiring') || 'URGENT HIRING'}
+                                                </Text>
+                                            </View>
+                                        )}
+
+                                        {/* Plan Title */}
+                                        <View style={jobPremiumStyles.planHeader}>
+                                            <View style={[
+                                                jobPremiumStyles.planIconContainer,
+                                                { backgroundColor: isSuperPremium ? '#FFF5E6' : '#E8F0FE' }
+                                            ]}>
+                                                <MaterialCommunityIcons
+                                                    name={isSuperPremium ? "crown" : "star"}
+                                                    size={28}
+                                                    color={isSuperPremium ? "#F5A623" : "#246BFD"}
+                                                />
+                                            </View>
+                                            <View style={jobPremiumStyles.planInfo}>
+                                                <Text style={[
+                                                    jobPremiumStyles.planName,
+                                                    isSuperPremium && { color: '#F5A623' }
+                                                ]}>
+                                                    {isSuperPremium
+                                                        ? (t('superPremiumJob') || '👑 Super Premium Job')
+                                                        : (t('premiumJob') || '⭐ Premium Job')
+                                                    }
+                                                </Text>
+                                                <Text style={jobPremiumStyles.planPricePerHiring}>
+                                                    ₹{plan.amount?.toLocaleString()} / {t('perHiring') || 'per hiring'}
+                                                </Text>
+                                            </View>
+                                        </View>
+
+                                        {/* Guarantee Badge */}
+                                        <View style={[
+                                            jobPremiumStyles.guaranteeBadge,
+                                            isSuperPremium && { backgroundColor: '#FFF5E6', borderColor: '#F5A623' }
+                                        ]}>
+                                            <Ionicons
+                                                name="shield-checkmark"
+                                                size={18}
+                                                color={isSuperPremium ? "#F5A623" : "#10B981"}
+                                            />
+                                            <Text style={[
+                                                jobPremiumStyles.guaranteeText,
+                                                isSuperPremium && { color: '#F5A623' }
+                                            ]}>
+                                                {isSuperPremium
+                                                    ? (t('superPremiumGuarantee') || `Driver hired within ${hiringDays} days — guaranteed or money back`)
+                                                    : (t('premiumGuarantee') || `Driver hired within ${hiringDays} days — or money back`)
+                                                }
+                                            </Text>
+                                        </View>
+
+                                        {/* Features */}
+                                        <View style={jobPremiumStyles.featuresContainer}>
+                                            {isSuperPremium ? (
+                                                <>
+                                                    <View style={jobPremiumStyles.featureRow}>
+                                                        <Ionicons name="checkmark-circle" size={18} color="#F5A623" />
+                                                        <Text style={jobPremiumStyles.featureText}>
+                                                            {t('priorityJobManager') || 'Priority Job Manager support'}
+                                                        </Text>
+                                                    </View>
+                                                    <View style={jobPremiumStyles.featureRow}>
+                                                        <Ionicons name="checkmark-circle" size={18} color="#F5A623" />
+                                                        <Text style={jobPremiumStyles.featureText}>
+                                                            {t('fasterShortlisting') || 'Faster shortlisting & daily follow-ups'}
+                                                        </Text>
+                                                    </View>
+                                                    <View style={jobPremiumStyles.featureRow}>
+                                                        <Ionicons name="checkmark-circle" size={18} color="#F5A623" />
+                                                        <Text style={jobPremiumStyles.featureText}>
+                                                            {t('highPriorityMatching') || 'High-priority driver matching'}
+                                                        </Text>
+                                                    </View>
+                                                    <View style={jobPremiumStyles.featureRow}>
+                                                        <Ionicons name="checkmark-circle" size={18} color="#F5A623" />
+                                                        <Text style={jobPremiumStyles.featureText}>
+                                                            {t('verifiedTrustedDrivers') || 'Verified & trusted drivers'}
+                                                        </Text>
+                                                    </View>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <View style={jobPremiumStyles.featureRow}>
+                                                        <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                                                        <Text style={jobPremiumStyles.featureText}>
+                                                            {t('dedicatedJobManager') || 'Dedicated Job Manager assigned'}
+                                                        </Text>
+                                                    </View>
+                                                    <View style={jobPremiumStyles.featureRow}>
+                                                        <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                                                        <Text style={jobPremiumStyles.featureText}>
+                                                            {t('endToEndSupport') || 'End-to-end hiring support'}
+                                                        </Text>
+                                                    </View>
+                                                    <View style={jobPremiumStyles.featureRow}>
+                                                        <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                                                        <Text style={jobPremiumStyles.featureText}>
+                                                            {t('shortlistingHandled') || 'Shortlisting, follow-ups & coordination handled by TruckMitr'}
+                                                        </Text>
+                                                    </View>
+                                                    <View style={jobPremiumStyles.featureRow}>
+                                                        <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                                                        <Text style={jobPremiumStyles.featureText}>
+                                                            {t('verifiedDriversOnly') || 'Verified drivers only'}
+                                                        </Text>
+                                                    </View>
+                                                </>
+                                            )}
+                                        </View>
+
+                                        {/* Best For */}
+                                        <View style={jobPremiumStyles.bestForContainer}>
+                                            <Text style={jobPremiumStyles.bestForLabel}>
+                                                {t('bestFor') || 'Best for:'}
+                                            </Text>
+                                            <Text style={[
+                                                jobPremiumStyles.bestForText,
+                                                isSuperPremium && { color: '#F5A623' }
+                                            ]}>
+                                                {isSuperPremium
+                                                    ? (t('urgentHiringDesc') || 'Urgent hiring with zero delay tolerance.')
+                                                    : (t('flexibleHiringDesc') || 'When you need a driver fast, but with flexibility.')
+                                                }
+                                            </Text>
+                                        </View>
+
+                                        {/* Total Calculation & Pay Button */}
+                                        <View style={jobPremiumStyles.planPriceRow}>
+                                            <View>
+                                                <Text style={jobPremiumStyles.calculationText}>
+                                                    {driverCount} {t('drivers') || 'drivers'} × ₹{plan.amount?.toLocaleString()}
+                                                </Text>
+                                                <Text style={[
+                                                    jobPremiumStyles.planPrice,
+                                                    isSuperPremium && { color: '#F5A623' }
+                                                ]}>
+                                                    ₹{totalAmount?.toLocaleString()}
+                                                </Text>
+                                            </View>
+                                            <View style={[
+                                                jobPremiumStyles.payButton,
+                                                isSuperPremium && jobPremiumStyles.payButtonPremium
+                                            ]}>
+                                                {jobPremiumLoading && selectedPremiumPlan?.id === plan.id ? (
+                                                    <ActivityIndicator size="small" color="#FFF" />
+                                                ) : (
+                                                    <>
+                                                        <Text style={jobPremiumStyles.payButtonText}>
+                                                            {t('payNow') || 'Pay Now'}
+                                                        </Text>
+                                                        <Ionicons name="arrow-forward" size={16} color="#FFF" />
+                                                    </>
+                                                )}
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })}
+
+                            {/* Skip Option */}
+                            <TouchableOpacity
+                                onPress={handleSkipPremium}
+                                disabled={jobPremiumLoading}
+                                style={jobPremiumStyles.skipButton}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={jobPremiumStyles.skipButtonText}>
+                                    {t('skipPostAsStandard') || 'Skip, post as standard job'}
+                                </Text>
+                            </TouchableOpacity>
+                        </ScrollView>
+
+                        {/* Skip Confirmation Dialog */}
+                        {showSkipConfirmDialog && (
+                            <View style={jobPremiumStyles.confirmDialogOverlay}>
+                                <View style={jobPremiumStyles.confirmDialog}>
+                                    <View style={jobPremiumStyles.confirmDialogIcon}>
+                                        <Ionicons name="information-circle" size={48} color="#246BFD" />
+                                    </View>
+                                    <Text style={jobPremiumStyles.confirmDialogTitle}>
+                                        {t('postAsStandardJob') || 'Post as Standard Job?'}
+                                    </Text>
+
+                                    {/* Main Message */}
+                                    <Text style={jobPremiumStyles.confirmDialogMessage}>
+                                        {t('transporterProBenefit') || 'Since you are a TruckMitr Transporter Pro subscriber, you can continue to post jobs and hire drivers directly through the app.'}
+                                    </Text>
+
+                                    {/* Warning Box */}
+                                    <View style={jobPremiumStyles.confirmWarningBox}>
+                                        <Ionicons name="warning" size={20} color="#F59E0B" />
+                                        <Text style={jobPremiumStyles.confirmWarningText}>
+                                            {t('noJobManagerWarning') || 'However, no dedicated Job Manager will be assigned for this job. You will manage shortlisting, calls, and hiring on your own using the in-app tools.'}
+                                        </Text>
+                                    </View>
+
+                                    {/* Tip */}
+                                    <View style={jobPremiumStyles.confirmTipBox}>
+                                        <Text style={jobPremiumStyles.confirmTipText}>
+                                            {t('upgradeTip') || '👉 If you want priority support and faster hiring, you can upgrade this job to Premium or Super Premium at any time.'}
+                                        </Text>
+                                    </View>
+
+                                    <View style={jobPremiumStyles.confirmDialogButtons}>
+                                        <TouchableOpacity
+                                            onPress={() => setShowSkipConfirmDialog(false)}
+                                            style={jobPremiumStyles.confirmDialogCancelBtn}
+                                        >
+                                            <Text style={jobPremiumStyles.confirmDialogCancelText}>
+                                                {t('goBack') || 'Go Back'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={confirmPostAsStandardJob}
+                                            style={jobPremiumStyles.confirmDialogConfirmBtn}
+                                        >
+                                            <Text style={jobPremiumStyles.confirmDialogConfirmText}>
+                                                {t('postJob') || 'Post Job'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            </View>
+                        )}
+                    </View>
+                </SafeAreaView>
+            </Modal>
+        </Animated.View >
     );
 }
 
@@ -3353,5 +3846,338 @@ const styles = StyleSheet.create({
     // Summary card full width
     summaryCardFull: {
         flex: 1,
+    },
+});
+// Job Premium Payment Modal Styles
+const jobPremiumStyles = StyleSheet.create({
+    overlay: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+    },
+    container: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingTop: 50,
+        paddingHorizontal: 20,
+        paddingBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
+        backgroundColor: '#FFFFFF',
+    },
+    headerIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#E8F0FE',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#1A1A2E',
+        flex: 1,
+    },
+    headerSubtitle: {
+        fontSize: 14,
+        color: '#6B7280',
+        textAlign: 'center',
+        lineHeight: 20,
+    },
+    plansContainer: {
+        flex: 1,
+        paddingHorizontal: 16,
+        paddingTop: 12,
+    },
+    planCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 14,
+        padding: 14,
+        marginBottom: 10,
+        borderWidth: 1.5,
+        borderColor: '#E5E7EB',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+        elevation: 3,
+    },
+    planCardPremium: {
+        borderColor: '#F5A623',
+        borderWidth: 2,
+        backgroundColor: '#FFFBF5',
+    },
+    planCardSelected: {
+        opacity: 0.7,
+    },
+    recommendedBadge: {
+        position: 'absolute',
+        top: -8,
+        right: 12,
+        backgroundColor: '#F5A623',
+        paddingHorizontal: 10,
+        paddingVertical: 3,
+        borderRadius: 10,
+    },
+    recommendedText: {
+        color: '#FFFFFF',
+        fontSize: 9,
+        fontWeight: '700',
+        letterSpacing: 0.5,
+    },
+    planHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    planIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    planInfo: {
+        flex: 1,
+    },
+    planName: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#1A1A2E',
+        marginBottom: 2,
+    },
+    planDescription: {
+        fontSize: 12,
+        color: '#6B7280',
+        lineHeight: 16,
+    },
+    planPricePerHiring: {
+        fontSize: 13,
+        color: '#6B7280',
+        fontWeight: '500',
+    },
+    planPriceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 10,
+        paddingTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#F0F0F0',
+    },
+    planPrice: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: '#246BFD',
+    },
+    calculationText: {
+        fontSize: 11,
+        color: '#6B7280',
+        marginBottom: 1,
+    },
+    payButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#246BFD',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 10,
+        gap: 4,
+    },
+    payButtonPremium: {
+        backgroundColor: '#F5A623',
+    },
+    payButtonText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    driverCountBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#E8F0FE',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        gap: 6,
+    },
+    driverCountText: {
+        fontSize: 12,
+        color: '#246BFD',
+        fontWeight: '600',
+    },
+    guaranteeBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#E6F9F0',
+        borderWidth: 1,
+        borderColor: '#10B981',
+        borderRadius: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        marginBottom: 10,
+        gap: 6,
+    },
+    guaranteeText: {
+        fontSize: 11,
+        color: '#10B981',
+        fontWeight: '600',
+        flex: 1,
+    },
+    bestForContainer: {
+        backgroundColor: '#F9FAFB',
+        borderRadius: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        marginTop: 8,
+    },
+    bestForLabel: {
+        fontSize: 10,
+        color: '#6B7280',
+        fontWeight: '600',
+        marginBottom: 2,
+    },
+    bestForText: {
+        fontSize: 11,
+        color: '#374151',
+        fontWeight: '500',
+        fontStyle: 'italic',
+    },
+    featuresContainer: {
+        marginTop: 0,
+    },
+    featureRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        marginBottom: 4,
+        gap: 6,
+    },
+    featureText: {
+        fontSize: 12,
+        color: '#374151',
+        flex: 1,
+        lineHeight: 16,
+    },
+    skipButton: {
+        alignItems: 'center',
+        paddingVertical: 12,
+        marginTop: 0,
+        marginBottom: 30,
+    },
+    skipButtonText: {
+        fontSize: 14,
+        color: '#6B7280',
+        textDecorationLine: 'underline',
+    },
+    // Confirmation Dialog Styles
+    confirmDialogOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+    },
+    confirmDialog: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 24,
+        width: '100%',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+        elevation: 8,
+    },
+    confirmDialogIcon: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: '#E8F0FE',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+    },
+    confirmDialogTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#1A1A2E',
+        textAlign: 'center',
+        marginBottom: 12,
+    },
+    confirmDialogMessage: {
+        fontSize: 14,
+        color: '#374151',
+        textAlign: 'left',
+        lineHeight: 20,
+        marginBottom: 12,
+    },
+    confirmWarningBox: {
+        flexDirection: 'row',
+        backgroundColor: '#FEF3E2',
+        borderRadius: 10,
+        padding: 12,
+        marginBottom: 12,
+        gap: 10,
+        alignItems: 'flex-start',
+    },
+    confirmWarningText: {
+        flex: 1,
+        fontSize: 13,
+        color: '#92400E',
+        lineHeight: 18,
+    },
+    confirmTipBox: {
+        backgroundColor: '#E8F0FE',
+        borderRadius: 10,
+        padding: 12,
+        marginBottom: 20,
+    },
+    confirmTipText: {
+        fontSize: 13,
+        color: '#1E40AF',
+        lineHeight: 18,
+    },
+    confirmDialogButtons: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%',
+    },
+    confirmDialogCancelBtn: {
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor: '#E5E7EB',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    confirmDialogCancelText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#6B7280',
+    },
+    confirmDialogConfirmBtn: {
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 12,
+        backgroundColor: '#246BFD',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    confirmDialogConfirmText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#FFFFFF',
     },
 });
