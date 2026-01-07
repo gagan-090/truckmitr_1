@@ -123,6 +123,7 @@ export type NavigatorParams = {
     paymentHistoryScreen: undefined
     verifyDriversDocumentUploadByTransporter: undefined
     addSingleDriverInfo: undefined
+    jobSummary: undefined
 };
 
 export const STACKS = {
@@ -257,4 +258,6 @@ export const STACKS = {
     TRUCK_INSURANCE: 'truckInsurance',
     CONVOY: 'convoy',
     ADD_SINGLE_DRIVER_INFO: 'addSingleDriverInfo',
+    JOB_SUMMARY: 'jobSummary',
+
 } as const;
