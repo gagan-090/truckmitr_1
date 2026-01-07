@@ -574,17 +574,24 @@ const JobCard = ({
             </View>
           ) : (
             <View style={{
-              alignSelf: 'center',
+              alignSelf: 'flex-end',
               marginBottom: responsiveFontSize(1.5),
             }}>
-              <Text style={{
-                fontSize: responsiveFontSize(1.5),
-                fontWeight: '800',
-                color: colors.blackOpacity(0.4),
-                letterSpacing: 1.5,
+              <View style={{
+                backgroundColor: '#374151',
+                paddingHorizontal: responsiveFontSize(1.6),
+                paddingVertical: responsiveFontSize(0.7),
+                borderRadius: responsiveFontSize(2.5),
               }}>
-                STANDARD JOB
-              </Text>
+                <Text style={{
+                  fontSize: responsiveFontSize(1.3),
+                  fontWeight: '600',
+                  color: '#fff',
+                  letterSpacing: 0.4,
+                }}>
+                  STANDARD JOB
+                </Text>
+              </View>
             </View>
           )}
 
