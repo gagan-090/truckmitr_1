@@ -154,19 +154,21 @@ const getTierConfigs = (t: any): Record<TierType, TierConfig> => ({
 // Helper function to get tier from payment_type
 // Now also accepts amount to detect legacy drivers (Rs 49 payment) and legacy transporters (Rs 100/99 payment)
 const getTierFromPaymentType = (paymentType: string, amount?: number, role?: string): TierType => {
-  // Legacy driver detection: Rs 49 payment = Legacy Driver
-  if (amount === 49 || amount === 49.00 || amount === 1 || amount === 1.00) {
-    return 'LEGACY';
-  }
+  const isTransporter = role?.toLowerCase() === 'transporter';
 
   // Transporter Pro detection: Rs 499 payment for transporters
-  if (role?.toLowerCase() === 'transporter' && (amount === 499 || amount === 499.00)) {
+  if (isTransporter && (amount === 499 || amount === 499.00)) {
     return 'TRANSPORTER PRO';
   }
 
-  // Legacy transporter detection: Rs 99 or Rs 100 payment for TRANSPORTERS
-  if (role === 'transporter' && (amount === 99 || amount === 99.00 || amount === 100 || amount === 100.00)) {
+  // Legacy transporter detection: Rs 99, 100, or 1 payment for TRANSPORTERS
+  if (isTransporter && (amount === 99 || amount === 99.00 || amount === 100 || amount === 100.00 || amount === 1 || amount === 1.00)) {
     return 'LEGACY TRANSPORTER';
+  }
+
+  // Legacy driver detection: Rs 49 or 1 payment for DRIVERS (implicitly, or explicitly check !isTransporter)
+  if (amount === 49 || amount === 49.00 || amount === 1 || amount === 1.00) {
+    return 'LEGACY';
   }
 
   const normalizedType = paymentType?.toUpperCase().replace(/\s+/g, ' ').trim();
@@ -1185,7 +1187,8 @@ export default function Profile() {
         */}
         {shouldShowMembershipCard({ user, subscriptionDetails, isDriver }) && (() => {
           // Get tier and card configuration using utility functions
-          const tier = getUserTier({ user, subscriptionDetails, isDriver });
+          const paidAmount = getPaidAmount();
+          const tier = getTierFromPaymentType(subscriptionDetails?.payment_type, paidAmount, user?.role);
           const cardConfig = getMembershipCardConfig({ user, subscriptionDetails, isDriver });
 
           if (!cardConfig) return null;
@@ -1204,7 +1207,7 @@ export default function Profile() {
           const userLocation = (cityName && stateName ? `${cityName}, ${stateName}` : (cityName || stateName)).toUpperCase();
           const isTransporterRole = user?.role === 'transporter';
           const displayLabel = isTransporterRole ? 'TRANSPORT NAME' : (t('licenseType') || 'LICENSE TYPE');
-          const displayValue = isTransporterRole ? (user?.Transport_Name || user?.transport_name || 'N/A')?.toUpperCase() : (user?.Type_of_License || 'HMV')?.toUpperCase();
+          const displayValue = isTransporterRole ? (user?.Transport_Name || user?.transport_name || '')?.toUpperCase() : (user?.Type_of_License || 'HMV')?.toUpperCase();
           const licenseType = user?.Type_of_License || 'HMV'; // Keeping for backward compatibility if needed elsewhere
 
           const profileImage = user?.images ? { uri: `${BASE_URL}public/${user?.images}` } : PROFILE_PLACEHOLDER;
