@@ -140,6 +140,42 @@ const AppleJobCard = ({ item, index, locations }: any) => {
         </View>
     );
 
+    const getSubscriptionType = () => {
+        const plan = item?.subscription_plan_name;
+        if (plan === 'premium_job') return 'PREMIUM';
+        if (plan === 'super_premium_job') return 'SUPER PREMIUM';
+        return 'STANDARD';
+    };
+
+    const getSubscriptionStyle = () => {
+        const type = getSubscriptionType();
+        switch (type) {
+            case 'PREMIUM':
+                return {
+                    borderColor: '#FFD700',
+                    borderWidth: 1.5,
+                    badgeColor: '#FFD700',
+                    textColor: '#000000',
+                };
+            case 'SUPER PREMIUM':
+                return {
+                    borderColor: '#E1AD01', // Richer gold/platinum look
+                    borderWidth: 2,
+                    badgeColor: '#E1AD01',
+                    textColor: '#FFFFFF',
+                };
+            default:
+                return {
+                    borderColor: 'transparent',
+                    borderWidth: 0,
+                    badgeColor: colors.blackOpacity(0.05),
+                    textColor: colors.blackOpacity(0.6),
+                };
+        }
+    };
+
+    const subStyle = getSubscriptionStyle();
+
     return (
         <Animated.View style={[
             styles.cardContainer,
@@ -147,6 +183,8 @@ const AppleJobCard = ({ item, index, locations }: any) => {
                 transform: [{ scale: scaleAnim }],
                 backgroundColor: colors.white,
                 marginBottom: responsiveFontSize(1.5),
+                borderColor: subStyle.borderColor,
+                borderWidth: subStyle.borderWidth,
             }
         ]}>
             <TouchableOpacity
@@ -154,15 +192,33 @@ const AppleJobCard = ({ item, index, locations }: any) => {
                 onPressIn={handlePressIn}
                 onPressOut={handlePressOut}
             >
+                {/* Subscription Badge */}
+                <View style={[
+                    styles.subscriptionBadge,
+                    { backgroundColor: subStyle.badgeColor }
+                ]}>
+                    <Text style={[
+                        styles.subscriptionBadgeText,
+                        { color: subStyle.textColor, fontSize: responsiveFontSize(1.2) }
+                    ]}>
+                        {getSubscriptionType()}
+                    </Text>
+                </View>
+
                 {/* Card Header */}
                 <View style={styles.cardHeader}>
                     <View style={styles.cardTitleContainer}>
                         <Text style={[styles.cardTitle, { color: colors.black, fontSize: responsiveFontSize(2.3) }]} numberOfLines={2}>
                             {item.job_title}
                         </Text>
-                        <Text style={[styles.jobIdText, { color: colors.blackOpacity(0.4), fontSize: responsiveFontSize(1.5) }]}>
-                            {item?.job_id}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <Text style={[styles.jobIdText, { color: colors.blackOpacity(0.4), fontSize: responsiveFontSize(1.5) }]}>
+                                {item?.job_id}
+                            </Text>
+                            <Text style={[styles.jobIdText, { color: colors.blackOpacity(0.4), fontSize: responsiveFontSize(1.5), marginLeft: 5 }]}>
+                                • {moment(item?.Created_at).format("DD MMM YYYY")}
+                            </Text>
+                        </View>
                     </View>
                     <View style={styles.cardActions}>
                         <TouchableOpacity
@@ -205,8 +261,8 @@ const AppleJobCard = ({ item, index, locations }: any) => {
                         />
                         <InfoRow
                             icon={<FontAwesome name='calendar-o' size={12} color={colors.royalBlue} />}
-                            label={t('postDate')}
-                            value={moment(item?.Created_at).format("DD MMM YYYY")}
+                            label={t('expiryDate')}
+                            value={(item?.Application_Deadline || item?.application_deadline) ? moment(item?.Application_Deadline || item?.application_deadline, ["DD-MM-YYYY", "YYYY-MM-DD", moment.ISO_8601]).format("DD MMM YYYY") : 'N/A'}
                         />
                     </View>
                 </View>
@@ -353,7 +409,7 @@ export default function AvailableJob() {
     );
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.container, { backgroundColor: colors.white }]}>
             <Space height={safeAreaInsets.top} />
 
             {/* Apple-style Header */}
@@ -688,5 +744,15 @@ const styles = StyleSheet.create({
     fabText: {
         color: '#FFFFFF',
         fontWeight: '600',
+    },
+    subscriptionBadge: {
+        alignSelf: 'flex-end',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+        marginBottom: 4,
+    },
+    subscriptionBadgeText: {
+        fontWeight: '700',
     },
 });
