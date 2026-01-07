@@ -265,6 +265,12 @@ export default function AddJob() {
             dispatch(jobAddAction({}));
         }
 
+
+        // Initialize addJob if it's null (for new job posting)
+        if (!addJob) {
+            dispatch(jobAddAction({}));
+        }
+
         return () => {
             dispatch(jobAddAction(null));
         };
@@ -1066,6 +1072,7 @@ export default function AddJob() {
                         <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
                             {t('routeHintDetail') || 'Enter the route for this job (e.g., Delhi to Mumbai)'}
                         </Text>
+
 
                         {/* Single Route Input */}
                         <TextInput
@@ -3032,6 +3039,7 @@ export default function AddJob() {
                 </SafeAreaView>
             </Modal>
         </Animated.View >
+
     );
 }
 
@@ -4344,5 +4352,5 @@ const jobPremiumStyles = StyleSheet.create({
         fontWeight: '600',
         color: '#FFFFFF',
     },
-    
 });
+
