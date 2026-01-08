@@ -493,10 +493,12 @@ const ChallanCheckInfo = () => {
                         <Text style={{ fontSize: responsiveFontSize(1.6), color: '#475569', marginBottom: 10, lineHeight: responsiveFontSize(2.2), textAlign: 'left' }}>
                             {t('challanIncludedWith', 'Challan Check is included with:')}
                         </Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                            <Ionicons name="checkmark-circle" size={20} color="#16A34A" style={{ marginRight: 8 }} />
-                            <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600' }}>{t('plan199', '₹199 Plan')}</Text>
-                        </View>
+                        {!isTransporter && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                <Ionicons name="checkmark-circle" size={20} color="#16A34A" style={{ marginRight: 8 }} />
+                                <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600' }}>{t('plan199', '₹199 Plan')}</Text>
+                            </View>
+                        )}
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
                             <Ionicons name="checkmark-circle" size={20} color="#16A34A" style={{ marginRight: 8 }} />
                             <Text style={{ fontSize: responsiveFontSize(1.7), color: '#334155', fontWeight: '600' }}>{t('plan499', '₹499 Plan')}</Text>

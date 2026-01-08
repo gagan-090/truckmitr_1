@@ -53,6 +53,9 @@ const RcCheckInfo = () => {
         if (activeSub) {
             const amt = activeSub.amount ? parseFloat(activeSub.amount) : 0;
             // RC Check is available for ₹199 and ₹499 plans
+            if (isTransporter) {
+                return amt === 499;
+            }
             return amt >= 199;
         }
         return false;
@@ -422,7 +425,9 @@ const RcCheckInfo = () => {
                         </View>
                         <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: 'bold', color: '#001F3F', marginBottom: 8, textAlign: 'center' }}>{t('subscriptionRequired') || 'Subscription Required'}</Text>
                         <Text style={{ fontSize: responsiveFontSize(1.5), color: '#64748B', textAlign: 'center', marginBottom: 24 }}>
-                            {t('rcCheckAvailableForPlans') || 'RC Check is available only for ₹199 and ₹499 plans.'}
+                            {isTransporter
+                                ? (t('rcCheckAvailableForTransporterPro') || 'RC Check is available only for ₹499 plan.')
+                                : (t('rcCheckAvailableForPlans') || 'RC Check is available only for ₹199 and ₹499 plans.')}
                         </Text>
 
                         <TouchableOpacity

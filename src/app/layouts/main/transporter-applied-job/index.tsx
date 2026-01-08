@@ -1,4 +1,4 @@
-import { ActivityIndicator, Image, Modal, StyleSheet, Text, TouchableOpacity, View, Linking, ScrollView, BackHandler } from 'react-native'
+import { ActivityIndicator, Image, Modal, StyleSheet, Text, TouchableOpacity, View, Linking, ScrollView, BackHandler, Pressable, Animated } from 'react-native'
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useColor, useResponsiveScale, useShadow, useStatusBarStyle } from '@truckmitr/src/app/hooks';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -44,10 +44,11 @@ export default function TransporterAppliedJob() {
     const navigation = useNavigation<NavigatorProp>();
     const { user } = useSelector((state: any) => state?.user);
     const [loading, setloading] = useState(true)
-    const [appliedJobList, setappliedJobList] = useState([])
+    const [appliedJobList, setappliedJobList] = useState<any[]>([])
     const [search, setsearch] = useState('')
     const [acceptJobId, setacceptJobId] = useState<any>(-1)
     const [rejectJobId, setrejectJobId] = useState<any>(-1)
+    const [infoModalType, setInfoModalType] = useState<string | null>(null);
     const [accpetRejectLoading, setaccpetRejectLoading] = useState(false)
     const [showVideoInterviewModal, setShowVideoInterviewModal] = useState(false);
     const [selectedDriver, setSelectedDriver] = useState<any>(null);
@@ -67,6 +68,12 @@ export default function TransporterAppliedJob() {
     const [jobFilters, setJobFilters] = useState<Record<string, string>>({});
     const [callLoading, setCallLoading] = useState(false);
     const [videoCallLoading, setVideoCallLoading] = useState(false);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [lastPage, setLastPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     const setFilter = (jobId: string, filter: string) => {
         setJobFilters(prev => ({ ...prev, [jobId]: filter }));
@@ -127,15 +134,15 @@ export default function TransporterAppliedJob() {
     };
 
     // Open Bottom Sheet Modal
-    const openDriverProfileModal = (item: any) => {
+    const openDriverProfileModal = useCallback((item: any) => {
         setSelectedDriverForModal(item);
         bottomSheetModalRef.current?.snapToIndex(0); // ✅ fixed height
-    };
+    }, []);
 
     // Close Bottom Sheet Modal
-    const closeDriverProfileModal = () => {
+    const closeDriverProfileModal = useCallback(() => {
         bottomSheetModalRef.current?.close();
-    };
+    }, []);
 
     const renderBackdrop = useCallback(
         (props: any) => (
@@ -152,28 +159,58 @@ export default function TransporterAppliedJob() {
 
 
     const safeInterviewDate = selectedInterviewDate ?? moment().add(15, 'minutes').toDate();
-    const _fetchJobs = async () => {
+
+    const _fetchJobs = async (page: number = 1, isLoadMore: boolean = false) => {
         // return setappliedJobList(MOCK_APPLIED_JOBS as any);
         try {
-            const response: any = await axiosInstance.get(END_POINTS?.TRANSPORTER_APPLIED_JOBS_LIST);
+            if (isLoadMore) {
+                setLoadingMore(true);
+            }
+            const response: any = await axiosInstance.get(`${END_POINTS?.TRANSPORTER_APPLIED_JOBS_LIST}?page=${page}`);
             if (response?.data?.status) {
-                setappliedJobList(response?.data?.data);
-                console.log('data-------------', response?.data?.data);
+                const newData = response?.data?.data || [];
+                const pagination = response?.data?.pagination;
 
+                if (isLoadMore && page > 1) {
+                    // Append to existing list
+                    setappliedJobList((prev: any) => [...prev, ...newData]);
+                } else {
+                    // Replace list
+                    setappliedJobList(newData);
+                }
+
+                // Update pagination state
+                if (pagination) {
+                    setCurrentPage(pagination.current_page || 1);
+                    setLastPage(pagination.last_page || 1);
+                    setTotalCount(pagination.total || 0);
+                }
+
+                console.log('data-------------', newData, 'Page:', page, 'Pagination:', pagination);
             } else {
-                setappliedJobList([]);
+                if (!isLoadMore) {
+                    setappliedJobList([]);
+                }
             }
         } catch (error) {
             console.error("Error searching jobs:", error);
         } finally {
             setloading(false);
+            setLoadingMore(false);
+        }
+    };
+
+    const _loadMoreJobs = () => {
+        if (!loadingMore && currentPage < lastPage) {
+            _fetchJobs(currentPage + 1, true);
         }
     };
 
     useFocusEffect(
         React.useCallback(() => {
-            setloading(true)
-            _fetchJobs();
+            setloading(true);
+            setCurrentPage(1);
+            _fetchJobs(1, false);
         }, [])
     );
 
@@ -397,69 +434,106 @@ export default function TransporterAppliedJob() {
         }
     };
 
+    // Helper function to get priority for sorting (higher = shown first)
+    const getPaymentPriority = useCallback((item: any) => {
+        const driver = item?.driver_details;
+        const paymentType = driver?.payments_type || driver?.payment_type || item?.payment_type;
+        if (paymentType === 'trusted') return 3;
+        if (paymentType === 'verified') return 2;
+        if (paymentType === 'job_ready') return 1;
+        return 0;
+    }, []);
 
-    const groupedJobs = appliedJobList.reduce((acc: any, item: any) => {
-        const jobId = item?.job_id;
+    const groupedJobs = useMemo(() => {
+        const grouped = appliedJobList.reduce((acc: any, item: any) => {
+            const jobId = item?.job_id;
 
-        if (!acc[jobId]) {
-            acc[jobId] = {
-                job_id: jobId,
-                job_title: item?.job_title,
-                applications: [],
-            };
-        }
+            if (!acc[jobId]) {
+                acc[jobId] = {
+                    job_id: jobId,
+                    job_title: item?.job_title,
+                    applications: [],
+                };
+            }
 
-        acc[jobId].applications.push(item);
-        return acc;
-    }, {});
+            acc[jobId].applications.push(item);
+            return acc;
+        }, {});
 
-    const jobGroups = Object.values(groupedJobs);
+        // Sort applications within each job by payment priority
+        Object.values(grouped).forEach((job: any) => {
+            job.applications.sort((a: any, b: any) => getPaymentPriority(b) - getPaymentPriority(a));
+        });
 
-    const toggleJob = (jobId: string) => {
+        return grouped;
+    }, [appliedJobList, getPaymentPriority]);
+
+    const jobGroups = useMemo(() => Object.values(groupedJobs), [groupedJobs]);
+
+    const toggleJob = useCallback((jobId: string) => {
         setExpandedJobIds(prev =>
             prev.includes(jobId)
                 ? prev.filter(id => id !== jobId)
                 : [...prev, jobId]
         );
-    };
+    }, []);
 
-    const getDriverTag = (item: any, index = 0) => {
+    const getDriverTag = useCallback((item: any, index = 0) => {
         // Check subscription data at both item and driver_details level
         const driver = item?.driver_details;
 
-        // Priority order: item level -> driver_details level (payments_type from API)
-        const paymentType = item?.payment_type || driver?.payments_type || driver?.payment_type;
-        const subscriptionPlanName = item?.subscription_plan_name || driver?.subscription_plan_name;
+        // Priority order: driver_details level -> item level (payments_type from API)
+        const paymentType = (driver?.payments_type || driver?.payment_type || item?.payment_type || '').toString().toLowerCase().trim();
         const amount = item?.amount || item?.subscription_amount || driver?.amount || driver?.subscription_amount;
 
-        // Legacy driver detection (Rs 49 payment)
-        if (amount === 49 || amount === 49.00) {
-            return { label: 'Legacy Driver', color: '#8B4513' };
+        // Legacy driver detection (Rs 49 payment or 'subscription' type)
+        if (amount === 49 || amount === 49.00 || paymentType === 'subscription') {
+            return { label: 'Legacy Driver', color: '#8B4513', isPremium: false, premiumLevel: 0 };
         }
 
-        // Trusted driver
+        // Trusted driver (Premium look - Highest tier)
         if (paymentType === 'trusted') {
-            return { label: 'Trusted Driver', color: '#7C3AED' };
+            return { label: 'Trusted Driver', color: '#7C3AED', isPremium: true, premiumLevel: 2 };
         }
 
-        // Verified driver
+        // Verified driver (Premium look - Lower tier)
         if (paymentType === 'verified') {
-            return { label: 'Verified Driver', color: '#2563EB' };
+            return { label: 'Verified Driver', color: '#2563EB', isPremium: true, premiumLevel: 1 };
         }
 
-        // Job Ready driver (subscription with Standard plan)
-        if (paymentType === 'subscription' && subscriptionPlanName === 'Standard') {
-            return { label: 'Job Ready Driver', color: '#16A34A' };
+        // Job Ready driver
+        if (paymentType === 'job_ready' || paymentType === 'job ready' || paymentType === 'jobready') {
+            return { label: 'Job Ready Driver', color: '#16A34A', isPremium: false, premiumLevel: 0 };
         }
 
-        // Default fallback
-        return { label: 'Job Ready Driver', color: '#16A34A' };
-    };
+        // Default fallback - New Driver
+        return { label: 'New Driver', color: '#6B7280', isPremium: false, premiumLevel: 0 };
+    }, []);
 
 
 
+    const DriverApplicationCard = React.memo(({ item, index = 0 }: any) => {
+        const [tooltipVisible, setTooltipVisible] = useState(false);
+        const fadeAnim = useRef(new Animated.Value(0)).current;
+        const timerRef = useRef<any>(null);
 
-    const DriverApplicationCard = ({ item, index = 0 }: any) => {
+        const showTooltip = useCallback(() => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+            setTooltipVisible(true);
+            Animated.spring(fadeAnim, { toValue: 1, useNativeDriver: true }).start();
+            timerRef.current = setTimeout(() => {
+                Animated.timing(fadeAnim, { toValue: 0, duration: 500, useNativeDriver: true }).start(() => setTooltipVisible(false));
+            }, 5000);
+        }, [fadeAnim]);
+
+        useEffect(() => {
+            const paymentType = (item?.driver_details?.payments_type || item?.payment_type || '').toString().toLowerCase().trim();
+            if (paymentType === 'trusted') {
+                showTooltip();
+            }
+            return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+        }, [item, showTooltip]);
+
         const driver = item?.driver_details;
 
         // ❌ HARD STOP: no TM ID → no UI
@@ -530,34 +604,47 @@ export default function TransporterAppliedJob() {
             </View>
         );
 
-        return (
+        // Premium card wrapper for trusted/verified drivers
+        const cardContent = (
             <View style={{
                 backgroundColor: colors.white,
                 borderRadius: 16,
                 padding: 12,
-                marginBottom: 16,
+                marginBottom: tag.isPremium ? 0 : 16,
                 ...shadow,
-                shadowColor: colors.blackOpacity(0.1),
+                shadowColor: tag.isPremium ? tag.color : colors.blackOpacity(0.1),
+                shadowOpacity: tag.isPremium ? (tag.premiumLevel === 2 ? 0.3 : 0.2) : 0.1,
+                shadowRadius: tag.isPremium ? (tag.premiumLevel === 2 ? 8 : 6) : 4,
                 marginHorizontal: 2,
+                borderWidth: tag.isPremium ? (tag.premiumLevel === 2 ? 2 : 1.5) : 0,
+                borderColor: tag.isPremium ? tag.color : 'transparent',
             }}>
-                {/* Status Badge - Top Right */}
-                <View style={{
-                    position: 'absolute',
-                    top: 12,
-                    right: 12,
-                    backgroundColor: tag.color,
-                    borderRadius: 4,
-                    paddingHorizontal: 8,
-                    paddingVertical: 4,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    zIndex: 1
-                }}>
-                    <MaterialIcons name="verified-user" size={10} color="#FFFFFF" style={{ marginRight: 4 }} />
-                    <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '700' }}>
-                        {tag.label}
-                    </Text>
-                </View>
+                {/* Status Badge - Top Right (Hide for premium drivers who have ribbon) */}
+                {!tag.isPremium && tag.label !== 'New Driver' && (
+                    <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            if (tag.label === 'Job Ready Driver') setInfoModalType('job_ready');
+                            if (tag.label === 'Legacy Driver') setInfoModalType('legacy');
+                        }}
+                        style={{
+                            position: 'absolute',
+                            top: 12,
+                            right: 12,
+                            backgroundColor: tag.color,
+                            borderRadius: 4,
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            zIndex: 1
+                        }}>
+                        <MaterialIcons name="verified-user" size={10} color="#FFFFFF" style={{ marginRight: 4 }} />
+                        <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '700' }}>
+                            {tag.label}
+                        </Text>
+                    </TouchableOpacity>
+                )}
                 {/* UPPER SECTION: Profile + Name + Ribbon Badge */}
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
                     {/* Profile Image Column */}
@@ -612,34 +699,7 @@ export default function TransporterAppliedJob() {
                         </Text>
 
                         {/* Training Row - Diamond if completed + Experience */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-                            {trainingCompleted ? (
-                                <>
-                                    <Text style={{ fontSize: 12 }}>💎</Text>
-                                    <Text style={{ marginLeft: 3, fontSize: 12, fontWeight: '600', color: '#7C3AED' }}>
-                                        Training Complete
-                                    </Text>
-                                </>
-                            ) : (
-                                <View style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    backgroundColor: '#E0F2FE',
-                                    paddingHorizontal: 8,
-                                    paddingVertical: 2,
-                                    borderRadius: 12
-                                }}>
-                                    <Text style={{ fontSize: 11 }}>💎</Text>
-                                    <Text style={{ marginLeft: 3, fontSize: 11, fontWeight: '600', color: '#0284C7' }}>
-                                        {driver?.ranking && driver?.ranking !== 'N/A' ? driver.ranking : 'New Driver'}
-                                    </Text>
-                                </View>
-                            )}
-                            <Text style={{ marginHorizontal: 6, fontSize: 13, color: '#222222' }}>•</Text>
-                            <Text style={{ fontSize: 13, color: '#222222' }}>
-                                {drivingExp !== '—' ? `${drivingExp} yrs exp` : 'N/A'}
-                            </Text>
-                        </View>
+
                     </View>
                 </View >
 
@@ -931,7 +991,185 @@ export default function TransporterAppliedJob() {
                 </TouchableOpacity>
             </View >
         );
-    };
+
+        // Return with premium wrapper if trusted/verified driver
+        if (tag.isPremium) {
+            // Different gradient colors based on premium level
+            const gradientColors = tag.premiumLevel === 2
+                ? ['#7C3AED', '#9333EA', '#7C3AED'] // Trusted - Purple
+                : ['#2563EB', '#3B82F6', '#2563EB']; // Verified - Blue
+
+            const ribbonText = tag.premiumLevel === 2 ? 'Trusted\nDriver' : 'Verified\nDriver';
+            // Ribbon gradient: light blue at top to purple at bottom
+            const ribbonGradientColors = tag.premiumLevel === 2
+                ? ['#8B5CF6', '#7C3AED', '#5B21B6'] // Royal Purple Gradient
+                : ['#60A5FA', '#3B82F6', '#2563EB']; // Light blue -> Blue
+
+            const onCardPress = () => {
+                if (tag.premiumLevel === 2) {
+                    showTooltip();
+                }
+            };
+
+            return (
+                <Pressable onPress={onCardPress} style={{ marginBottom: 16, overflow: 'visible' }}>
+                    <LinearGradient
+                        colors={gradientColors}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{
+                            borderRadius: 18,
+                            padding: tag.premiumLevel === 2 ? 2 : 1.5,
+                        }}
+                    >
+                        {cardContent}
+                    </LinearGradient>
+
+                    {/* Simple Classic Ribbon Badge */}
+                    <TouchableOpacity
+                        activeOpacity={0.9}
+                        onPress={() => {
+                            if (tag.premiumLevel === 2) {
+                                setTooltipVisible(false);
+                            }
+                            if (tag.isPremium) {
+                                setInfoModalType(tag.premiumLevel === 2 ? 'trusted' : 'verified');
+                            }
+                        }}
+                        style={{
+                            position: 'absolute',
+                            top: 0, // Flush with top edge
+                            right: 16,
+                            alignItems: 'center',
+                            zIndex: 10,
+                        }}
+                    >
+                        {tag.premiumLevel === 2 && tooltipVisible && (
+                            <Animated.View style={{
+                                position: 'absolute',
+                                right: 62,
+                                top: 18,
+                                opacity: fadeAnim,
+                                transform: [{ scale: fadeAnim }],
+                                backgroundColor: '#FFF',
+                                paddingHorizontal: 2,
+                                paddingVertical: 4,
+                                borderRadius: 12,
+                                borderWidth: 1,
+                                borderColor: '#F59E0B',
+                                shadowColor: '#F59E0B',
+                                shadowOffset: { width: 0, height: 0 },
+                                shadowOpacity: 0.8,
+                                shadowRadius: 8,
+                                elevation: 8,
+                                zIndex: 20,
+                            }}>
+                                <Text numberOfLines={1} style={{ color: '#F59E0B', fontSize: 10, fontWeight: '700' }}>
+                                    Why Trusted?
+                                </Text>
+                                {/* Arrow pointing right */}
+                                <View style={{
+                                    position: 'absolute',
+                                    right: -5,
+                                    top: 6,
+                                    width: 0,
+                                    height: 0,
+                                    borderStyle: 'solid',
+                                    borderTopWidth: 4,
+                                    borderBottomWidth: 4,
+                                    borderLeftWidth: 5,
+                                    borderTopColor: 'transparent',
+                                    borderBottomColor: 'transparent',
+                                    borderLeftColor: '#F59E0B',
+                                }} />
+                                <View style={{
+                                    position: 'absolute',
+                                    right: -3.5,
+                                    top: 6,
+                                    width: 0,
+                                    height: 0,
+                                    borderStyle: 'solid',
+                                    borderTopWidth: 4,
+                                    borderBottomWidth: 4,
+                                    borderLeftWidth: 5,
+                                    borderTopColor: 'transparent',
+                                    borderBottomColor: 'transparent',
+                                    borderLeftColor: '#FFF',
+                                }} />
+                            </Animated.View>
+                        )}
+                        {/* Ribbon Body with Gradient */}
+                        <LinearGradient
+                            colors={ribbonGradientColors}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 0, y: 1 }} // Vertical gradient for classic look
+                            style={{
+                                width: 56, // Classic width
+                                paddingTop: tag.premiumLevel === 2 ? 6 : 8,
+                                paddingBottom: 10,
+                                paddingHorizontal: 2,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                shadowColor: tag.premiumLevel === 2 ? '#5B21B6' : '#2563EB',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.3,
+                                shadowRadius: 3,
+                                elevation: 4,
+                            }}
+                        >
+                            {tag.premiumLevel === 2 && (
+                                <MaterialCommunityIcons name="crown" size={14} color="#FFD700" style={{ marginBottom: 2 }} />
+                            )}
+                            <Text style={{
+                                color: '#FFFFFF',
+                                fontSize: 11,
+                                fontWeight: '700',
+                                textAlign: 'center',
+                                lineHeight: 15,
+                                textShadowColor: 'rgba(0, 0, 0, 0.25)',
+                                textShadowOffset: { width: 0, height: 1 },
+                                textShadowRadius: 3,
+                                fontFamily: isIOS() ? 'System' : 'Roboto',
+                            }}>{ribbonText}</Text>
+                        </LinearGradient>
+
+                        {/* V-Notch at bottom */}
+                        <View style={{
+                            flexDirection: 'row',
+                            marginTop: -1, // Overlap slightly to avoid gaps
+                        }}>
+                            {/* Left Cut */}
+                            <View style={{
+                                width: 0,
+                                height: 0,
+                                borderStyle: 'solid',
+                                borderLeftWidth: 0,
+                                borderRightWidth: 28, // Half of 56
+                                borderTopWidth: 14,
+                                borderLeftColor: 'transparent',
+                                borderRightColor: 'transparent',
+                                borderTopColor: tag.premiumLevel === 2 ? '#5B21B6' : '#2563EB', // Match bottom gradient color
+                            }} />
+                            {/* Right Cut */}
+                            <View style={{
+                                width: 0,
+                                height: 0,
+                                borderStyle: 'solid',
+                                borderLeftWidth: 28, // Half of 56
+                                borderRightWidth: 0,
+                                borderTopWidth: 14,
+                                borderLeftColor: 'transparent',
+                                borderRightColor: 'transparent',
+                                borderTopColor: tag.premiumLevel === 2 ? '#5B21B6' : '#2563EB', // Match bottom gradient color
+                            }} />
+                        </View>
+                    </TouchableOpacity>
+                </Pressable>
+            );
+        }
+
+        return cardContent;
+    });
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.white }}>
@@ -967,6 +1205,42 @@ export default function TransporterAppliedJob() {
                                 data={jobGroups}
                                 keyExtractor={(item: any) => item.job_id}
                                 showsVerticalScrollIndicator={false}
+                                onEndReached={_loadMoreJobs}
+                                onEndReachedThreshold={0.3}
+                                ListFooterComponent={() => (
+                                    loadingMore ? (
+                                        <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                                            <ActivityIndicator color={colors.royalBlue} size="small" />
+                                            <Text style={{ color: colors.blackOpacity(0.5), fontSize: 12, marginTop: 8 }}>
+                                                {t('loadingMore') || 'Loading more...'}
+                                            </Text>
+                                        </View>
+                                    ) : currentPage < lastPage ? (
+                                        <TouchableOpacity
+                                            onPress={_loadMoreJobs}
+                                            style={{
+                                                paddingVertical: 12,
+                                                alignItems: 'center',
+                                                backgroundColor: colors.blueOpacity(0.1),
+                                                borderRadius: 10,
+                                                marginHorizontal: 10,
+                                                marginBottom: 20,
+                                            }}
+                                        >
+                                            <Text style={{ color: colors.royalBlue, fontWeight: '600' }}>
+                                                {t('loadMore') || 'Load More'} ({currentPage}/{lastPage})
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ) : totalCount > 0 ? (
+                                        <Text style={{ textAlign: 'center', color: colors.blackOpacity(0.4), paddingVertical: 16, fontSize: 12 }}>
+                                            {t('showingAll') || 'Showing all'} {totalCount} {t('applications') || 'applications'}
+                                        </Text>
+                                    ) : null
+                                )}
+                                initialNumToRender={5}
+                                maxToRenderPerBatch={5}
+                                windowSize={10}
+                                removeClippedSubviews={true}
                                 contentContainerStyle={{
                                     paddingHorizontal: responsiveWidth(5),
                                     paddingBottom: responsiveHeight(5),
@@ -1065,7 +1339,7 @@ export default function TransporterAppliedJob() {
                                                     </ScrollView>
                                                     {validApplications.map((item: any, index: number) => {
                                                         return (
-                                                            <DriverApplicationCard key={item.application_id} item={item} />
+                                                            <DriverApplicationCard key={item.application_id} item={item} index={index} />
                                                         )
                                                     })}
                                                 </View>
@@ -1382,13 +1656,13 @@ export default function TransporterAppliedJob() {
                         const reviewCount = driver?.review_count || 0;
 
                         // Contact Info (masked)
-                        const email = driver?.email || '';
-                        const mobile = driver?.mobile || driver?.driver_mobile || '';
+                        const email = driver?.driver_email || driver?.email || '';
+                        const mobile = driver?.driver_mobile || driver?.mobile || '';
 
                         // Personal Info
                         const fatherName = driver?.father_name || driver?.Father_Name || 'N/A';
-                        const dob = driver?.dob || driver?.date_of_birth || driver?.DOB
-                            ? moment(driver?.dob || driver?.date_of_birth || driver?.DOB).format('DD MMM YYYY')
+                        const dob = driver?.driver_DOB || driver?.dob || driver?.date_of_birth || driver?.DOB
+                            ? moment(driver?.driver_DOB || driver?.dob || driver?.date_of_birth || driver?.DOB).format('DD MMM YYYY')
                             : 'N/A';
                         const gender = driver?.gender || driver?.Gender || 'N/A';
                         const maritalStatus = driver?.marital_status || driver?.Marital_Status || 'N/A';
@@ -1402,17 +1676,18 @@ export default function TransporterAppliedJob() {
 
                         // Work Info
                         const vehicleType = driver?.vehicle_type || driver?.Vehicle_Type || driver?.preferred_vehicle || 'N/A';
-                        const drivingExp = driver?.driving_exp || driver?.driving_experience || driver?.Driver_Experience || 'N/A';
-                        const preferredLocation = driver?.preferred_location || driver?.Preferred_Location || driver?.preferred_city || 'N/A';
+                        const drivingExp = driver?.Driver_Experience || driver?.driving_exp || driver?.driving_experience || 'N/A';
+                        const preferredLocation = driver?.Preferred_Location || driver?.preferred_location || driver?.preferred_city || 'N/A';
+                        const licenseEndorsement = driver?.licence_endorsement || driver?.license_endorsement || 'N/A';
 
                         // License/Documents Info
-                        const licenseType = driver?.license_type || driver?.Type_of_License || 'N/A';
+                        const licenseType = driver?.Type_of_License || driver?.license_type || 'N/A';
                         const aadharNo = driver?.Aadhar_Number || driver?.aadhar_number || driver?.aadhar_no || '';
-                        const licenseNo = driver?.license_no || driver?.License_number || '';
-                        const licenseExpiry = driver?.license_expiry || driver?.Expiry_date_of_license
-                            ? moment(driver?.license_expiry || driver?.Expiry_date_of_license).format('DD MMM YYYY')
+                        const licenseNo = driver?.License_number || driver?.license_no || '';
+                        const licenseExpiry = driver?.Expiry_date_of_license || driver?.license_expiry
+                            ? moment(driver?.Expiry_date_of_license || driver?.license_expiry).format('DD MMM YYYY')
                             : 'N/A';
-                        const panNo = driver?.pan_number || driver?.Pan_Number || driver?.pan_no || '';
+                        const panNo = driver?.PAN_Number || driver?.pan_number || driver?.Pan_Number || driver?.pan_no || '';
 
                         const profileImage =
                             driver?.driver_picture
@@ -1569,10 +1844,11 @@ export default function TransporterAppliedJob() {
                                     padding: 16,
                                     marginBottom: 16,
                                 }}>
-                                    <SectionHeader title={t('workInfo') || 'Work Information'} icon="briefcase-outline" />
+                                    <SectionHeader title={t('workInfo') || 'Driving Details'} icon="briefcase-outline" />
                                     <DetailItem label={t('vehicleType') || 'Vehicle Type'} value={vehicleType} />
                                     <DetailItem label={t('drivingExperience') || 'Driving Experience'} value={drivingExp !== 'N/A' ? `${drivingExp} years` : 'N/A'} />
                                     <DetailItem label={t('preferredLocation') || 'Preferred Location'} value={preferredLocation} />
+                                    <DetailItem label={t('licenseEndorsement') || 'License Endorsement'} value={licenseEndorsement} />
                                 </View>
 
                                 {/* License & Documents */}
@@ -2009,6 +2285,222 @@ export default function TransporterAppliedJob() {
                                 </Text>
                             </TouchableOpacity>
                         </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Driver Badge Info Modal */}
+            <Modal
+                transparent={true}
+                visible={infoModalType !== null}
+                animationType="fade"
+                onRequestClose={() => setInfoModalType(null)}
+            >
+                <View style={{
+                    flex: 1,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    padding: 20,
+                }}>
+                    <View style={{
+                        width: '90%',
+                        backgroundColor: '#fff',
+                        borderRadius: 16,
+                        padding: 24,
+                        elevation: 5,
+                    }}>
+                        {infoModalType === 'trusted' && (
+                            <>
+                                {/* Header */}
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                                    <Ionicons name="ellipse" size={12} color="#7C3AED" style={{ marginRight: 8 }} />
+                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1F2937', flex: 1 }}>
+                                        Trusted Driver – What does it mean?
+                                    </Text>
+                                    <TouchableOpacity onPress={() => setInfoModalType(null)}>
+                                        <Ionicons name="close" size={24} color="#9CA3AF" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <Text style={{ fontSize: 14, color: '#4B5563', marginBottom: 16 }}>
+                                    Trusted Driver is a 100% verified and highly reliable driver on TruckMitr.
+                                </Text>
+
+                                <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 12 }}>
+                                    Why this driver is Trusted?
+                                </Text>
+
+                                {/* List */}
+                                {[
+                                    'Government ID verified',
+                                    'Face verification completed',
+                                    'Court / criminal record check done',
+                                    'Digital address verified',
+                                    'Driving license verified',
+                                    'High verification score & trust rating'
+                                ].map((item, index) => (
+                                    <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                        <MaterialCommunityIcons
+                                            name={index === 5 ? "star" : "check-circle"}
+                                            size={18}
+                                            color={index === 5 ? "#F59E0B" : "#10B981"}
+                                            style={{ marginRight: 8 }}
+                                        />
+                                        <Text style={{ fontSize: 14, color: '#374151', fontWeight: index === 5 ? '600' : '400' }}>{item}</Text>
+                                    </View>
+                                ))}
+
+                                <View style={{ height: 1, backgroundColor: '#E5E7EB', marginVertical: 16 }} />
+
+                                <Text style={{ fontSize: 14, color: '#374151', marginBottom: 8 }}>
+                                    <Text style={{ fontWeight: '700' }}>Best for: </Text>
+                                    Transporters who want maximum safety, zero risk, and peace of mind while hiring drivers.
+                                </Text>
+
+                                <Text style={{ fontSize: 14, color: '#374151' }}>
+                                    <Text style={{ fontWeight: '700' }}>👉 Recommended for </Text>
+                                    long trips, high-value goods, and critical assignments.
+                                </Text>
+                            </>
+                        )}
+
+                        {infoModalType === 'verified' && (
+                            <>
+                                {/* Header */}
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                                    <Ionicons name="ellipse" size={12} color="#2563EB" style={{ marginRight: 8 }} />
+                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1F2937', flex: 1 }}>
+                                        Verified Driver – What does it mean?
+                                    </Text>
+                                    <TouchableOpacity onPress={() => setInfoModalType(null)}>
+                                        <Ionicons name="close" size={24} color="#9CA3AF" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <Text style={{ fontSize: 14, color: '#4B5563', marginBottom: 16 }}>
+                                    Verified Driver is a background-checked driver with essential verifications completed.
+                                </Text>
+
+                                <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 12 }}>
+                                    What is verified?
+                                </Text>
+
+                                {['Government ID verified', 'Driving license verified'].map((item, index) => (
+                                    <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                        <MaterialCommunityIcons name="check-circle" size={18} color="#10B981" style={{ marginRight: 8 }} />
+                                        <Text style={{ fontSize: 14, color: '#374151' }}>{item}</Text>
+                                    </View>
+                                ))}
+
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                    <MaterialCommunityIcons name="alert" size={18} color="#F59E0B" style={{ marginRight: 8 }} />
+                                    <Text style={{ fontSize: 14, color: '#374151', fontStyle: 'italic' }}>Some advanced checks may be pending or optional</Text>
+                                </View>
+
+                                <View style={{ height: 1, backgroundColor: '#E5E7EB', marginVertical: 16 }} />
+
+                                <Text style={{ fontSize: 14, color: '#374151', marginBottom: 8 }}>
+                                    <Text style={{ fontWeight: '700' }}>Best for: </Text>
+                                    Transporters looking for quick hiring with basic safety assurance.
+                                </Text>
+
+                                <Text style={{ fontSize: 14, color: '#374151' }}>
+                                    <Text style={{ fontWeight: '700' }}>👉 Suitable for </Text>
+                                    short routes, local trips, or urgent driver requirements.
+                                </Text>
+                            </>
+                        )}
+
+                        {infoModalType === 'job_ready' && (
+                            <>
+                                {/* Header */}
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                                    <Ionicons name="ellipse" size={12} color="#F97316" style={{ marginRight: 8 }} />
+                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1F2937', flex: 1 }}>
+                                        Job Ready Driver – What does it mean?
+                                    </Text>
+                                    <TouchableOpacity onPress={() => setInfoModalType(null)}>
+                                        <Ionicons name="close" size={24} color="#9CA3AF" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <Text style={{ fontSize: 14, color: '#4B5563', marginBottom: 16 }}>
+                                    Job Ready Drivers are drivers who have completed their profile and are ready to work, but verification is not completed yet.
+                                </Text>
+
+                                <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 12 }}>
+                                    What this means for you:
+                                </Text>
+
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                    <MaterialCommunityIcons name="check-circle" size={18} color="#10B981" style={{ marginRight: 8 }} />
+                                    <Text style={{ fontSize: 14, color: '#374151' }}>Profile details filled (personal & driving info)</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                    <MaterialCommunityIcons name="check-circle" size={18} color="#10B981" style={{ marginRight: 8 }} />
+                                    <Text style={{ fontSize: 14, color: '#374151' }}>Actively looking for jobs</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                    <MaterialCommunityIcons name="close-circle" size={18} color="#EF4444" style={{ marginRight: 8 }} />
+                                    <Text style={{ fontSize: 14, color: '#374151' }}>Background verification not completed yet</Text>
+                                </View>
+
+                                <View style={{ height: 1, backgroundColor: '#E5E7EB', marginVertical: 16 }} />
+
+                                <Text style={{ fontSize: 14, color: '#374151', marginBottom: 8 }}>
+                                    <Text style={{ fontWeight: '700' }}>Best for: </Text>
+                                    Transporters who need immediate driver availability and are comfortable proceeding without full verification.
+                                </Text>
+
+                                <Text style={{ fontSize: 14, color: '#374151' }}>
+                                    <Text style={{ fontWeight: '700' }}>👉 You may choose to </Text>
+                                    verify documents manually before hiring.
+                                </Text>
+                            </>
+                        )}
+
+                        {infoModalType === 'legacy' && (
+                            <>
+                                {/* Header */}
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                                    <Ionicons name="ellipse" size={12} color="#EAB308" style={{ marginRight: 8 }} />
+                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1F2937', flex: 1 }}>
+                                        Legacy Driver – What does it mean?
+                                    </Text>
+                                    <TouchableOpacity onPress={() => setInfoModalType(null)}>
+                                        <Ionicons name="close" size={24} color="#9CA3AF" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <Text style={{ fontSize: 14, color: '#4B5563', marginBottom: 16 }}>
+                                    Legacy Drivers are drivers who joined TruckMitr at a very early stage and have been part of the platform since the beginning.
+                                </Text>
+
+                                <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 12 }}>
+                                    Why they are called Legacy Drivers:
+                                </Text>
+
+                                {['Early subscribers of TruckMitr', 'Familiar with the app and its processes', 'Long-term association with the platform'].map((item, index) => (
+                                    <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                        <MaterialCommunityIcons name="check-circle" size={18} color="#10B981" style={{ marginRight: 8 }} />
+                                        <Text style={{ fontSize: 14, color: '#374151' }}>{item}</Text>
+                                    </View>
+                                ))}
+
+                                <View style={{ height: 1, backgroundColor: '#E5E7EB', marginVertical: 16 }} />
+
+                                <Text style={{ fontSize: 14, color: '#374151', marginBottom: 8 }}>
+                                    <Text style={{ fontWeight: '700' }}>Best for: </Text>
+                                    Transporters who value experience, platform familiarity, and early trust built over time.
+                                </Text>
+
+                                <Text style={{ fontSize: 14, color: '#374151' }}>
+                                    <Text style={{ fontWeight: '700' }}>👉 Legacy status </Text>
+                                    reflects loyalty, not verification level.
+                                </Text>
+                            </>
+                        )}
                     </View>
                 </View>
             </Modal>
