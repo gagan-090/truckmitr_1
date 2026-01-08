@@ -1944,78 +1944,74 @@ export default function AddJob() {
                             <Text style={styles.summaryCardValue}>{addJob?.job_title || '-'}</Text>
                         </View>
 
-                        {/* Location & Vehicle Row */}
-                        <View style={styles.summaryRow}>
-                            <View style={[styles.summaryCard, styles.summaryCardHalf]}>
-                                <View style={styles.summaryCardHeader}>
-                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#E8F8F0' }]}>
-                                        <Ionicons name="location" size={18} color="#10B981" />
-                                    </View>
-                                    <Text style={styles.summaryCardTitle}>{t('location') || 'Location'}</Text>
+                        {/* Location Card */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryCardHeader}>
+                                <View style={[styles.summaryIconContainer, { backgroundColor: '#E8F8F0' }]}>
+                                    <Ionicons name="location" size={18} color="#10B981" />
                                 </View>
-                                <Text style={styles.summaryCardValue}>{addJob?.job_location || '-'}</Text>
+                                <Text style={styles.summaryCardTitle}>{t('location') || 'Location'}</Text>
                             </View>
-
-                            {/* Route Card */}
-                            <View style={[styles.summaryCard, styles.summaryCardHalf]}>
-                                <View style={styles.summaryCardHeader}>
-                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#EBF4FF' }]}>
-                                        <Ionicons name="map" size={18} color="#3B82F6" />
-                                    </View>
-                                    <Text style={styles.summaryCardTitle}>{t('route') || 'Route'}</Text>
-                                </View>
-                                <Text style={styles.summaryCardValue} numberOfLines={2}>
-                                    {addJob?.route || '-'}
-                                </Text>
-                            </View>
+                            <Text style={styles.summaryCardValue}>{addJob?.job_location || '-'}</Text>
                         </View>
 
-                        {/* Vehicle Row */}
-                        <View style={styles.summaryRow}>
-                            <View style={[styles.summaryCard, styles.summaryCardHalf]}>
-                                <View style={styles.summaryCardHeader}>
-                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#FEF3E8' }]}>
-                                        <Ionicons name="car" size={18} color="#F59E0B" />
-                                    </View>
-                                    <Text style={styles.summaryCardTitle}>{t('vehicle') || 'Vehicle'}</Text>
+                        {/* Route Card */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryCardHeader}>
+                                <View style={[styles.summaryIconContainer, { backgroundColor: '#EBF4FF' }]}>
+                                    <Ionicons name="map" size={18} color="#3B82F6" />
                                 </View>
-                                {getVehicleImage(addJob?.vehicle_type) && (
-                                    <Image
-                                        source={getVehicleImage(addJob?.vehicle_type)}
-                                        style={styles.summaryVehicleImage}
-                                        resizeMode="contain"
-                                    />
-                                )}
-                                <Text style={[styles.summaryCardValue, { fontSize: 11, marginTop: 4 }]}>
-                                    {addJob?.vehicle_type || '-'}
-                                </Text>
+                                <Text style={styles.summaryCardTitle}>{t('route') || 'Route'}</Text>
                             </View>
+                            <Text style={styles.summaryCardValue} numberOfLines={2}>
+                                {addJob?.route || '-'}
+                            </Text>
                         </View>
 
-                        {/* Experience & Salary Row */}
-                        <View style={styles.summaryRow}>
-                            <View style={[styles.summaryCard, styles.summaryCardHalf]}>
-                                <View style={styles.summaryCardHeader}>
-                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#F3E8FF' }]}>
-                                        <Ionicons name="time" size={18} color="#8B5CF6" />
-                                    </View>
-                                    <Text style={styles.summaryCardTitle}>{t('experience') || 'Experience'}</Text>
+                        {/* Vehicle Card */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryCardHeader}>
+                                <View style={[styles.summaryIconContainer, { backgroundColor: '#FEF3E8' }]}>
+                                    <Ionicons name="car" size={18} color="#F59E0B" />
                                 </View>
-                                <Text style={styles.summaryCardValue}>
-                                    {getExperienceLabel(addJob?.Required_Experience) || '-'}
-                                </Text>
+                                <Text style={styles.summaryCardTitle}>{t('vehicle') || 'Vehicle'}</Text>
                             </View>
-                            <View style={[styles.summaryCard, styles.summaryCardHalf]}>
-                                <View style={styles.summaryCardHeader}>
-                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#E8FDF0' }]}>
-                                        <Ionicons name="cash" size={18} color="#059669" />
-                                    </View>
-                                    <Text style={styles.summaryCardTitle}>{t('fixedSalary') || 'Fixed Salary'}</Text>
+                            {getVehicleImage(addJob?.vehicle_type) && (
+                                <Image
+                                    source={getVehicleImage(addJob?.vehicle_type)}
+                                    style={styles.summaryVehicleImage}
+                                    resizeMode="contain"
+                                />
+                            )}
+                            <Text style={[styles.summaryCardValue, { fontSize: 11, marginTop: 4 }]}>
+                                {addJob?.vehicle_type || '-'}
+                            </Text>
+                        </View>
+
+                        {/* Experience Card */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryCardHeader}>
+                                <View style={[styles.summaryIconContainer, { backgroundColor: '#F3E8FF' }]}>
+                                    <Ionicons name="time" size={18} color="#8B5CF6" />
                                 </View>
-                                <Text style={styles.summaryCardValue}>
-                                    {getSalaryLabel(addJob?.Salary_Range) || '-'}
-                                </Text>
+                                <Text style={styles.summaryCardTitle}>{t('experience') || 'Experience'}</Text>
                             </View>
+                            <Text style={styles.summaryCardValue}>
+                                {getExperienceLabel(addJob?.Required_Experience) || '-'}
+                            </Text>
+                        </View>
+
+                        {/* Salary Card */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryCardHeader}>
+                                <View style={[styles.summaryIconContainer, { backgroundColor: '#E8FDF0' }]}>
+                                    <Ionicons name="cash" size={18} color="#059669" />
+                                </View>
+                                <Text style={styles.summaryCardTitle}>{t('fixedSalary') || 'Fixed Salary'}</Text>
+                            </View>
+                            <Text style={styles.summaryCardValue}>
+                                {getSalaryLabel(addJob?.Salary_Range) || '-'}
+                            </Text>
                         </View>
 
                         {/* ESI/PF Card */}
@@ -2031,121 +2027,111 @@ export default function AddJob() {
                             </Text>
                         </View>
 
-                        {/* Food Allowance Row */}
-                        <View style={styles.summaryRow}>
-                            <View style={[styles.summaryCard, styles.summaryCardFull]}>
-                                <View style={styles.summaryCardHeader}>
-                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#FEF3E2' }]}>
-                                        <Ionicons name="restaurant" size={18} color="#F59E0B" />
-                                    </View>
-                                    <Text style={styles.summaryCardTitle}>{t('foodAllowance') || 'Food Allowance'}</Text>
+                        {/* Food Allowance Card */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryCardHeader}>
+                                <View style={[styles.summaryIconContainer, { backgroundColor: '#FEF3E2' }]}>
+                                    <Ionicons name="restaurant" size={18} color="#F59E0B" />
                                 </View>
-                                <Text style={styles.summaryCardValue}>
-                                    {addJob?.food_allowance_provided === 'yes'
-                                        ? `${t('yes') || 'Yes'}${addJob?.food_allowance_amount ? ` - ₹${addJob.food_allowance_amount}` : ''}`
-                                        : addJob?.food_allowance_provided === 'no'
-                                            ? (t('no') || 'No')
-                                            : '-'}
-                                </Text>
+                                <Text style={styles.summaryCardTitle}>{t('foodAllowance') || 'Food Allowance'}</Text>
                             </View>
+                            <Text style={styles.summaryCardValue}>
+                                {addJob?.food_allowance_provided === 'yes'
+                                    ? `${t('yes') || 'Yes'}${addJob?.food_allowance_amount ? ` - ₹${addJob.food_allowance_amount}` : ''}`
+                                    : addJob?.food_allowance_provided === 'no'
+                                        ? (t('no') || 'No')
+                                        : '-'}
+                            </Text>
                         </View>
 
-                        {/* Trip Incentive Row */}
-                        <View style={styles.summaryRow}>
-                            <View style={[styles.summaryCard, styles.summaryCardFull]}>
-                                <View style={styles.summaryCardHeader}>
-                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#F0FDF4' }]}>
-                                        <Ionicons name="gift" size={18} color="#16A34A" />
-                                    </View>
-                                    <Text style={styles.summaryCardTitle}>{t('tripIncentive') || 'Trip Incentive'}</Text>
+                        {/* Trip Incentive Card */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryCardHeader}>
+                                <View style={[styles.summaryIconContainer, { backgroundColor: '#F0FDF4' }]}>
+                                    <Ionicons name="gift" size={18} color="#16A34A" />
                                 </View>
-                                <Text style={styles.summaryCardValue}>
-                                    {addJob?.trip_incentive_provided === 'yes'
-                                        ? `${t('yes') || 'Yes'}${addJob?.trip_incentive_amount ? ` - ₹${addJob.trip_incentive_amount}` : ''}`
-                                        : addJob?.trip_incentive_provided === 'no'
-                                            ? (t('no') || 'No')
-                                            : '-'}
-                                </Text>
+                                <Text style={styles.summaryCardTitle}>{t('tripIncentive') || 'Trip Incentive'}</Text>
                             </View>
+                            <Text style={styles.summaryCardValue}>
+                                {addJob?.trip_incentive_provided === 'yes'
+                                    ? `${t('yes') || 'Yes'}${addJob?.trip_incentive_amount ? ` - ₹${addJob.trip_incentive_amount}` : ''}`
+                                    : addJob?.trip_incentive_provided === 'no'
+                                        ? (t('no') || 'No')
+                                        : '-'}
+                            </Text>
                         </View>
 
-                        {/* Accommodation Row */}
-                        <View style={styles.summaryRow}>
-                            <View style={[styles.summaryCard, styles.summaryCardFull]}>
-                                <View style={styles.summaryCardHeader}>
-                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#EEF2FF' }]}>
-                                        <Ionicons name="home" size={18} color="#6366F1" />
-                                    </View>
-                                    <Text style={styles.summaryCardTitle}>{t('accommodationFacility') || 'Accommodation Facility'}</Text>
+                        {/* Accommodation Card */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryCardHeader}>
+                                <View style={[styles.summaryIconContainer, { backgroundColor: '#EEF2FF' }]}>
+                                    <Ionicons name="home" size={18} color="#6366F1" />
                                 </View>
-                                <Text style={styles.summaryCardValue}>
-                                    {addJob?.accommodation_provided === 'yes' ? (t('yes') || 'Yes') : addJob?.accommodation_provided === 'no' ? (t('no') || 'No') : '-'}
-                                </Text>
+                                <Text style={styles.summaryCardTitle}>{t('accommodationFacility') || 'Accommodation Facility'}</Text>
                             </View>
+                            <Text style={styles.summaryCardValue}>
+                                {addJob?.accommodation_provided === 'yes' ? (t('yes') || 'Yes') : addJob?.accommodation_provided === 'no' ? (t('no') || 'No') : '-'}
+                            </Text>
                         </View>
 
-                        {/* Mileage Row */}
-                        <View style={styles.summaryRow}>
-                            <View style={[styles.summaryCard, styles.summaryCardFull]}>
-                                <View style={styles.summaryCardHeader}>
-                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#F0F9FF' }]}>
-                                        <Ionicons name="speedometer" size={18} color="#0EA5E9" />
-                                    </View>
-                                    <Text style={styles.summaryCardTitle}>{t('mileageRequired') || 'Mileage Required'}</Text>
+                        {/* Mileage Card */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryCardHeader}>
+                                <View style={[styles.summaryIconContainer, { backgroundColor: '#F0F9FF' }]}>
+                                    <Ionicons name="speedometer" size={18} color="#0EA5E9" />
                                 </View>
-                                <Text style={styles.summaryCardValue}>
-                                    {addJob?.mileage_required === 'yes'
-                                        ? `${t('yes') || 'Yes'}${addJob?.mileage_amount ? ` - ${addJob.mileage_amount} km/l` : ''}`
-                                        : addJob?.mileage_required === 'no'
-                                            ? (t('no') || 'No')
-                                            : '-'}
-                                </Text>
+                                <Text style={styles.summaryCardTitle}>{t('mileageRequired') || 'Mileage Required'}</Text>
                             </View>
+                            <Text style={styles.summaryCardValue}>
+                                {addJob?.mileage_required === 'yes'
+                                    ? `${t('yes') || 'Yes'}${addJob?.mileage_amount ? ` - ${addJob.mileage_amount} km/l` : ''}`
+                                    : addJob?.mileage_required === 'no'
+                                        ? (t('no') || 'No')
+                                        : '-'}
+                            </Text>
                         </View>
 
-                        {/* FASTag/Road Kharcha Row */}
-                        <View style={styles.summaryRow}>
-                            <View style={[styles.summaryCard, styles.summaryCardFull]}>
-                                <View style={styles.summaryCardHeader}>
-                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#FEF3E2' }]}>
-                                        <Ionicons name="card" size={18} color="#F59E0B" />
-                                    </View>
-                                    <Text style={styles.summaryCardTitle}>{t('fastagRoadKharcha') || 'FASTag/Road Kharcha'}</Text>
+                        {/* FASTag/Road Kharcha Card */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryCardHeader}>
+                                <View style={[styles.summaryIconContainer, { backgroundColor: '#FEF3E2' }]}>
+                                    <Ionicons name="card" size={18} color="#F59E0B" />
                                 </View>
-                                <Text style={styles.summaryCardValue}>
-                                    {addJob?.fastag_provided === 'yes'
-                                        ? `${t('yes') || 'Yes'}${addJob?.fastag_amount ? ` - ₹${addJob.fastag_amount}` : ''}`
-                                        : addJob?.fastag_provided === 'no'
-                                            ? (t('no') || 'No')
-                                            : '-'}
-                                </Text>
+                                <Text style={styles.summaryCardTitle}>{t('fastagRoadKharcha') || 'FASTag/Road Kharcha'}</Text>
                             </View>
+                            <Text style={styles.summaryCardValue}>
+                                {addJob?.fastag_provided === 'yes'
+                                    ? `${t('yes') || 'Yes'}${addJob?.fastag_amount ? ` - ₹${addJob.fastag_amount}` : ''}`
+                                    : addJob?.fastag_provided === 'no'
+                                        ? (t('no') || 'No')
+                                        : '-'}
+                            </Text>
                         </View>
 
-                        {/* License & Drivers Count Row */}
-                        <View style={styles.summaryRow}>
-                            <View style={[styles.summaryCard, styles.summaryCardHalf]}>
-                                <View style={styles.summaryCardHeader}>
-                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#FEE8E8' }]}>
-                                        <Ionicons name="card" size={18} color="#EF4444" />
-                                    </View>
-                                    <Text style={styles.summaryCardTitle}>{t('license') || 'License'}</Text>
+                        {/* License Card */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryCardHeader}>
+                                <View style={[styles.summaryIconContainer, { backgroundColor: '#FEE8E8' }]}>
+                                    <Ionicons name="card" size={18} color="#EF4444" />
                                 </View>
-                                <Text style={styles.summaryCardValue}>
-                                    {getLicenseLabel(addJob?.Type_of_License) || '-'}
-                                </Text>
+                                <Text style={styles.summaryCardTitle}>{t('license') || 'License'}</Text>
                             </View>
-                            <View style={[styles.summaryCard, styles.summaryCardHalf]}>
-                                <View style={styles.summaryCardHeader}>
-                                    <View style={[styles.summaryIconContainer, { backgroundColor: '#E8F0FE' }]}>
-                                        <Ionicons name="people" size={18} color="#3B82F6" />
-                                    </View>
-                                    <Text style={styles.summaryCardTitle}>{t('drivers') || 'Drivers'}</Text>
+                            <Text style={styles.summaryCardValue}>
+                                {getLicenseLabel(addJob?.Type_of_License) || '-'}
+                            </Text>
+                        </View>
+
+                        {/* Drivers Count Card */}
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryCardHeader}>
+                                <View style={[styles.summaryIconContainer, { backgroundColor: '#E8F0FE' }]}>
+                                    <Ionicons name="people" size={18} color="#3B82F6" />
                                 </View>
-                                <Text style={styles.summaryCardValue}>
-                                    {addJob?.Job_Management || '-'}
-                                </Text>
+                                <Text style={styles.summaryCardTitle}>{t('drivers') || 'Drivers'}</Text>
                             </View>
+                            <Text style={styles.summaryCardValue}>
+                                {addJob?.Job_Management || '-'}
+                            </Text>
                         </View>
 
                         {/* Deadline Card */}
@@ -3759,15 +3745,6 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 2,
     },
-    summaryCardHalf: {
-        flex: 1,
-        marginHorizontal: 5,
-    },
-    summaryRow: {
-        flexDirection: 'row',
-        marginHorizontal: -5,
-        marginBottom: 0,
-    },
     summaryCardHeader: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -3987,10 +3964,6 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
     },
 
-    // Summary card full width
-    summaryCardFull: {
-        flex: 1,
-    },
     // Pincode styles
     pincodeSection: {
         marginTop: 8,

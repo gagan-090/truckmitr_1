@@ -173,6 +173,7 @@ const getComparisonData = (t: (key: string) => string) => ({
     { label: t('subCourtCheck'), values: [false, false, true] },
     { label: t('subAddressVerification'), values: [false, false, true] },
     { label: t('subTransporterTrust'), values: [t('subLow'), t('subMedium'), t('subHigh')] },
+    { label: t('subPrice'), values: ['₹99', '₹199', '₹499'] },
   ],
 });
 
@@ -917,7 +918,7 @@ const PlanCard = React.memo(({
                 { backgroundColor: plan.color, opacity: consentChecked ? 1 : 0.5 }
               ]}
             >
-              <Text style={styles.quickPayButtonText}>Pay Now</Text>
+              <Text style={styles.quickPayButtonText}>{t('payNowButton')}</Text>
               <Ionicons name="arrow-forward" size={14} color={COLORS.white} />
             </TouchableOpacity>
           </View>
@@ -968,14 +969,14 @@ const PlanCard = React.memo(({
               </View>
             </TouchableOpacity>
             <Text style={styles.consentText}>
-              I agree to the{' '}
+              {t('subConsentAgree')}{' '}
               <Text
                 style={styles.consentLink}
                 onPress={onOpenConsent}
               >
-                subscription terms and disclaimer
+                {t('subTermsAndConditions')}
               </Text>
-              {' '}and authorize recurring payments
+              {' '}{t('subAuthorizePayments')}
             </Text>
           </View>
 

@@ -26,7 +26,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useDispatch, useSelector } from 'react-redux';
 import { BASE_URL, END_POINTS } from '@truckmitr/src/utils/config';
 import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
-import { subscriptionDetailsAction, subscriptionModalAction, userAction } from '@truckmitr/src/redux/actions/user.action';
+import { subscriptionDetailsAction, subscriptionModalAction, userAction, jobAddAction } from '@truckmitr/src/redux/actions/user.action';
 import moment from 'moment';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
 import LottieView from 'lottie-react-native';
@@ -698,6 +698,9 @@ const Home = React.forwardRef((props, ref) => {
     }
 
     const _navigateAddJob = () => {
+        // Clear any existing job data from Redux
+        dispatch(jobAddAction({}));
+        
         if (subscriptionDetails?.showSubscriptionModel && isTransporter) {
             dispatch(subscriptionModalAction(true))
         } else {

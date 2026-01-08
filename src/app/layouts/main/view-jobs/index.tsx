@@ -372,7 +372,11 @@ export default function AvailableJob() {
     }, []);
 
     const _goback = () => navigation.goBack();
-    const _navigateAddJob = () => navigation.navigate(STACKS?.ADD_JOB);
+    const _navigateAddJob = () => {
+        // Clear any existing job data from Redux
+        dispatch(jobAddAction({}));
+        navigation.navigate(STACKS?.ADD_JOB);
+    };
 
     // Empty State Component
     const EmptyState = () => (

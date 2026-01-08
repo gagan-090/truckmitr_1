@@ -400,8 +400,18 @@ const JobCard = ({
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Continuous shimmer animation - faster and looping
+    Animated.loop(
+      Animated.timing(shimmerAnim, {
+        toValue: 1,
+        duration: 1800,
+        useNativeDriver: true,
+      })
+    ).start();
+
     Animated.parallel([
       Animated.spring(scaleAnim, {
         toValue: 1,
@@ -448,18 +458,7 @@ const JobCard = ({
         opacity: fadeAnim,
       }}
     >
-      <View style={[styles.cardContainer, {
-        width: responsiveWidth(92),
-        backgroundColor: colors.white,
-        marginBottom: responsiveHeight(2),
-        borderRadius: responsiveFontSize(2.2),
-        overflow: 'hidden',
-        shadowColor: colors.royalBlue,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.1,
-        shadowRadius: 14,
-        elevation: 6,
-      }]}>
+      
         {/* Gradient Accent */}
         <LinearGradient
           colors={[colors.royalBlue + '12', colors.royalBlue + '04', 'transparent']}
@@ -467,6 +466,135 @@ const JobCard = ({
         />
 
         <View style={{ padding: responsiveFontSize(2.2) }}>
+          {/* Subscription Badge */}
+          {item?.subscription_plan_name === 'super_premium_job' ? (
+            <View style={{
+              alignSelf: 'flex-end',
+              marginBottom: responsiveFontSize(1.5),
+              shadowColor: '#B8860B',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.4,
+              shadowRadius: 8,
+              elevation: 8,
+            }}>
+              <LinearGradient
+                colors={['#fbbf24', '#f59e0b', '#d97706', '#b45309']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: responsiveFontSize(1.6),
+                  paddingVertical: responsiveFontSize(0.8),
+                  borderRadius: responsiveFontSize(2.5),
+                  overflow: 'hidden',
+                }}>
+                {/* Shimmer Effect */}
+                <Animated.View
+                  style={{
+                    position: 'absolute',
+                    top: -5,
+                    bottom: -5,
+                    width: responsiveFontSize(8),
+                    backgroundColor: 'rgba(255, 255, 255, 0.45)',
+                    transform: [{
+                      translateX: shimmerAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-responsiveFontSize(15), responsiveFontSize(25)]
+                      })
+                    }, {
+                      skewX: '-25deg'
+                    }]
+                  }}
+                />
+                <MaterialCommunityIcons name="crown" size={15} color="#fff" style={{ marginRight: responsiveFontSize(0.6) }} />
+                <Text style={{
+                  fontSize: responsiveFontSize(1.35),
+                  fontWeight: '700',
+                  color: '#fff',
+                  letterSpacing: 0.5,
+                  textShadowColor: 'rgba(0, 0, 0, 0.2)',
+                  textShadowOffset: { width: 0, height: 1 },
+                  textShadowRadius: 2,
+                }}>
+                  SUPER PREMIUM JOB
+                </Text>
+              </LinearGradient>
+            </View>
+          ) : item?.subscription_plan_name === 'premium_job' ? (
+            <View style={{
+              alignSelf: 'flex-end',
+              marginBottom: responsiveFontSize(1.5),
+              shadowColor: '#1e3a8a',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.4,
+              shadowRadius: 8,
+              elevation: 8,
+            }}>
+              <LinearGradient
+                colors={['#3b82f6', '#2563eb', '#1d4ed8', '#1e3a8a']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: responsiveFontSize(1.6),
+                  paddingVertical: responsiveFontSize(0.8),
+                  borderRadius: responsiveFontSize(2.5),
+                  overflow: 'hidden',
+                }}>
+                {/* Shimmer Effect */}
+                <Animated.View
+                  style={{
+                    position: 'absolute',
+                    top: -5,
+                    bottom: -5,
+                    width: responsiveFontSize(8),
+                    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                    transform: [{
+                      translateX: shimmerAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-responsiveFontSize(15), responsiveFontSize(25)]
+                      })
+                    }, {
+                      skewX: '-25deg'
+                    }]
+                  }}
+                />
+                <MaterialCommunityIcons name="crown" size={15} color="#fbbf24" style={{ marginRight: responsiveFontSize(0.6) }} />
+                <Text style={{
+                  fontSize: responsiveFontSize(1.35),
+                  fontWeight: '700',
+                  color: '#fff',
+                  letterSpacing: 0.5,
+                }}>
+                  PREMIUM JOB
+                </Text>
+              </LinearGradient>
+            </View>
+          ) : (
+            <View style={{
+              alignSelf: 'flex-end',
+              marginBottom: responsiveFontSize(1.5),
+            }}>
+              <View style={{
+                backgroundColor: '#374151',
+                paddingHorizontal: responsiveFontSize(1.6),
+                paddingVertical: responsiveFontSize(0.7),
+                borderRadius: responsiveFontSize(2.5),
+              }}>
+                <Text style={{
+                  fontSize: responsiveFontSize(1.3),
+                  fontWeight: '600',
+                  color: '#fff',
+                  letterSpacing: 0.4,
+                }}>
+                  STANDARD JOB
+                </Text>
+              </View>
+            </View>
+          )}
+
           {/* Header: Title + Job ID Badge */}
           <View style={{ marginBottom: responsiveFontSize(1.5) }}>
             <Text style={{
@@ -478,38 +606,7 @@ const JobCard = ({
             }}>
               {item?.job_title}
             </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: responsiveFontSize(1) }}>
-              <View style={{
-                backgroundColor: colors.royalBlue + '15',
-                paddingHorizontal: responsiveFontSize(1),
-                paddingVertical: responsiveFontSize(0.4),
-                borderRadius: responsiveFontSize(0.8),
-              }}>
-                <Text style={{
-                  fontSize: responsiveFontSize(1.35),
-                  color: colors.royalBlue,
-                  fontWeight: '600'
-                }}>
-                  {item?.job_id}
-                </Text>
-              </View>
-              <View style={{
-                backgroundColor: colors.blackOpacity(0.06),
-                paddingHorizontal: responsiveFontSize(1),
-                paddingVertical: responsiveFontSize(0.4),
-                borderRadius: responsiveFontSize(0.8),
-                marginLeft: responsiveFontSize(0.8),
-              }}>
-                <Text style={{
-                  fontSize: responsiveFontSize(1.35),
-                  color: colors.blackOpacity(0.6),
-                  fontWeight: '500'
-                }}>
-                  {moment(item?.Created_at).format("DD MMM YYYY")}
-                </Text>
-              </View>
-            </View>
-          </View>
+            
 
           {/* Description */}
           <View style={{ marginBottom: responsiveFontSize(2) }}>
@@ -551,83 +648,105 @@ const JobCard = ({
 
           {/* Info Grid - Premium Layout */}
           <View style={{
-            backgroundColor: colors.blackOpacity(0.02),
+            backgroundColor: colors.blackOpacity(0.03),
             borderRadius: responsiveFontSize(1.5),
-            padding: responsiveFontSize(1.8),
+            padding: responsiveFontSize(2),
             marginBottom: responsiveFontSize(2),
           }}>
-            {/* Row 1: Salary & License */}
+            {/* Job Details Header */}
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginBottom: responsiveFontSize(2),
+            }}>
+              <MaterialCommunityIcons name="briefcase-outline" size={20} color={colors.royalBlue} />
+              <Text style={{
+                fontSize: responsiveFontSize(2.1),
+                fontWeight: '700',
+                color: colors.royalBlue,
+                marginLeft: responsiveFontSize(0.8),
+              }}>
+                {t('jobDetails') || 'Job Details'}
+              </Text>
+            </View>
+
+            {/* Row 1: Job ID & Posted On */}
             <View style={styles.infoRow}>
-              <InfoItem
-                icon={<FontAwesome name='rupee' size={14} color={colors.royalBlue} />}
-                label={t(`salary`)}
-                value={item?.Salary_Range}
-                colors={colors}
-                responsiveFontSize={responsiveFontSize}
-              />
-              <InfoItem
-                icon={<MaterialCommunityIcons name='license' size={14} color={colors.royalBlue} />}
-                label={t(`typeOfLicense`)}
-                value={item?.Type_of_License}
-                colors={colors}
-                responsiveFontSize={responsiveFontSize}
-              />
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                <MaterialCommunityIcons name="card-account-details-outline" size={16} color={colors.royalBlue} />
+                <Text style={{ fontSize: responsiveFontSize(1.6), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
+                  Job ID: <Text style={{ color: colors.black, fontWeight: '500' }}>{item?.job_id}</Text>
+                </Text>
+              </View>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                <FontAwesome name="calendar" size={14} color={colors.royalBlue} />
+                <Text style={{ fontSize: responsiveFontSize(1.6), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
+                  Posted On: <Text style={{ color: colors.black, fontWeight: '500' }}>{moment(item?.Created_at).format("DD MMM YYYY")}</Text>
+                </Text>
+              </View>
             </View>
 
-            {/* Row 2: Location & Jobs Count */}
-            <View style={[styles.infoRow, { marginTop: responsiveFontSize(1.5) }]}>
-              <InfoItem
-                icon={<FontAwesome6 name='location-dot' size={14} color={colors.royalBlue} />}
-                label={t(`location`)}
-                value={item?.job_location}
-                colors={colors}
-                responsiveFontSize={responsiveFontSize}
-              />
-              <InfoItem
-                icon={<FontAwesome6 name='business-time' size={14} color={colors.royalBlue} />}
-                label={t(`noOfJobs`)}
-                value={item?.Job_Management}
-                colors={colors}
-                responsiveFontSize={responsiveFontSize}
-              />
+            {/* Row 2: Location & Open Positions */}
+            <View style={[styles.infoRow, { marginTop: responsiveFontSize(1.8) }]}>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                <FontAwesome6 name="location-dot" size={14} color={colors.royalBlue} />
+                <Text style={{ fontSize: responsiveFontSize(1.6), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
+                  {t('location') || 'Location'}: <Text style={{ color: colors.black, fontWeight: '500' }}>{item?.job_location}</Text>
+                </Text>
+              </View>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                <FontAwesome6 name="users" size={14} color={colors.royalBlue} />
+                <Text style={{ fontSize: responsiveFontSize(1.6), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
+                  Open Positions: <Text style={{ color: colors.black, fontWeight: '500' }}>{item?.number_of_drivers_required || '-'}</Text>
+                </Text>
+              </View>
             </View>
 
-            {/* Row 3: Experience & Vehicle */}
-            <View style={[styles.infoRow, { marginTop: responsiveFontSize(1.5) }]}>
-              <InfoItem
-                icon={<FontAwesome name='trophy' size={14} color={colors.royalBlue} />}
-                label={t(`experience`)}
-                value={item?.Required_Experience}
-                colors={colors}
-                responsiveFontSize={responsiveFontSize}
-              />
-              <InfoItem
-                icon={<FontAwesome6 name='car-rear' size={14} color={colors.royalBlue} />}
-                label={t(`vehicleType`)}
-                value={item?.vehicle_type}
-                colors={colors}
-                responsiveFontSize={responsiveFontSize}
-              />
+            {/* Row 3: Experience Required & License Type */}
+            <View style={[styles.infoRow, { marginTop: responsiveFontSize(1.8) }]}>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <FontAwesome name="star" size={14} color={colors.royalBlue} />
+                  <Text style={{ fontSize: responsiveFontSize(1.6), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
+                    Experience Required
+                  </Text>
+                </View>
+                <Text style={{ fontSize: responsiveFontSize(1.6), color: colors.black, fontWeight: '500', marginLeft: responsiveFontSize(2.5), marginTop: responsiveFontSize(0.3) }}>
+                  {item?.Required_Experience} Years
+                </Text>
+              </View>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                <MaterialCommunityIcons name="license" size={16} color={colors.royalBlue} />
+                <Text style={{ fontSize: responsiveFontSize(1.6), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
+                  License Type: <Text style={{ color: colors.black, fontWeight: '500' }}>{item?.Type_of_License}</Text>
+                </Text>
+              </View>
             </View>
 
-            {/* Row 4: Deadline */}
-            <View style={[styles.infoRow, { marginTop: responsiveFontSize(1.5) }]}>
-              <InfoItem
-                icon={<FontAwesome name='calendar-minus-o' size={14} color={colors.royalBlue} />}
-                label={t(`lastDate`)}
-                value={item?.Application_Deadline}
-                colors={colors}
-                responsiveFontSize={responsiveFontSize}
-              />
-              {skills?.length > 0 && skills[0] && (
-                <InfoItem
-                  icon={<FontAwesome6 name='child-reaching' size={14} color={colors.royalBlue} />}
-                  label={t(`preferredSkills`)}
-                  value={skills.slice(0, 2).join(", ")}
-                  colors={colors}
-                  responsiveFontSize={responsiveFontSize}
-                />
-              )}
+            {/* Row 4: Vehicle Type & Application Deadline */}
+            <View style={[styles.infoRow, { marginTop: responsiveFontSize(1.8) }]}>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <MaterialCommunityIcons name="truck" size={16} color={colors.royalBlue} />
+                  <Text style={{ fontSize: responsiveFontSize(1.6), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
+                    {t('vehicleType') || 'Vehicle Type'}
+                  </Text>
+                </View>
+                <Text style={{ fontSize: responsiveFontSize(1.6), color: colors.black, fontWeight: '500', marginLeft: responsiveFontSize(2.5), marginTop: responsiveFontSize(0.3) }}>
+                  {item?.vehicle_type}
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <FontAwesome name="calendar" size={14} color={colors.royalBlue} />
+                  <Text style={{ fontSize: responsiveFontSize(1.6), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
+                    Application Deadline
+                  </Text>
+                </View>
+                <Text style={{ fontSize: responsiveFontSize(1.6), color: colors.black, fontWeight: '500', marginLeft: responsiveFontSize(2.5), marginTop: responsiveFontSize(0.3) }}>
+                  {item?.Application_Deadline || '-'}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -747,30 +866,16 @@ const JobCard = ({
   );
 };
 
-// Info Item Component
+// Info Item Component - Inline format (label: value on same line)
 const InfoItem = ({ icon, label, value, colors, responsiveFontSize }: any) => (
-  <View style={{ flex: 1 }}>
-    <View style={{
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: responsiveFontSize(0.5)
-    }}>
-      {icon}
-      <Text style={{
-        color: colors.royalBlue,
-        fontSize: responsiveFontSize(1.45),
-        fontWeight: '600',
-        marginLeft: responsiveFontSize(0.6),
-      }}>
-        {label}
-      </Text>
-    </View>
+  <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingVertical: responsiveFontSize(0.8) }}>
+    <View style={{ marginRight: responsiveFontSize(0.5) }}>{icon}</View>
     <Text style={{
-      color: colors.blackOpacity(0.75),
-      fontSize: responsiveFontSize(1.55),
-      fontWeight: '500',
-    }} numberOfLines={1}>
-      {value || '-'}
+      color: colors.royalBlue,
+      fontSize: responsiveFontSize(1.45),
+      fontWeight: '600',
+    }}>
+      {label}: <Text style={{ color: colors.black, fontWeight: '500' }}>{value || '-'}</Text>
     </Text>
   </View>
 );
