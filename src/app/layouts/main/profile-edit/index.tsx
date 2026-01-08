@@ -49,6 +49,7 @@ const DRIVER_STEPS = [
     { id: 'vehicle', title: 'vehicleTypeStep', subtitle: 'vehicleTypeStepDesc' },
     { id: 'experience', title: 'experienceStep', subtitle: 'experienceStepDesc' },
     { id: 'license_type', title: 'licenseTypeStep', subtitle: 'licenseTypeStepDesc' },
+    { id: 'endorsement', title: 'licenseEndorsement', subtitle: 'selectLicenseEndorsementsDesc' },
     { id: 'salary', title: 'salaryStep', subtitle: 'salaryStepDesc' },
     { id: 'preferences', title: 'preferencesStep', subtitle: 'preferencesStepDesc' },
     { id: 'aadhar_details', title: 'aadharStep', subtitle: 'aadharStepDesc' },
@@ -178,6 +179,15 @@ export default function ProfileEdit() {
         { label: t('intercity') || 'Intercity', value: 'intercity' },
         { label: t('interstate') || 'Interstate', value: 'interstate' },
         { label: t('allIndia') || 'All India', value: 'all_india' },
+    ];
+
+    const translatedEndorsements = [
+        { id: 'hill', label: t('hillDriving') || 'Hill Driving', emoji: '🏔️' },
+        { id: 'hazardous', label: t('hazardousGoods') || 'Hazardous Goods', emoji: '☢️' },
+        { id: 'roller', label: t('roadRoller') || 'Road Roller', emoji: '🚜' },
+        { id: 'tractor', label: t('tractorTrailer') || 'Tractor-Trailer (Commercial)', emoji: '🚛' },
+        { id: 'forklift', label: t('forkliftMHE') || 'Forklift / MHE', emoji: '🏗️' },
+        { id: 'other', label: t('other') || 'Other', emoji: '📋' },
     ];
 
     useEffect(() => {
@@ -445,6 +455,38 @@ export default function ProfileEdit() {
         }
     }, [user, userRole, vehicleTypes]);
 
+    // Driver Data Normalization
+    useEffect(() => {
+        if (userRole === 'driver' && user) {
+            let shouldUpdate = false;
+            const updates: any = {};
+
+            // Normalize endorsement
+            // Check if we have licence_endorsement (Array) or endorsement (String) in user object
+            const rawEndorsement = user.licence_endorsement || user.Licence_Endorsement || user.endorsement;
+
+            if (rawEndorsement) {
+                let normEndorsement = '';
+                if (Array.isArray(rawEndorsement)) {
+                    normEndorsement = rawEndorsement.join(',');
+                } else if (typeof rawEndorsement === 'string') {
+                    normEndorsement = rawEndorsement;
+                }
+
+                // If userEdit doesn't have endorsement set yet, populate it from user data
+                if (normEndorsement && !userEdit?.endorsement) {
+                    updates.endorsement = normEndorsement;
+                    shouldUpdate = true;
+                }
+            }
+
+            if (shouldUpdate) {
+                console.log('Normalizing driver data:', updates);
+                dispatch(userEditAction({ ...(userEditRef.current || {}), ...updates }));
+            }
+        }
+    }, [user, userRole]);
+
     // Play voice when step changes (only for Hindi language)
     useEffect(() => {
         contentOpacity.value = 0;
@@ -584,6 +626,13 @@ export default function ProfileEdit() {
             case 'license_type':
                 if (!userEdit?.Type_of_License) {
                     showToast(t('licenseTypeRequired') || 'License type is required');
+                    return false;
+                }
+                break;
+
+            case 'endorsement':
+                if (!userEdit?.endorsement) {
+                    showToast(t('pleaseSelectEndorsement') || 'Please select at least one endorsement');
                     return false;
                 }
                 break;
@@ -811,6 +860,15 @@ export default function ProfileEdit() {
             formData.append('current_monthly_income', userEdit?.Current_Monthly_Income || '');
             formData.append('expected_monthly_income', userEdit?.Expected_Monthly_Income || '');
             formData.append('type_of_license', userEdit?.Type_of_License || '');
+
+            // License Endorsements - API expects array
+            const endorsements = userEdit?.endorsement?.split(',').filter(Boolean) || [];
+            if (endorsements.length > 0) {
+                endorsements.forEach((end: string) => {
+                    formData.append('licence_endorsement[]', end.trim());
+                });
+            }
+
             formData.append('Aadhar_Number', userEdit?.Aadhar_Number || '');
             formData.append('license_number', userEdit?.License_Number || '');
             formData.append('expiry_date_of_license', userEdit?.Expiry_date_of_License ? moment(userEdit.Expiry_date_of_License).format('DD-MM-YYYY') : '');
@@ -1247,6 +1305,40 @@ export default function ProfileEdit() {
                     </View>
                 );
 
+            case 'endorsement':
+                return (
+                    <View style={styles.stepContent}>
+                        <Text style={styles.inputLabel}>{t('selectLicenseEndorsements') || 'Select License Endorsements'} <Text style={styles.requiredAsterisk}>*</Text></Text>
+                        <Text style={[styles.helperText, { marginBottom: 12 }]}>{t('selectMultipleIfApplicable') || 'Select all that apply'}</Text>
+                        <View>
+                            {translatedEndorsements.map(item => {
+                                const current = userEdit?.endorsement ? userEdit.endorsement.split(',') : [];
+                                const isSelected = current.includes(item.id);
+                                return (
+                                    <TouchableOpacity
+                                        key={item.id}
+                                        style={[
+                                            styles.endorsementTile,
+                                            isSelected && styles.endorsementTileSelected
+                                        ]}
+                                        onPress={() => toggleMultiSelect('endorsement', item.id)}
+                                    >
+                                        <View style={[styles.endorsementIcon, isSelected && { backgroundColor: '#246BFD' }]}>
+                                            <Text style={{ fontSize: 22 }}>{item.emoji}</Text>
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={[styles.endorsementLabel, isSelected && { color: '#246BFD' }]}>
+                                                {item.label}
+                                            </Text>
+                                        </View>
+                                        {isSelected && <Ionicons name="checkmark-circle" size={24} color="#246BFD" />}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
+                );
+
             case 'salary':
                 return (
                     <View style={styles.stepContent}>
@@ -1492,6 +1584,38 @@ const styles = StyleSheet.create({
     chipSelected: { backgroundColor: '#F0F5FF', borderColor: '#246BFD' },
     chipText: { fontSize: 14, color: '#495057', fontWeight: '500' },
     chipTextSelected: { color: '#246BFD', fontWeight: '600' },
+    segmentChipTextSelected: {
+        color: '#246BFD',
+        fontWeight: '600',
+    },
+    endorsementTile: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#DEE2E6',
+        borderRadius: 8,
+        marginBottom: 12,
+        backgroundColor: 'white',
+    },
+    endorsementTileSelected: {
+        borderColor: '#246BFD',
+        backgroundColor: '#F0F5FF',
+    },
+    endorsementIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#F8F9FA',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 16,
+    },
+    endorsementLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#333',
+    },
     gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
     gridTile: { width: '48%', backgroundColor: 'white', borderRadius: 8, borderWidth: 1.5, borderColor: '#DEE2E6', paddingVertical: 14, paddingHorizontal: 10, marginBottom: 10, alignItems: 'center' },
     gridTileSelected: { borderColor: '#246BFD', backgroundColor: '#F0F5FF' },

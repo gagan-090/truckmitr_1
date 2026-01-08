@@ -542,7 +542,7 @@ export default function ProfileCompletion() {
         if (!isVoiceMuted) {
             playStepVoice();
         }
-    }, [currentStep, isVoiceMuted]);
+    }, [currentStep, isVoiceMuted, userRole]);
 
     const animatedContentStyle = useAnimatedStyle(() => ({
         opacity: contentOpacity.value,
@@ -550,11 +550,17 @@ export default function ProfileCompletion() {
     }));
 
     const playStepVoice = () => {
+        if (userRole === 'transporter') {
+            setCurrentAudioSource(null);
+            return;
+        }
+
         if (isVoiceMuted) return;
 
         try {
             const stepId = STEPS[currentStep].id;
-            const VOICE_FILES = userRole === 'transporter' ? TRANSPORTER_VOICE_FILES : DRIVER_VOICE_FILES;
+            // userRole is guaranteed to be 'driver' here due to early return above
+            const VOICE_FILES = DRIVER_VOICE_FILES;
             const voiceFile = VOICE_FILES[stepId];
 
             if (voiceFile) {
