@@ -48,7 +48,7 @@ export default function TransporterAppliedJob() {
     const [search, setsearch] = useState('')
     const [acceptJobId, setacceptJobId] = useState<any>(-1)
     const [rejectJobId, setrejectJobId] = useState<any>(-1)
-    const [showTrustedInfoModal, setShowTrustedInfoModal] = useState(false);
+    const [infoModalType, setInfoModalType] = useState<string | null>(null);
     const [accpetRejectLoading, setaccpetRejectLoading] = useState(false)
     const [showVideoInterviewModal, setShowVideoInterviewModal] = useState(false);
     const [selectedDriver, setSelectedDriver] = useState<any>(null);
@@ -619,23 +619,29 @@ export default function TransporterAppliedJob() {
             }}>
                 {/* Status Badge - Top Right (Hide for premium drivers who have ribbon) */}
                 {!tag.isPremium && tag.label !== 'New Driver' && (
-                    <View style={{
-                        position: 'absolute',
-                        top: 12,
-                        right: 12,
-                        backgroundColor: tag.color,
-                        borderRadius: 4,
-                        paddingHorizontal: 8,
-                        paddingVertical: 4,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        zIndex: 1
-                    }}>
+                    <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            if (tag.label === 'Job Ready Driver') setInfoModalType('job_ready');
+                            if (tag.label === 'Legacy Driver') setInfoModalType('legacy');
+                        }}
+                        style={{
+                            position: 'absolute',
+                            top: 12,
+                            right: 12,
+                            backgroundColor: tag.color,
+                            borderRadius: 4,
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            zIndex: 1
+                        }}>
                         <MaterialIcons name="verified-user" size={10} color="#FFFFFF" style={{ marginRight: 4 }} />
                         <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '700' }}>
                             {tag.label}
                         </Text>
-                    </View>
+                    </TouchableOpacity>
                 )}
                 {/* UPPER SECTION: Profile + Name + Ribbon Badge */}
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
@@ -1022,8 +1028,10 @@ export default function TransporterAppliedJob() {
                         activeOpacity={0.9}
                         onPress={() => {
                             if (tag.premiumLevel === 2) {
-                                setShowTrustedInfoModal(true);
                                 setTooltipVisible(false);
+                            }
+                            if (tag.isPremium) {
+                                setInfoModalType(tag.premiumLevel === 2 ? 'trusted' : 'verified');
                             }
                         }}
                         style={{
@@ -2279,12 +2287,12 @@ export default function TransporterAppliedJob() {
                 </View>
             </Modal>
 
-            {/* Trusted Driver Info Modal */}
+            {/* Driver Badge Info Modal */}
             <Modal
                 transparent={true}
-                visible={showTrustedInfoModal}
+                visible={infoModalType !== null}
                 animationType="fade"
-                onRequestClose={() => setShowTrustedInfoModal(false)}
+                onRequestClose={() => setInfoModalType(null)}
             >
                 <View style={{
                     flex: 1,
@@ -2300,57 +2308,197 @@ export default function TransporterAppliedJob() {
                         padding: 24,
                         elevation: 5,
                     }}>
-                        {/* Header */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-                            <Ionicons name="ellipse" size={12} color="#7C3AED" style={{ marginRight: 8 }} />
-                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1F2937', flex: 1 }}>
-                                Trusted Driver – What does it mean?
-                            </Text>
-                            <TouchableOpacity onPress={() => setShowTrustedInfoModal(false)}>
-                                <Ionicons name="close" size={24} color="#9CA3AF" />
-                            </TouchableOpacity>
-                        </View>
+                        {infoModalType === 'trusted' && (
+                            <>
+                                {/* Header */}
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                                    <Ionicons name="ellipse" size={12} color="#7C3AED" style={{ marginRight: 8 }} />
+                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1F2937', flex: 1 }}>
+                                        Trusted Driver – What does it mean?
+                                    </Text>
+                                    <TouchableOpacity onPress={() => setInfoModalType(null)}>
+                                        <Ionicons name="close" size={24} color="#9CA3AF" />
+                                    </TouchableOpacity>
+                                </View>
 
-                        <Text style={{ fontSize: 14, color: '#4B5563', marginBottom: 16 }}>
-                            Trusted Driver is a 100% verified and highly reliable driver on TruckMitr.
-                        </Text>
+                                <Text style={{ fontSize: 14, color: '#4B5563', marginBottom: 16 }}>
+                                    Trusted Driver is a 100% verified and highly reliable driver on TruckMitr.
+                                </Text>
 
-                        <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 12 }}>
-                            Why this driver is Trusted?
-                        </Text>
+                                <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 12 }}>
+                                    Why this driver is Trusted?
+                                </Text>
 
-                        {/* List */}
-                        {[
-                            'Government ID verified',
-                            'Face verification completed',
-                            'Court / criminal record check done',
-                            'Digital address verified',
-                            'Driving license verified',
-                            'High verification score & trust rating'
-                        ].map((item, index) => (
-                            <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                                <MaterialCommunityIcons
-                                    name={index === 5 ? "star" : "check-circle"}
-                                    size={18}
-                                    color={index === 5 ? "#F59E0B" : "#10B981"}
-                                    style={{ marginRight: 8 }}
-                                />
-                                <Text style={{ fontSize: 14, color: '#374151', fontWeight: index === 5 ? '600' : '400' }}>{item}</Text>
-                            </View>
-                        ))}
+                                {/* List */}
+                                {[
+                                    'Government ID verified',
+                                    'Face verification completed',
+                                    'Court / criminal record check done',
+                                    'Digital address verified',
+                                    'Driving license verified',
+                                    'High verification score & trust rating'
+                                ].map((item, index) => (
+                                    <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                        <MaterialCommunityIcons
+                                            name={index === 5 ? "star" : "check-circle"}
+                                            size={18}
+                                            color={index === 5 ? "#F59E0B" : "#10B981"}
+                                            style={{ marginRight: 8 }}
+                                        />
+                                        <Text style={{ fontSize: 14, color: '#374151', fontWeight: index === 5 ? '600' : '400' }}>{item}</Text>
+                                    </View>
+                                ))}
 
-                        <View style={{ height: 1, backgroundColor: '#E5E7EB', marginVertical: 16 }} />
+                                <View style={{ height: 1, backgroundColor: '#E5E7EB', marginVertical: 16 }} />
 
-                        <Text style={{ fontSize: 14, color: '#374151', marginBottom: 8 }}>
-                            <Text style={{ fontWeight: '700' }}>Best for: </Text>
-                            Transporters who want maximum safety, zero risk, and peace of mind while hiring drivers.
-                        </Text>
+                                <Text style={{ fontSize: 14, color: '#374151', marginBottom: 8 }}>
+                                    <Text style={{ fontWeight: '700' }}>Best for: </Text>
+                                    Transporters who want maximum safety, zero risk, and peace of mind while hiring drivers.
+                                </Text>
 
-                        <Text style={{ fontSize: 14, color: '#374151' }}>
-                            <Text style={{ fontWeight: '700' }}>👉 Recommended for </Text>
-                            long trips, high-value goods, and critical assignments.
-                        </Text>
+                                <Text style={{ fontSize: 14, color: '#374151' }}>
+                                    <Text style={{ fontWeight: '700' }}>👉 Recommended for </Text>
+                                    long trips, high-value goods, and critical assignments.
+                                </Text>
+                            </>
+                        )}
 
+                        {infoModalType === 'verified' && (
+                            <>
+                                {/* Header */}
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                                    <Ionicons name="ellipse" size={12} color="#2563EB" style={{ marginRight: 8 }} />
+                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1F2937', flex: 1 }}>
+                                        Verified Driver – What does it mean?
+                                    </Text>
+                                    <TouchableOpacity onPress={() => setInfoModalType(null)}>
+                                        <Ionicons name="close" size={24} color="#9CA3AF" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <Text style={{ fontSize: 14, color: '#4B5563', marginBottom: 16 }}>
+                                    Verified Driver is a background-checked driver with essential verifications completed.
+                                </Text>
+
+                                <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 12 }}>
+                                    What is verified?
+                                </Text>
+
+                                {['Government ID verified', 'Driving license verified'].map((item, index) => (
+                                    <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                        <MaterialCommunityIcons name="check-circle" size={18} color="#10B981" style={{ marginRight: 8 }} />
+                                        <Text style={{ fontSize: 14, color: '#374151' }}>{item}</Text>
+                                    </View>
+                                ))}
+
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                    <MaterialCommunityIcons name="alert" size={18} color="#F59E0B" style={{ marginRight: 8 }} />
+                                    <Text style={{ fontSize: 14, color: '#374151', fontStyle: 'italic' }}>Some advanced checks may be pending or optional</Text>
+                                </View>
+
+                                <View style={{ height: 1, backgroundColor: '#E5E7EB', marginVertical: 16 }} />
+
+                                <Text style={{ fontSize: 14, color: '#374151', marginBottom: 8 }}>
+                                    <Text style={{ fontWeight: '700' }}>Best for: </Text>
+                                    Transporters looking for quick hiring with basic safety assurance.
+                                </Text>
+
+                                <Text style={{ fontSize: 14, color: '#374151' }}>
+                                    <Text style={{ fontWeight: '700' }}>👉 Suitable for </Text>
+                                    short routes, local trips, or urgent driver requirements.
+                                </Text>
+                            </>
+                        )}
+
+                        {infoModalType === 'job_ready' && (
+                            <>
+                                {/* Header */}
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                                    <Ionicons name="ellipse" size={12} color="#F97316" style={{ marginRight: 8 }} />
+                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1F2937', flex: 1 }}>
+                                        Job Ready Driver – What does it mean?
+                                    </Text>
+                                    <TouchableOpacity onPress={() => setInfoModalType(null)}>
+                                        <Ionicons name="close" size={24} color="#9CA3AF" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <Text style={{ fontSize: 14, color: '#4B5563', marginBottom: 16 }}>
+                                    Job Ready Drivers are drivers who have completed their profile and are ready to work, but verification is not completed yet.
+                                </Text>
+
+                                <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 12 }}>
+                                    What this means for you:
+                                </Text>
+
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                    <MaterialCommunityIcons name="check-circle" size={18} color="#10B981" style={{ marginRight: 8 }} />
+                                    <Text style={{ fontSize: 14, color: '#374151' }}>Profile details filled (personal & driving info)</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                    <MaterialCommunityIcons name="check-circle" size={18} color="#10B981" style={{ marginRight: 8 }} />
+                                    <Text style={{ fontSize: 14, color: '#374151' }}>Actively looking for jobs</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                    <MaterialCommunityIcons name="close-circle" size={18} color="#EF4444" style={{ marginRight: 8 }} />
+                                    <Text style={{ fontSize: 14, color: '#374151' }}>Background verification not completed yet</Text>
+                                </View>
+
+                                <View style={{ height: 1, backgroundColor: '#E5E7EB', marginVertical: 16 }} />
+
+                                <Text style={{ fontSize: 14, color: '#374151', marginBottom: 8 }}>
+                                    <Text style={{ fontWeight: '700' }}>Best for: </Text>
+                                    Transporters who need immediate driver availability and are comfortable proceeding without full verification.
+                                </Text>
+
+                                <Text style={{ fontSize: 14, color: '#374151' }}>
+                                    <Text style={{ fontWeight: '700' }}>👉 You may choose to </Text>
+                                    verify documents manually before hiring.
+                                </Text>
+                            </>
+                        )}
+
+                        {infoModalType === 'legacy' && (
+                            <>
+                                {/* Header */}
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                                    <Ionicons name="ellipse" size={12} color="#EAB308" style={{ marginRight: 8 }} />
+                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1F2937', flex: 1 }}>
+                                        Legacy Driver – What does it mean?
+                                    </Text>
+                                    <TouchableOpacity onPress={() => setInfoModalType(null)}>
+                                        <Ionicons name="close" size={24} color="#9CA3AF" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <Text style={{ fontSize: 14, color: '#4B5563', marginBottom: 16 }}>
+                                    Legacy Drivers are drivers who joined TruckMitr at a very early stage and have been part of the platform since the beginning.
+                                </Text>
+
+                                <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 12 }}>
+                                    Why they are called Legacy Drivers:
+                                </Text>
+
+                                {['Early subscribers of TruckMitr', 'Familiar with the app and its processes', 'Long-term association with the platform'].map((item, index) => (
+                                    <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                        <MaterialCommunityIcons name="check-circle" size={18} color="#10B981" style={{ marginRight: 8 }} />
+                                        <Text style={{ fontSize: 14, color: '#374151' }}>{item}</Text>
+                                    </View>
+                                ))}
+
+                                <View style={{ height: 1, backgroundColor: '#E5E7EB', marginVertical: 16 }} />
+
+                                <Text style={{ fontSize: 14, color: '#374151', marginBottom: 8 }}>
+                                    <Text style={{ fontWeight: '700' }}>Best for: </Text>
+                                    Transporters who value experience, platform familiarity, and early trust built over time.
+                                </Text>
+
+                                <Text style={{ fontSize: 14, color: '#374151' }}>
+                                    <Text style={{ fontWeight: '700' }}>👉 Legacy status </Text>
+                                    reflects loyalty, not verification level.
+                                </Text>
+                            </>
+                        )}
                     </View>
                 </View>
             </Modal>

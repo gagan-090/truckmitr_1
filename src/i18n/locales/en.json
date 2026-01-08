@@ -1787,6 +1787,7 @@
   "enterVehicleNumberCorrectly": "Please enter the vehicle number correctly",
   "verifyRc": "Verify RC",
   "rcCheckAvailableForPlans": "RC Check is available only for ₹199 and ₹499 plans.",
+  "rcCheckAvailableForTransporterPro": "RC Check is available only for ₹499 plan.",
   "pleaseEnterVehicleNumber": "Please enter vehicle number",
   "rcVerificationFailed": "RC verification failed",
   "rcDetails": "RC Details",
