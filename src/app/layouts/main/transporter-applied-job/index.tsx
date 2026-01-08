@@ -232,6 +232,8 @@ export default function TransporterAppliedJob() {
                 // Success: Navigate to dial pad with phone number from response
                 const phoneNumber = response.data.phone;
                 console.log('Call logged successfully, dialing:', phoneNumber);
+                // console.log('Call logged successfully, dialing:', phoneNumber);
+
                 Linking.openURL(`tel:${phoneNumber}`);
                 showToast(response.data.message || 'Call logged successfully');
             } else {

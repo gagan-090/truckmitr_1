@@ -698,7 +698,11 @@ const Home = React.forwardRef((props, ref) => {
     }
 
     const _navigateAddJob = () => {
-        navigation.navigate(STACKS.ADD_JOB)
+        if (subscriptionDetails?.showSubscriptionModel && isTransporter) {
+            dispatch(subscriptionModalAction(true))
+        } else {
+            navigation.navigate(STACKS.ADD_JOB)
+        }
     }
     const _navigateViewJobs = () => {
         navigation.navigate(STACKS.VIEW_JOBS)

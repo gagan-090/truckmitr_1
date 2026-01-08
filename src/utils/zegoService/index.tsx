@@ -37,12 +37,12 @@ export const initializeZeegoService = async ({
     );
 
     // 🔔 Ask for "Appear on top" permission
-    // ZegoUIKitPrebuiltCallService.requestSystemAlertWindow({
-    //   message:
-    //     'We need this permission so incoming calls can appear on top of other apps.',
-    //   allow: 'Allow',
-    //   deny: 'Deny',
-    // });
+    ZegoUIKitPrebuiltCallService.requestSystemAlertWindow({
+      message:
+        'We need this permission so incoming calls can appear on top of other apps.',
+      allow: 'Allow',
+      deny: 'Deny',
+    });
 
     // 🔔 Log push token for debugging offline calls
     console.log('✅ Zego Call Service initialized for:', userID);

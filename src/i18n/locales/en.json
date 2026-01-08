@@ -911,6 +911,8 @@
   "driversNeeded": "needed",
   "postJob": "Post Job",
   "updateJob": "Update Job",
+  "update": "Update",
+  "edit": "Edit",
   "profilePhotoStep": "Profile Photo",
   "profilePhotoStepDesc": "Add a clear photo of yourself",
   "personalInfoStep": "Personal Details",

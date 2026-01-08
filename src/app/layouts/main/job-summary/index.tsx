@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo, memo } from 'react';
 import {
     View,
     Text,
@@ -7,6 +7,7 @@ import {
     ScrollView,
     StatusBar,
     Image,
+    Pressable,
 } from 'react-native';
 import { useStatusBarStyle } from '@truckmitr/src/app/hooks';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,7 +33,7 @@ const TruckImages = {
     reefer: require('@truckmitr/src/assets/trucks/refregerator.png'),
 };
 
-// Data Arrays
+// Data Arrays - moved outside component to prevent recreation
 const vehicleTypes = [
     { label: 'Cargo Truck (Open)', value: 'Cargo Truck (Open)', image: TruckImages.cargoOpen },
     { label: 'Cargo Truck (Closed)', value: 'Cargo Truck (Closed)', image: TruckImages.cargoClosed },
@@ -81,6 +82,41 @@ const operationalSegments = [
     { id: 'others', label: 'Others', emoji: '📋' },
 ];
 
+const conditionLabelsMap: { [key: string]: string } = {
+    'excellent': 'Excellent (New/Very well maintained)',
+    'good': 'Good (Regularly serviced)',
+    'average': 'Average (Working condition)',
+    'old_running': 'Old but Running',
+    'road_ready': 'Made Road Ready after joining'
+};
+
+// Memoized Edit Button Component for better performance
+const EditButton = memo(({ onPress }: { onPress: () => void }) => (
+    <Pressable 
+        onPress={onPress} 
+        style={({ pressed }) => [styles.editButton, pressed && styles.editButtonPressed]}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+    >
+        <Ionicons name="pencil" size={14} color="#246BFD" />
+    </Pressable>
+));
+
+// Memoized Summary Card Component
+const SummaryCard = memo(({ iconBg, iconName, iconColor, title, value, onEdit, children }: {
+    iconBg: string; iconName: string; iconColor: string; title: string; value?: string; onEdit: () => void; children?: React.ReactNode;
+}) => (
+    <View style={styles.summaryCard}>
+        <View style={styles.summaryCardHeader}>
+            <View style={[styles.summaryIconContainer, { backgroundColor: iconBg }]}>
+                <Ionicons name={iconName as any} size={18} color={iconColor} />
+            </View>
+            <Text style={styles.summaryCardTitle}>{title}</Text>
+            <EditButton onPress={onEdit} />
+        </View>
+        {children || <Text style={styles.summaryCardValue}>{value}</Text>}
+    </View>
+));
+
 export default function JobSummary() {
     const { t } = useTranslation();
     useStatusBarStyle('dark-content');
@@ -88,35 +124,69 @@ export default function JobSummary() {
     const navigation = useNavigation<NavigatorProp>();
     const { addJob } = useSelector((state: any) => state?.job);
 
-    const notProvided = t('notProvided') || 'Not Provided';
+    const notProvided = useMemo(() => t('notProvided') || 'Not Provided', [t]);
 
+    const getSalaryLabel = useCallback((value: string) => {
+        return salaryRanges.find(s => s.value === value)?.label || value || notProvided;
+    }, [notProvided]);
 
-    const getSalaryLabel = (value: string) => {
-        return salaryRanges.find(s => s.value === value)?.label || value;
-    };
-
-    const getExperienceLabel = (value: string) => {
+    const getExperienceLabel = useCallback((value: string) => {
         const exp = drivingExperienceArray.find(e => e.value === value);
-        return exp ? (t(exp.labelKey) || exp.label) : value;
-    };
+        return exp ? (t(exp.labelKey) || exp.label) : (value || notProvided);
+    }, [t, notProvided]);
 
-    const getLicenseLabel = (value: string) => {
-        return licenseTypes.find(l => l.value === value)?.label || value;
-    };
+    const getLicenseLabel = useCallback((value: string) => {
+        return licenseTypes.find(l => l.value === value)?.label || value || notProvided;
+    }, [notProvided]);
 
-    const getVehicleImage = (value: string) => {
+    const getVehicleImage = useCallback((value: string) => {
         return vehicleTypes.find(v => v.value === value)?.image || null;
-    };
+    }, []);
 
-    const handleEdit = () => {
-        navigation.navigate(STACKS?.ADD_JOB);
-    };
+    const handleEdit = useCallback((stepId: string) => {
+        navigation.navigate(STACKS?.EDIT_JOB, { stepId });
+    }, [navigation]);
 
-    const EditButton = () => (
-        <TouchableOpacity onPress={handleEdit} style={styles.editButton}>
-            <Ionicons name="pencil" size={14} color="#246BFD" />
-        </TouchableOpacity>
-    );
+    const goBack = useCallback(() => navigation.goBack(), [navigation]);
+
+    // Memoized edit handlers
+    const editJobTitle = useCallback(() => handleEdit('job_title'), [handleEdit]);
+    const editLocation = useCallback(() => handleEdit('job_location'), [handleEdit]);
+    const editRoute = useCallback(() => handleEdit('route'), [handleEdit]);
+    const editVehicle = useCallback(() => handleEdit('vehicle_type'), [handleEdit]);
+    const editExperience = useCallback(() => handleEdit('experience'), [handleEdit]);
+    const editSalary = useCallback(() => handleEdit('salary_range'), [handleEdit]);
+    const editEsiPf = useCallback(() => handleEdit('esi_pf'), [handleEdit]);
+    const editFoodAllowance = useCallback(() => handleEdit('food_allowance'), [handleEdit]);
+    const editTripIncentive = useCallback(() => handleEdit('trip_incentive'), [handleEdit]);
+    const editAccommodation = useCallback(() => handleEdit('accommodation'), [handleEdit]);
+    const editMileage = useCallback(() => handleEdit('mileage'), [handleEdit]);
+    const editFastag = useCallback(() => handleEdit('fastag'), [handleEdit]);
+    const editLicense = useCallback(() => handleEdit('license_type'), [handleEdit]);
+    const editDriversCount = useCallback(() => handleEdit('drivers_count'), [handleEdit]);
+    const editDeadline = useCallback(() => handleEdit('deadline'), [handleEdit]);
+    const editSkills = useCallback(() => handleEdit('preferred_skills'), [handleEdit]);
+    const editDescription = useCallback(() => handleEdit('job_description'), [handleEdit]);
+    const editTruckCondition = useCallback(() => handleEdit('truck_condition'), [handleEdit]);
+
+    // Memoized values
+    const yesText = useMemo(() => t('yes') || 'Yes', [t]);
+    const noText = useMemo(() => t('no') || 'No', [t]);
+
+    const getYesNoValue = useCallback((value: string | undefined, desc?: string, suffix?: string) => {
+        if (value === 'yes') return `${yesText}${desc ? ` - ${suffix === 'km/l' ? desc : '₹' + desc}${suffix || '/day'}` : ''}`;
+        if (value === 'no') return noText;
+        return notProvided;
+    }, [yesText, noText, notProvided]);
+
+    const truckConditionValue = useMemo(() => {
+        if (!addJob?.truck_condition) return notProvided;
+        return t(addJob.truck_condition) || conditionLabelsMap[addJob.truck_condition] || addJob.truck_condition;
+    }, [addJob?.truck_condition, t, notProvided]);
+
+    const deadlineValue = useMemo(() => {
+        return addJob?.Application_Deadline ? moment(addJob.Application_Deadline).format('DD MMMM YYYY') : notProvided;
+    }, [addJob?.Application_Deadline, notProvided]);
 
     return (
         <View style={[styles.container, { paddingTop: safeAreaInsets.top }]}>
@@ -124,268 +194,46 @@ export default function JobSummary() {
 
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                <Pressable onPress={goBack} style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <Ionicons name="arrow-back" size={24} color="#212529" />
-                </TouchableOpacity>
+                </Pressable>
                 <Text style={styles.headerTitle}>{t('jobSummary') || 'Job Summary'}</Text>
                 <View style={{ width: 40 }} />
             </View>
 
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-            >
+            <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} removeClippedSubviews>
                 {/* Header Section */}
                 <View style={styles.summaryHeader}>
                     <Text style={styles.summaryHeaderTitle}>{t('reviewYourJob') || 'Review Your Job'}</Text>
-                    <Text style={styles.summaryHeaderSubtitle}>
-                        {t('reviewJobDetailsMessage') || 'Please review all the details before posting your job'}
-                    </Text>
+                    <Text style={styles.summaryHeaderSubtitle}>{t('reviewJobDetailsMessage') || 'Please review all the details before posting your job'}</Text>
                 </View>
 
-                {/* Job Title Card */}
-                <View style={styles.summaryCard}>
-                    <View style={styles.summaryCardHeader}>
-                        <View style={[styles.summaryIconContainer, { backgroundColor: '#E8F4FD' }]}>
-                            <Ionicons name="briefcase" size={18} color="#246BFD" />
-                        </View>
-                        <Text style={styles.summaryCardTitle}>{t('jobTitle') || 'Job Title'}</Text>
-                        <EditButton />
-                    </View>
-                    <Text style={styles.summaryCardValue}>{addJob?.job_title || notProvided}</Text>
-                </View>
-
-                {/* Location & Route Row */}
-                <View style={styles.summaryRow}>
-                    <View style={[styles.summaryCard, styles.summaryCardHalf]}>
-                        <View style={styles.summaryCardHeader}>
-                            <View style={[styles.summaryIconContainer, { backgroundColor: '#E8F8F0' }]}>
-                                <Ionicons name="location" size={18} color="#10B981" />
-                            </View>
-                            <Text style={styles.summaryCardTitle}>{t('location') || 'Location'}</Text>
-                            <EditButton />
-                        </View>
-                        <Text style={styles.summaryCardValue}>{addJob?.job_location || notProvided}</Text>
-                    </View>
-
-                    <View style={[styles.summaryCard, styles.summaryCardHalf]}>
-                        <View style={styles.summaryCardHeader}>
-                            <View style={[styles.summaryIconContainer, { backgroundColor: '#EBF4FF' }]}>
-                                <Ionicons name="map" size={18} color="#3B82F6" />
-                            </View>
-                            <Text style={styles.summaryCardTitle}>{t('route') || 'Route'}</Text>
-                            <EditButton />
-                        </View>
-                        <Text style={styles.summaryCardValue} numberOfLines={2}>
-                            {addJob?.route || notProvided}
-                        </Text>
-                    </View>
-                </View>
+                <SummaryCard iconBg="#E8F4FD" iconName="briefcase" iconColor="#246BFD" title={t('jobTitle') || 'Job Title'} value={addJob?.job_title || notProvided} onEdit={editJobTitle} />
+                <SummaryCard iconBg="#E8F8F0" iconName="location" iconColor="#10B981" title={t('location') || 'Location'} value={addJob?.job_location || notProvided} onEdit={editLocation} />
+                <SummaryCard iconBg="#EBF4FF" iconName="map" iconColor="#3B82F6" title={t('route') || 'Route'} value={addJob?.route || notProvided} onEdit={editRoute} />
 
                 {/* Vehicle Card */}
-                <View style={styles.summaryCard}>
-                    <View style={styles.summaryCardHeader}>
-                        <View style={[styles.summaryIconContainer, { backgroundColor: '#FEF3E8' }]}>
-                            <Ionicons name="car" size={18} color="#F59E0B" />
-                        </View>
-                        <Text style={styles.summaryCardTitle}>{t('vehicle') || 'Vehicle'}</Text>
-                        <EditButton />
-                    </View>
+                <SummaryCard iconBg="#FEF3E8" iconName="car" iconColor="#F59E0B" title={t('vehicle') || 'Vehicle'} onEdit={editVehicle}>
                     {getVehicleImage(addJob?.vehicle_type) && (
-                        <Image
-                            source={getVehicleImage(addJob?.vehicle_type)}
-                            style={styles.summaryVehicleImage}
-                            resizeMode="contain"
-                        />
+                        <Image source={getVehicleImage(addJob?.vehicle_type)} style={styles.summaryVehicleImage} resizeMode="contain" />
                     )}
-                    <Text style={[styles.summaryCardValue, { fontSize: 13, marginTop: 4 }]}>
-                        {addJob?.vehicle_type || notProvided}
-                    </Text>
-                </View>
+                    <Text style={[styles.summaryCardValue, { fontSize: 13, marginTop: 4 }]}>{addJob?.vehicle_type || notProvided}</Text>
+                </SummaryCard>
 
-                {/* Experience & Salary Row */}
-                <View style={styles.summaryRow}>
-                    <View style={[styles.summaryCard, styles.summaryCardHalf]}>
-                        <View style={styles.summaryCardHeader}>
-                            <View style={[styles.summaryIconContainer, { backgroundColor: '#F3E8FF' }]}>
-                                <Ionicons name="time" size={18} color="#8B5CF6" />
-                            </View>
-                            <Text style={styles.summaryCardTitle}>{t('experience') || 'Experience'}</Text>
-                            <EditButton />
-                        </View>
-                        <Text style={styles.summaryCardValue}>
-                            {getExperienceLabel(addJob?.Required_Experience) || notProvided}
-                        </Text>
-                    </View>
-                    <View style={[styles.summaryCard, styles.summaryCardHalf]}>
-                        <View style={styles.summaryCardHeader}>
-                            <View style={[styles.summaryIconContainer, { backgroundColor: '#E8FDF0' }]}>
-                                <Ionicons name="cash" size={18} color="#059669" />
-                            </View>
-                            <Text style={styles.summaryCardTitle}>{t('fixedSalary') || 'Fixed Salary'}</Text>
-                            <EditButton />
-                        </View>
-                        <Text style={styles.summaryCardValue}>
-                            {getSalaryLabel(addJob?.Salary_Range) || notProvided}
-                        </Text>
-                    </View>
-                </View>
-
-                {/* ESI/PF Card */}
-                <View style={styles.summaryCard}>
-                    <View style={styles.summaryCardHeader}>
-                        <View style={[styles.summaryIconContainer, { backgroundColor: '#F0F9FF' }]}>
-                            <Ionicons name="shield-checkmark" size={18} color="#0EA5E9" />
-                        </View>
-                        <Text style={styles.summaryCardTitle}>{t('esiPf') || 'ESI/PF'}</Text>
-                        <EditButton />
-                    </View>
-                    <Text style={styles.summaryCardValue}>
-                        {addJob?.esi_pf === 'yes' ? (t('yes') || 'Yes') : addJob?.esi_pf === 'no' ? (t('no') || 'No') : notProvided}
-                    </Text>
-                </View>
-
-                {/* Food Allowance Card */}
-                <View style={styles.summaryCard}>
-                    <View style={styles.summaryCardHeader}>
-                        <View style={[styles.summaryIconContainer, { backgroundColor: '#FEF3E2' }]}>
-                            <Ionicons name="restaurant" size={18} color="#F59E0B" />
-                        </View>
-                        <Text style={styles.summaryCardTitle}>{t('foodAllowance') || 'Food Allowance'}</Text>
-                        <EditButton />
-                    </View>
-                    <Text style={styles.summaryCardValue}>
-                        {addJob?.food_allowance === 'yes'
-                            ? `${t('yes') || 'Yes'}${addJob?.food_allowance_desc ? ` - ₹${addJob.food_allowance_desc}/day` : ''}`
-                            : addJob?.food_allowance === 'no'
-                                ? (t('no') || 'No')
-                                : notProvided}
-                    </Text>
-                </View>
-
-                {/* Trip Incentive Card */}
-                <View style={styles.summaryCard}>
-                    <View style={styles.summaryCardHeader}>
-                        <View style={[styles.summaryIconContainer, { backgroundColor: '#F0FDF4' }]}>
-                            <Ionicons name="gift" size={18} color="#16A34A" />
-                        </View>
-                        <Text style={styles.summaryCardTitle}>{t('tripIncentive') || 'Trip Incentive'}</Text>
-                        <EditButton />
-                    </View>
-                    <Text style={styles.summaryCardValue}>
-                        {addJob?.trip_incentive === 'yes'
-                            ? `${t('yes') || 'Yes'}${addJob?.trip_incentive_desc ? ` - ₹${addJob.trip_incentive_desc}/day` : ''}`
-                            : addJob?.trip_incentive === 'no'
-                                ? (t('no') || 'No')
-                                : notProvided}
-                    </Text>
-                </View>
-
-                {/* Accommodation Card */}
-                <View style={styles.summaryCard}>
-                    <View style={styles.summaryCardHeader}>
-                        <View style={[styles.summaryIconContainer, { backgroundColor: '#EEF2FF' }]}>
-                            <Ionicons name="home" size={18} color="#6366F1" />
-                        </View>
-                        <Text style={styles.summaryCardTitle}>{t('accommodationFacility') || 'Accommodation Facility'}</Text>
-                        <EditButton />
-                    </View>
-                    <Text style={styles.summaryCardValue}>
-                        {addJob?.rahane_ki_suvidha === 'yes' ? (t('yes') || 'Yes') : addJob?.rahane_ki_suvidha === 'no' ? (t('no') || 'No') : notProvided}
-                    </Text>
-                </View>
-
-                {/* Mileage Card */}
-                <View style={styles.summaryCard}>
-                    <View style={styles.summaryCardHeader}>
-                        <View style={[styles.summaryIconContainer, { backgroundColor: '#F0F9FF' }]}>
-                            <Ionicons name="speedometer" size={18} color="#0EA5E9" />
-                        </View>
-                        <Text style={styles.summaryCardTitle}>{t('mileageRequired') || 'Mileage Required'}</Text>
-                        <EditButton />
-                    </View>
-                    <Text style={styles.summaryCardValue}>
-                        {addJob?.mileage === 'yes'
-                            ? `${t('yes') || 'Yes'}${addJob?.mileage_desc ? ` - ${addJob.mileage_desc} km/l` : ''}`
-                            : addJob?.mileage === 'no'
-                                ? (t('no') || 'No')
-                                : notProvided}
-                    </Text>
-                </View>
-
-                {/* FASTag/Road Kharcha Card */}
-                <View style={styles.summaryCard}>
-                    <View style={styles.summaryCardHeader}>
-                        <View style={[styles.summaryIconContainer, { backgroundColor: '#FEF3E2' }]}>
-                            <Ionicons name="card" size={18} color="#F59E0B" />
-                        </View>
-                        <Text style={styles.summaryCardTitle}>{t('fastagRoadKharcha') || 'FASTag/Road Kharcha'}</Text>
-                        <EditButton />
-                    </View>
-                    <Text style={styles.summaryCardValue}>
-                        {addJob?.fast_tag_road_kharcha === 'yes'
-                            ? `${t('yes') || 'Yes'}${addJob?.fast_tag_road_kharcha_desc ? ` - ₹${addJob.fast_tag_road_kharcha_desc}` : ''}`
-                            : addJob?.fast_tag_road_kharcha === 'no'
-                                ? (t('no') || 'No')
-                                : notProvided}
-                    </Text>
-                </View>
-
-                {/* License & Drivers Count Row */}
-                <View style={styles.summaryRow}>
-                    <View style={[styles.summaryCard, styles.summaryCardHalf]}>
-                        <View style={styles.summaryCardHeader}>
-                            <View style={[styles.summaryIconContainer, { backgroundColor: '#FEE8E8' }]}>
-                                <Ionicons name="card" size={18} color="#EF4444" />
-                            </View>
-                            <Text style={styles.summaryCardTitle}>{t('license') || 'License'}</Text>
-                            <EditButton />
-                        </View>
-                        <Text style={styles.summaryCardValue}>
-                            {getLicenseLabel(addJob?.Type_of_License) || notProvided}
-                        </Text>
-                    </View>
-                    <View style={[styles.summaryCard, styles.summaryCardHalf]}>
-                        <View style={styles.summaryCardHeader}>
-                            <View style={[styles.summaryIconContainer, { backgroundColor: '#E8F0FE' }]}>
-                                <Ionicons name="people" size={18} color="#3B82F6" />
-                            </View>
-                            <Text style={styles.summaryCardTitle}>{t('drivers') || 'Drivers'}</Text>
-                            <EditButton />
-                        </View>
-                        <Text style={styles.summaryCardValue}>
-                            {addJob?.Job_Management || notProvided}
-                        </Text>
-                    </View>
-                </View>
-
-                {/* Deadline Card */}
-                <View style={styles.summaryCard}>
-                    <View style={styles.summaryCardHeader}>
-                        <View style={[styles.summaryIconContainer, { backgroundColor: '#FFF3E8' }]}>
-                            <Ionicons name="calendar" size={18} color="#F97316" />
-                        </View>
-                        <Text style={styles.summaryCardTitle}>{t('applicationDeadline') || 'Application Deadline'}</Text>
-                        <EditButton />
-                    </View>
-                    <Text style={styles.summaryCardValue}>
-                        {addJob?.Application_Deadline
-                            ? moment(addJob.Application_Deadline).format('DD MMMM YYYY')
-                            : notProvided
-                        }
-                    </Text>
-                </View>
+                <SummaryCard iconBg="#F3E8FF" iconName="time" iconColor="#8B5CF6" title={t('experience') || 'Experience'} value={getExperienceLabel(addJob?.Required_Experience)} onEdit={editExperience} />
+                <SummaryCard iconBg="#E8FDF0" iconName="cash" iconColor="#059669" title={t('fixedSalary') || 'Fixed Salary'} value={getSalaryLabel(addJob?.Salary_Range)} onEdit={editSalary} />
+                <SummaryCard iconBg="#F0F9FF" iconName="shield-checkmark" iconColor="#0EA5E9" title={t('esiPf') || 'ESI/PF'} value={addJob?.esi_pf === 'yes' ? yesText : addJob?.esi_pf === 'no' ? noText : notProvided} onEdit={editEsiPf} />
+                <SummaryCard iconBg="#FEF3E2" iconName="restaurant" iconColor="#F59E0B" title={t('foodAllowance') || 'Food Allowance'} value={getYesNoValue(addJob?.food_allowance, addJob?.food_allowance_desc)} onEdit={editFoodAllowance} />
+                <SummaryCard iconBg="#F0FDF4" iconName="gift" iconColor="#16A34A" title={t('tripIncentive') || 'Trip Incentive'} value={getYesNoValue(addJob?.trip_incentive, addJob?.trip_incentive_desc)} onEdit={editTripIncentive} />
+                <SummaryCard iconBg="#EEF2FF" iconName="home" iconColor="#6366F1" title={t('accommodationFacility') || 'Accommodation Facility'} value={addJob?.rahane_ki_suvidha === 'yes' ? yesText : addJob?.rahane_ki_suvidha === 'no' ? noText : notProvided} onEdit={editAccommodation} />
+                <SummaryCard iconBg="#F0F9FF" iconName="speedometer" iconColor="#0EA5E9" title={t('mileageRequired') || 'Mileage Required'} value={getYesNoValue(addJob?.mileage, addJob?.mileage_desc, 'km/l')} onEdit={editMileage} />
+                <SummaryCard iconBg="#FEF3E2" iconName="card" iconColor="#F59E0B" title={t('fastagRoadKharcha') || 'FASTag/Road Kharcha'} value={getYesNoValue(addJob?.fast_tag_road_kharcha, addJob?.fast_tag_road_kharcha_desc, '')} onEdit={editFastag} />
+                <SummaryCard iconBg="#FEE8E8" iconName="card" iconColor="#EF4444" title={t('license') || 'License'} value={getLicenseLabel(addJob?.Type_of_License)} onEdit={editLicense} />
+                <SummaryCard iconBg="#E8F0FE" iconName="people" iconColor="#3B82F6" title={t('drivers') || 'Drivers'} value={addJob?.Job_Management || notProvided} onEdit={editDriversCount} />
+                <SummaryCard iconBg="#FFF3E8" iconName="calendar" iconColor="#F97316" title={t('applicationDeadline') || 'Application Deadline'} value={deadlineValue} onEdit={editDeadline} />
 
                 {/* Skills Card */}
-                <View style={styles.summaryCard}>
-                    <View style={styles.summaryCardHeader}>
-                        <View style={[styles.summaryIconContainer, { backgroundColor: '#E8F4FD' }]}>
-                            <Ionicons name="construct" size={18} color="#246BFD" />
-                        </View>
-                        <Text style={styles.summaryCardTitle}>{t('preferredSkills') || 'Preferred Skills'}</Text>
-                        <EditButton />
-                    </View>
+                <SummaryCard iconBg="#E8F4FD" iconName="construct" iconColor="#246BFD" title={t('preferredSkills') || 'Preferred Skills'} onEdit={editSkills}>
                     <View style={styles.summarySkillsContainer}>
                         {(addJob?.Preferred_Skills || []).map((skill: string, index: number) => {
                             const skillData = operationalSegments.find(s => s.label === skill);
@@ -400,48 +248,14 @@ export default function JobSummary() {
                             <Text style={styles.summaryCardValue}>{notProvided}</Text>
                         )}
                     </View>
-                </View>
+                </SummaryCard>
 
-                {/* Description Card */}
-                <View style={styles.summaryCard}>
-                    <View style={styles.summaryCardHeader}>
-                        <View style={[styles.summaryIconContainer, { backgroundColor: '#F3E8FF' }]}>
-                            <Ionicons name="document-text" size={18} color="#8B5CF6" />
-                        </View>
-                        <Text style={styles.summaryCardTitle}>{t('jobDescriptionTitle') || 'Job Description'}</Text>
-                        <EditButton />
-                    </View>
-                    <Text style={[styles.summaryCardValue, styles.summaryDescription]}>
-                        {addJob?.Job_Description || notProvided}
-                    </Text>
-                </View>
+                <SummaryCard iconBg="#F3E8FF" iconName="document-text" iconColor="#8B5CF6" title={t('jobDescriptionTitle') || 'Job Description'} onEdit={editDescription}>
+                    <Text style={[styles.summaryCardValue, styles.summaryDescription]}>{addJob?.Job_Description || notProvided}</Text>
+                </SummaryCard>
 
-                {/* Truck Condition Card */}
-                <View style={styles.summaryCard}>
-                    <View style={styles.summaryCardHeader}>
-                        <View style={[styles.summaryIconContainer, { backgroundColor: '#FEF3E2' }]}>
-                            <Ionicons name="build" size={18} color="#F59E0B" />
-                        </View>
-                        <Text style={styles.summaryCardTitle}>{t('truckCondition') || 'Truck Condition'}</Text>
-                        <EditButton />
-                    </View>
-                    <Text style={styles.summaryCardValue}>
-                        {addJob?.truck_condition ? (
-                            (() => {
-                                const conditionLabels: { [key: string]: string } = {
-                                    'excellent': t('excellent') || 'Excellent (New/Very well maintained)',
-                                    'good': t('good') || 'Good (Regularly serviced)',
-                                    'average': t('average') || 'Average (Working condition)',
-                                    'old_running': t('old_running') || 'Old but Running',
-                                    'road_ready': t('road_ready') || 'Made Road Ready after joining'
-                                };
-                                return conditionLabels[addJob.truck_condition] || addJob.truck_condition;
-                            })()
-                        ) : notProvided}
-                    </Text>
-                </View>
+                <SummaryCard iconBg="#FEF3E2" iconName="build" iconColor="#F59E0B" title={t('truckCondition') || 'Truck Condition'} value={truckConditionValue} onEdit={editTruckCondition} />
 
-                {/* Bottom Spacing */}
                 <View style={{ height: 30 }} />
             </ScrollView>
         </View>
@@ -449,142 +263,26 @@ export default function JobSummary() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F8F9FA',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        backgroundColor: '#FFFFFF',
-        borderBottomWidth: 1,
-        borderBottomColor: '#E9ECEF',
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#212529',
-    },
-    scrollView: {
-        flex: 1,
-    },
-    scrollContent: {
-        padding: 16,
-    },
-    summaryHeader: {
-        marginBottom: 20,
-    },
-    summaryHeaderTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#212529',
-        marginBottom: 6,
-    },
-    summaryHeaderSubtitle: {
-        fontSize: 13,
-        color: '#6C757D',
-        lineHeight: 20,
-    },
-    summaryCard: {
-        backgroundColor: 'white',
-        borderRadius: 14,
-        padding: 16,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderColor: '#E9ECEF',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    summaryCardHalf: {
-        flex: 1,
-        marginHorizontal: 5,
-    },
-    summaryRow: {
-        flexDirection: 'row',
-        marginHorizontal: -5,
-        marginBottom: 0,
-    },
-    summaryCardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    summaryIconContainer: {
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    summaryCardTitle: {
-        fontSize: 11,
-        fontWeight: '600',
-        color: '#6C757D',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        flex: 1,
-    },
-    summaryCardValue: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: '#212529',
-        marginLeft: 48,
-        lineHeight: 22,
-    },
-    summaryVehicleImage: {
-        width: '100%',
-        height: 60,
-        marginTop: 4,
-        marginBottom: 4,
-    },
-    summarySkillsContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        marginLeft: 48,
-        marginTop: 0,
-    },
-    summarySkillChip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F0F5FF',
-        borderRadius: 20,
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        marginRight: 8,
-        marginBottom: 8,
-    },
-    summarySkillText: {
-        fontSize: 12,
-        color: '#246BFD',
-        fontWeight: '500',
-        marginLeft: 5,
-    },
-    summaryDescription: {
-        fontSize: 14,
-        lineHeight: 22,
-        color: '#495057',
-        fontWeight: '400',
-    },
-    editButton: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: '#F0F7FF',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
+    container: { flex: 1, backgroundColor: '#F8F9FA' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E9ECEF' },
+    backButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+    backButtonPressed: { opacity: 0.6, backgroundColor: '#F0F0F0' },
+    headerTitle: { fontSize: 18, fontWeight: '600', color: '#212529' },
+    scrollView: { flex: 1 },
+    scrollContent: { padding: 16 },
+    summaryHeader: { marginBottom: 20 },
+    summaryHeaderTitle: { fontSize: 18, fontWeight: '700', color: '#212529', marginBottom: 6 },
+    summaryHeaderSubtitle: { fontSize: 13, color: '#6C757D', lineHeight: 20 },
+    summaryCard: { backgroundColor: 'white', borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E9ECEF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+    summaryCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+    summaryIconContainer: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+    summaryCardTitle: { fontSize: 11, fontWeight: '600', color: '#6C757D', textTransform: 'uppercase', letterSpacing: 0.5, flex: 1 },
+    summaryCardValue: { fontSize: 15, fontWeight: '600', color: '#212529', marginLeft: 48, lineHeight: 22 },
+    summaryVehicleImage: { width: '100%', height: 60, marginTop: 4, marginBottom: 4 },
+    summarySkillsContainer: { flexDirection: 'row', flexWrap: 'wrap', marginLeft: 48, marginTop: 0 },
+    summarySkillChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0F5FF', borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12, marginRight: 8, marginBottom: 8 },
+    summarySkillText: { fontSize: 12, color: '#246BFD', fontWeight: '500', marginLeft: 5 },
+    summaryDescription: { fontSize: 14, lineHeight: 22, color: '#495057', fontWeight: '400' },
+    editButton: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#F0F7FF', justifyContent: 'center', alignItems: 'center' },
+    editButtonPressed: { opacity: 0.6, backgroundColor: '#D0E7FF' },
 });

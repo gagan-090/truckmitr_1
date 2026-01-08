@@ -221,12 +221,14 @@ const AppleJobCard = ({ item, index, locations }: any) => {
                         </View>
                     </View>
                     <View style={styles.cardActions}>
-                        <TouchableOpacity
-                            onPress={_navigateEditJob}
-                            style={[styles.editButton, { backgroundColor: colors.blackOpacity(0.04) }]}
-                        >
-                            <Feather name="edit-2" size={16} color={colors.blackOpacity(0.6)} />
-                        </TouchableOpacity>
+                        {Number(item?.status) === 0 && (
+                            <TouchableOpacity
+                                onPress={_navigateEditJob}
+                                style={[styles.editButton, { backgroundColor: colors.blackOpacity(0.04) }]}
+                            >
+                                <Feather name="edit-2" size={16} color={colors.blackOpacity(0.6)} />
+                            </TouchableOpacity>
+                        )}
                         <Switch
                             value={_jobActiveOrInactive()}
                             onPress={_onPressToggle}

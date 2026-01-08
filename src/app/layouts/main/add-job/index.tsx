@@ -308,16 +308,16 @@ export default function AddJob() {
             setPincodeError('');
             return;
         }
-        
+
         setPincodeLoading(true);
         setPincodeError('');
         setPincodeAreas([]);
         setSelectedArea(null);
-        
+
         try {
             const response = await fetch(`https://api.postalpincode.in/pincode/${pincodeValue}`);
             const data = await response.json();
-            
+
             if (data && data[0]) {
                 if (data[0].Status === 'Success' && data[0].PostOffice) {
                     const areas = data[0].PostOffice.map((po: any) => ({
@@ -343,7 +343,7 @@ export default function AddJob() {
     const handlePincodeChange = (text: string) => {
         const numericText = text.replace(/[^0-9]/g, '').slice(0, 6);
         setPincode(numericText);
-        
+
         if (numericText.length === 6) {
             fetchAreasByPincode(numericText);
         } else {
@@ -738,11 +738,12 @@ export default function AddJob() {
         data.append('Type_of_License', addJob?.Type_of_License);
         data.append('Preferred_Skills', JSON.stringify(addJob?.Preferred_Skills));
         data.append('Application_Deadline', moment(addJob?.Application_Deadline).format("DD-MM-YYYY"));
-        data.append('Job_Management', addJob?.Job_Management);
+        data.append('number_of_drivers_required', addJob?.Job_Management);
         data.append('Job_Description', addJob?.Job_Description);
         data.append('truck_condition', addJob?.truck_condition || '');
         data.append('consent_visible_driver', checkBoxSelect ? 1 : 0);
-
+        // console.log('+++++++++++++++++++++++formdata++++++++++++++++', data);
+ 
         try {
             const response = addJob?.id
                 ? await axiosInstance.post(END_POINTS.TRANSPORTER_EDIT_JOB(addJob?.id), data)
@@ -1007,7 +1008,7 @@ export default function AddJob() {
                             </Text>
                             <Ionicons name="chevron-down" size={20} color="#666" />
                         </TouchableOpacity>
-                        
+
                         {/* Pincode Section */}
                         <View style={styles.pincodeSection}>
                             <Text style={[styles.conditionalLabel, { marginTop: 16 }]}>{t('enterPincode') || 'Enter Pincode'}</Text>
@@ -1020,7 +1021,7 @@ export default function AddJob() {
                                 keyboardType="numeric"
                                 maxLength={6}
                             />
-                            
+
                             {/* Loading indicator */}
                             {pincodeLoading && (
                                 <View style={styles.pincodeLoadingContainer}>
@@ -1028,12 +1029,12 @@ export default function AddJob() {
                                     <Text style={styles.pincodeLoadingText}>{t('fetchingAreas') || 'Fetching areas...'}</Text>
                                 </View>
                             )}
-                            
+
                             {/* Error message */}
                             {pincodeError ? (
                                 <Text style={styles.pincodeErrorText}>{pincodeError}</Text>
                             ) : null}
-                            
+
                             {/* Area Dropdown */}
                             {pincodeAreas.length > 0 && (
                                 <View style={{ marginTop: 12 }}>
@@ -1050,8 +1051,8 @@ export default function AddJob() {
                                         value={selectedArea}
                                         onChange={item => {
                                             setSelectedArea(item.value);
-                                            dispatch(jobAddAction({ 
-                                                ...addJob, 
+                                            dispatch(jobAddAction({
+                                                ...addJob,
                                                 pincode: pincode,
                                                 area: item.value,
                                                 area_district: item.district,
@@ -3990,7 +3991,7 @@ const styles = StyleSheet.create({
     summaryCardFull: {
         flex: 1,
     },
-     // Pincode styles
+    // Pincode styles
     pincodeSection: {
         marginTop: 8,
     },

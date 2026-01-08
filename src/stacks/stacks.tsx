@@ -124,6 +124,7 @@ export type NavigatorParams = {
     verifyDriversDocumentUploadByTransporter: undefined
     addSingleDriverInfo: undefined
     jobSummary: undefined
+    editJob: { stepId: string } | undefined
 };
 
 export const STACKS = {
@@ -259,5 +260,6 @@ export const STACKS = {
     CONVOY: 'convoy',
     ADD_SINGLE_DRIVER_INFO: 'addSingleDriverInfo',
     JOB_SUMMARY: 'jobSummary',
+    EDIT_JOB: 'editJob',
 
 } as const;
