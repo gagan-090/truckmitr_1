@@ -1258,11 +1258,13 @@ export default function TransporterAppliedJob() {
                                                 {t('loadMore') || 'Load More'} ({currentPage}/{lastPage})
                                             </Text>
                                         </TouchableOpacity>
-                                    ) : totalCount > 0 ? (
-                                        <Text style={{ textAlign: 'center', color: colors.blackOpacity(0.4), paddingVertical: 16, fontSize: 12 }}>
-                                            {t('showingAll') || 'Showing all'} {totalCount} {t('applications') || 'applications'}
-                                        </Text>
-                                    ) : null
+                                    )
+                                    //  : totalCount > 0 ? (
+                                    //     <Text style={{ textAlign: 'center', color: colors.blackOpacity(0.4), paddingVertical: 16, fontSize: 12 }}>
+                                    //         {t('showingAll') || 'Showing all'} {totalCount} {t('applications') || 'applications'}
+                                    //     </Text>
+                                    // ) 
+                                    : null
                                 )}
                                 renderSectionHeader={({ section: job }) => (
                                     <View style={{ marginBottom: job.isExpanded ? 0 : responsiveFontSize(3) }}>
