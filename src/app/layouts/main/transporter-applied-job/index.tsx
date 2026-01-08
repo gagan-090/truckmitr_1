@@ -100,25 +100,30 @@ export default function TransporterAppliedJob() {
 
     // Masking Utility Functions
     const maskAadhar = (aadhar: string) => {
-        if (!aadhar || aadhar.length < 4) return '****';
+        if (!aadhar || aadhar.length < 4) return 'N/A';
         return `XXXX XXXX ${aadhar.slice(-4)}`;
     };
 
     const maskLicense = (license: string) => {
-        if (!license || license.length < 4) return '****';
+        if (!license || license.length < 4) return 'N/A';
         return `${'X'.repeat(Math.max(0, license.length - 4))}${license.slice(-4)}`;
     };
 
     const maskMobile = (mobile: string) => {
-        if (!mobile || mobile.length < 4) return '****';
+        if (!mobile || mobile.length < 4) return 'N/A';
         return `XXXXXX${mobile.slice(-4)}`;
     };
 
     const maskEmail = (email: string) => {
-        if (!email) return '****';
+        if (!email) return 'N/A';
         const parts = email.split('@');
-        if (parts.length !== 2) return '****';
+        if (parts.length !== 2) return 'N/A';
         return `${parts[0][0]}***@${parts[1]}`;
+    };
+
+    const maskPan = (pan: string) => {
+        if (!pan || pan.length < 4) return 'N/A';
+        return `${pan.slice(0, 2)}${'X'.repeat(Math.max(0, pan.length - 4))}${pan.slice(-2)}`;
     };
 
     // Open Bottom Sheet Modal
@@ -420,8 +425,8 @@ export default function TransporterAppliedJob() {
         // Check subscription data at both item and driver_details level
         const driver = item?.driver_details;
 
-        // Priority order: item level -> driver_details level
-        const paymentType = item?.payment_type || driver?.payment_type;
+        // Priority order: item level -> driver_details level (payments_type from API)
+        const paymentType = item?.payment_type || driver?.payments_type || driver?.payment_type;
         const subscriptionPlanName = item?.subscription_plan_name || driver?.subscription_plan_name;
         const amount = item?.amount || item?.subscription_amount || driver?.amount || driver?.subscription_amount;
 
@@ -467,11 +472,11 @@ export default function TransporterAppliedJob() {
         const driverType = driver?.driver_type || 'Driver';
         const city = driver?.city || '—';
         const state = driver?.states || driver?.state || '—';
-        const drivingExp = driver?.driving_exp || driver?.driving_experience || driver?.Driving_Experience || '—';
-        const licenseType = driver?.license_type || driver?.License_Type || '—';
-        const licenseNo = driver?.license_no || driver?.License_No || '';
-        const licenseExpiry = driver?.license_expiry || driver?.License_Expiry
-            ? moment(driver?.license_expiry || driver?.License_Expiry).format('DD MMM YYYY')
+        const drivingExp = driver?.driving_exp || driver?.driving_experience || driver?.Driver_Experience || '—';
+        const licenseType = driver?.license_type || driver?.Type_of_License || '—';
+        const licenseNo = driver?.license_no || driver?.License_number || '';
+        const licenseExpiry = driver?.license_expiry || driver?.Expiry_date_of_license
+            ? moment(driver?.license_expiry || driver?.Expiry_date_of_license).format('DD MMM YYYY')
             : '—';
 
         // Training status - check if training is fully completed
@@ -479,27 +484,22 @@ export default function TransporterAppliedJob() {
 
         // Profile image - use UI Avatar if no image available
         const profileImageUri = driver?.driver_picture
-            ? `${BASE_URL}${driver.driver_picture}`
+            ? `${BASE_URL}public/${driver.driver_picture}`
             : driver?.images
                 ? `${BASE_URL}public/${driver.images}`
                 : `https://ui-avatars.com/api/?name=${encodeURIComponent(driverName)}&background=0D8ABC&color=fff&size=128`;
 
-        // Debug log to see subscription data at both level
-        // 
-
-        console.log('Driver subscription data:', {
+        // Debug log to see API data
+        console.log('Driver API data:', {
             name: driverName,
-            // Check item level (application level)
-            item_subscription_amount: item?.subscription_amount,
-            item_amount: item?.amount,
-            item_plan_amount: item?.plan_amount,
-            item_payment_type: item?.payment_type,
-            item_subscription_plan_name: item?.subscription_plan_name,
-            // Check driver_details level
-            driver_subscription_amount: driver?.subscription_amount,
-            driver_amount: driver?.amount,
-            driver_payment_type: driver?.payment_type,
-            driver_subscription_plan_name: driver?.subscription_plan_name,
+            profileImageUri,
+            driver_picture: driver?.driver_picture,
+            ranking: driver?.ranking,
+            Driver_Experience: driver?.Driver_Experience,
+            Type_of_License: driver?.Type_of_License,
+            License_number: driver?.License_number,
+            Expiry_date_of_license: driver?.Expiry_date_of_license,
+            payments_type: driver?.payments_type,
         });
 
         // Pass full item to check subscription at both levels
@@ -573,7 +573,11 @@ export default function TransporterAppliedJob() {
                                 </Svg>
                             </View>
 
-                            <Image source={DEFAULT_MALE_PROFILE} style={{ height: 38, width: 38, borderRadius: 19, resizeMode: 'cover' }} />
+                            <Image
+                                source={{ uri: profileImageUri }}
+                                defaultSource={DEFAULT_MALE_PROFILE}
+                                style={{ height: 38, width: 38, borderRadius: 19, resizeMode: 'cover' }}
+                            />
 
                             {/* Percentage Badge */}
                             <View style={{ position: 'absolute', bottom: -3, backgroundColor: '#F5A623', borderRadius: 8, paddingHorizontal: 4, paddingVertical: 1, borderWidth: 1, borderColor: '#fff', zIndex: 10 }}>
@@ -625,13 +629,13 @@ export default function TransporterAppliedJob() {
                                 }}>
                                     <Text style={{ fontSize: 11 }}>💎</Text>
                                     <Text style={{ marginLeft: 3, fontSize: 11, fontWeight: '600', color: '#0284C7' }}>
-                                        Diamond
+                                        {driver?.ranking && driver?.ranking !== 'N/A' ? driver.ranking : 'New Driver'}
                                     </Text>
                                 </View>
                             )}
                             <Text style={{ marginHorizontal: 6, fontSize: 13, color: '#222222' }}>•</Text>
                             <Text style={{ fontSize: 13, color: '#222222' }}>
-                                {drivingExp !== '—' ? `${drivingExp}+ yrs exp` : '8+ yrs exp'}
+                                {drivingExp !== '—' ? `${drivingExp} yrs exp` : 'N/A'}
                             </Text>
                         </View>
                     </View>
@@ -642,22 +646,22 @@ export default function TransporterAppliedJob() {
                     {/* Location */}
                     <Text style={{ fontSize: 13, color: '#222222', lineHeight: 18 }}>
                         <Text style={{ fontWeight: '500' }}>Location: </Text>
-                        {city !== '—' ? city : ''} {city !== '—' && state !== '—' ? ', ' : ''} {state !== '—' ? state : 'N/A'}
+                        {city !== '—' ? city : ''}{city !== '—' && state !== '—' ? ', ' : ''}{state !== '—' ? state : 'N/A'}
                     </Text>
                     {/* License */}
                     <Text style={{ fontSize: 13, color: '#222222', lineHeight: 18 }}>
                         <Text style={{ fontWeight: '500' }}>License: </Text>
-                        {licenseType !== '—' ? licenseType : 'HMV'}
+                        {licenseType !== '—' ? licenseType : 'N/A'}
                     </Text>
                     {/* Number */}
                     <Text style={{ fontSize: 13, color: '#222222', lineHeight: 18 }}>
                         <Text style={{ fontWeight: '500' }}>License No.: </Text>
-                        {licenseNo ? maskLicense(licenseNo) : 'XXXXXX1234'}
+                        {licenseNo ? maskLicense(licenseNo) : 'N/A'}
                     </Text>
                     {/* Exp */}
                     <Text style={{ fontSize: 13, color: '#222222', lineHeight: 18 }}>
                         <Text style={{ fontWeight: '500' }}>License Exp: </Text>
-                        {licenseExpiry !== '—' ? licenseExpiry : '15 Jan 2035'}
+                        {licenseExpiry !== '—' ? licenseExpiry : 'N/A'}
                     </Text>
                 </View>
 
@@ -1369,40 +1373,86 @@ export default function TransporterAppliedJob() {
                         const driver = selectedDriverForModal?.driver_details;
                         if (!driver) return null;
 
+                        // Basic Info
                         const driverName = driver?.driver_name || driver?.name || 'Driver';
-                        const tmId = driver?.unique_id || '—';
+                        const tmId = driver?.unique_id || 'N/A';
                         const rating = Number(driver?.rating) || 0;
                         const reviewCount = driver?.review_count || 0;
-                        const driverType = driver?.driver_type || 'Driver';
-                        const city = driver?.city || '—';
-                        const state = driver?.states || driver?.state || '—';
-                        const drivingExp = driver?.driving_exp || driver?.driving_experience || driver?.Driving_Experience || '—';
-                        const licenseType = driver?.license_type || driver?.License_Type || '—';
-                        const licenseNo = driver?.license_no || driver?.License_No || '';
-                        const licenseExpiry = driver?.license_expiry || driver?.License_Expiry
-                            ? moment(driver?.license_expiry || driver?.License_Expiry).format('DD MMM YYYY')
-                            : '—';
-                        const aadharNo = driver?.Aadhar_Number || driver?.aadhar_number || '';
-                        const mobile = driver?.mobile || driver?.driver_mobile || '';
+
+                        // Contact Info (masked)
                         const email = driver?.email || '';
+                        const mobile = driver?.mobile || driver?.driver_mobile || '';
+
+                        // Personal Info
+                        const fatherName = driver?.father_name || driver?.Father_Name || 'N/A';
+                        const dob = driver?.dob || driver?.date_of_birth || driver?.DOB
+                            ? moment(driver?.dob || driver?.date_of_birth || driver?.DOB).format('DD MMM YYYY')
+                            : 'N/A';
+                        const gender = driver?.gender || driver?.Gender || 'N/A';
+                        const maritalStatus = driver?.marital_status || driver?.Marital_Status || 'N/A';
+                        const education = driver?.education || driver?.Education || driver?.qualification || 'N/A';
+
+                        // Address Details
+                        const address = driver?.address || driver?.Address || driver?.permanent_address || 'N/A';
+                        const pincode = driver?.pincode || driver?.Pincode || driver?.pin_code || 'N/A';
+                        const district = driver?.district || driver?.District || driver?.city || 'N/A';
+                        const state = driver?.state || driver?.State || driver?.states || 'N/A';
+
+                        // Work Info
+                        const vehicleType = driver?.vehicle_type || driver?.Vehicle_Type || driver?.preferred_vehicle || 'N/A';
+                        const drivingExp = driver?.driving_exp || driver?.driving_experience || driver?.Driver_Experience || 'N/A';
+                        const preferredLocation = driver?.preferred_location || driver?.Preferred_Location || driver?.preferred_city || 'N/A';
+
+                        // License/Documents Info
+                        const licenseType = driver?.license_type || driver?.Type_of_License || 'N/A';
+                        const aadharNo = driver?.Aadhar_Number || driver?.aadhar_number || driver?.aadhar_no || '';
+                        const licenseNo = driver?.license_no || driver?.License_number || '';
+                        const licenseExpiry = driver?.license_expiry || driver?.Expiry_date_of_license
+                            ? moment(driver?.license_expiry || driver?.Expiry_date_of_license).format('DD MMM YYYY')
+                            : 'N/A';
+                        const panNo = driver?.pan_number || driver?.Pan_Number || driver?.pan_no || '';
 
                         const profileImage =
                             driver?.driver_picture
-                                ? `${BASE_URL}${driver.driver_picture}`
+                                ? `${BASE_URL}public/${driver.driver_picture}`
                                 : driver?.images
                                     ? `${BASE_URL}public/${driver.images}`
-                                    : 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+                                    : `https://ui-avatars.com/api/?name=${encodeURIComponent(driverName)}&background=0D8ABC&color=fff&size=128`;
 
-                        const tag = getDriverTag(driver);
+                        const tag = getDriverTag(selectedDriverForModal);
+
+                        // Section Header Component
+                        const SectionHeader = ({ title, icon }: { title: string; icon: string }) => (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, marginTop: 8 }}>
+                                <Ionicons name={icon as any} size={20} color={colors.royalBlue} style={{ marginRight: 10 }} />
+                                <Text style={{ fontSize: responsiveFontSize(2.0), fontWeight: '700', color: colors.royalBlue }}>
+                                    {title}
+                                </Text>
+                            </View>
+                        );
 
                         // Detail Item Component
-                        const DetailItem = ({ label, value, icon }: { label: string; value: string; icon?: string }) => (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.blackOpacity(0.05) }}>
-                                {icon && <Ionicons name={icon as any} size={18} color={colors.royalBlue} style={{ marginRight: 12 }} />}
-                                <View style={{ flex: 1 }}>
-                                    <Text style={{ fontSize: responsiveFontSize(1.3), color: colors.blackOpacity(0.5) }}>{label}</Text>
-                                    <Text style={{ fontSize: responsiveFontSize(1.6), color: colors.black, fontWeight: '500', marginTop: 2 }}>{value}</Text>
-                                </View>
+                        const DetailItem = ({ label, value }: { label: string; value: string }) => (
+                            <View style={{
+                                flexDirection: 'row',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                paddingVertical: 10,
+                                borderBottomWidth: 1,
+                                borderBottomColor: colors.blackOpacity(0.05)
+                            }}>
+                                <Text style={{ fontSize: responsiveFontSize(1.7), color: colors.blackOpacity(0.6), flex: 1 }}>
+                                    {label}
+                                </Text>
+                                <Text style={{
+                                    fontSize: responsiveFontSize(1.8),
+                                    color: value === 'N/A' ? colors.blackOpacity(0.4) : colors.black,
+                                    fontWeight: '500',
+                                    flex: 1.5,
+                                    textAlign: 'right'
+                                }}>
+                                    {value}
+                                </Text>
                             </View>
                         );
 
@@ -1435,9 +1485,9 @@ export default function TransporterAppliedJob() {
                                         }}>
                                             <Ionicons
                                                 name={
-                                                    tag.label === 'Trusted'
+                                                    tag.label === 'Trusted Driver'
                                                         ? 'shield-checkmark'
-                                                        : tag.label === 'Verified'
+                                                        : tag.label === 'Verified Driver'
                                                             ? 'checkmark-circle'
                                                             : 'briefcase'
                                                 }
@@ -1465,57 +1515,77 @@ export default function TransporterAppliedJob() {
                                             <Text style={{ marginLeft: 6, fontSize: 14, fontWeight: '600', color: '#92400E' }}>
                                                 {rating.toFixed(1)}
                                             </Text>
-                                            {reviewCount > 0 && (
-                                                <Text style={{ fontSize: 13, color: '#92400E', marginLeft: 4 }}>
-                                                    ({reviewCount} reviews)
-                                                </Text>
-                                            )}
-                                        </View>
-                                        <View style={{
-                                            marginLeft: 10,
-                                            backgroundColor: colors.blueOpacity(0.1),
-                                            paddingHorizontal: 12,
-                                            paddingVertical: 5,
-                                            borderRadius: 16
-                                        }}>
-                                            <Text style={{ fontSize: 13, fontWeight: '500', color: colors.royalBlue }}>
-                                                {driverType}
-                                            </Text>
                                         </View>
                                     </View>
                                 </View>
 
-                                {/* Details Section */}
+                                {/* Contact Information */}
                                 <View style={{
                                     backgroundColor: colors.blackOpacity(0.02),
                                     borderRadius: 16,
                                     padding: 16,
                                     marginBottom: 16,
                                 }}>
-                                    <Text style={{ fontSize: responsiveFontSize(1.7), fontWeight: '600', color: colors.black, marginBottom: 8 }}>
-                                        {t('driverDetails') || 'Driver Details'}
-                                    </Text>
-                                    <DetailItem label={t('city')} value={city} icon="location-outline" />
-                                    <DetailItem label={t('state')} value={state} icon="map-outline" />
-                                    <DetailItem label={t('drivingExperience') || 'Driving Experience'} value={drivingExp} icon="car-outline" />
-                                    <DetailItem label={t('licenseType') || 'License Type'} value={licenseType} icon="card-outline" />
-                                    <DetailItem label={t('licenseNo') || 'License No.'} value={maskLicense(licenseNo)} icon="document-text-outline" />
-                                    <DetailItem label={t('licenseExpiry') || 'License Expiry'} value={licenseExpiry} icon="calendar-outline" />
+                                    <SectionHeader title={t('contactInfo') || 'Contact Information'} icon="call-outline" />
+                                    <DetailItem label={t('email') || 'Email'} value={maskEmail(email)} />
+                                    <DetailItem label={t('mobile') || 'Mobile'} value={maskMobile(mobile)} />
                                 </View>
 
-                                {/* Masked Sensitive Info */}
+                                {/* Personal Information */}
+                                <View style={{
+                                    backgroundColor: colors.blackOpacity(0.02),
+                                    borderRadius: 16,
+                                    padding: 16,
+                                    marginBottom: 16,
+                                }}>
+                                    <SectionHeader title={t('personalInfo') || 'Personal Information'} icon="person-outline" />
+                                    <DetailItem label={t('fatherName') || 'Father Name'} value={fatherName} />
+                                    <DetailItem label={t('dateOfBirth') || 'Date of Birth'} value={dob} />
+                                    <DetailItem label={t('gender') || 'Gender'} value={gender} />
+                                    <DetailItem label={t('maritalStatus') || 'Marital Status'} value={maritalStatus} />
+                                    <DetailItem label={t('education') || 'Education'} value={education} />
+                                </View>
+
+                                {/* Address Details */}
+                                <View style={{
+                                    backgroundColor: colors.blackOpacity(0.02),
+                                    borderRadius: 16,
+                                    padding: 16,
+                                    marginBottom: 16,
+                                }}>
+                                    <SectionHeader title={t('addressDetails') || 'Address Details'} icon="location-outline" />
+                                    <DetailItem label={t('address') || 'Address'} value={address} />
+                                    <DetailItem label={t('pincode') || 'Pincode'} value={pincode} />
+                                    <DetailItem label={t('district') || 'District'} value={district} />
+                                    <DetailItem label={t('state') || 'State'} value={state} />
+                                </View>
+
+                                {/* Work Information */}
+                                <View style={{
+                                    backgroundColor: colors.blackOpacity(0.02),
+                                    borderRadius: 16,
+                                    padding: 16,
+                                    marginBottom: 16,
+                                }}>
+                                    <SectionHeader title={t('workInfo') || 'Work Information'} icon="briefcase-outline" />
+                                    <DetailItem label={t('vehicleType') || 'Vehicle Type'} value={vehicleType} />
+                                    <DetailItem label={t('drivingExperience') || 'Driving Experience'} value={drivingExp !== 'N/A' ? `${drivingExp} years` : 'N/A'} />
+                                    <DetailItem label={t('preferredLocation') || 'Preferred Location'} value={preferredLocation} />
+                                </View>
+
+                                {/* License & Documents */}
                                 <View style={{
                                     backgroundColor: colors.blackOpacity(0.02),
                                     borderRadius: 16,
                                     padding: 16,
                                     marginBottom: 20,
                                 }}>
-                                    <Text style={{ fontSize: responsiveFontSize(1.7), fontWeight: '600', color: colors.black, marginBottom: 8 }}>
-                                        {t('contactInfo') || 'Contact Information'}
-                                    </Text>
-                                    <DetailItem label={t('aadharNumber') || 'Aadhar No.'} value={maskAadhar(aadharNo)} icon="finger-print-outline" />
-                                    <DetailItem label={t('mobile') || 'Mobile'} value={maskMobile(mobile)} icon="call-outline" />
-                                    <DetailItem label={t('e-mail') || 'Email'} value={maskEmail(email)} icon="mail-outline" />
+                                    <SectionHeader title={t('licenseDocuments') || 'License & Documents'} icon="document-text-outline" />
+                                    <DetailItem label={t('licenseType') || 'License Type'} value={licenseType} />
+                                    <DetailItem label={t('aadharNumber') || 'Aadhar No.'} value={maskAadhar(aadharNo)} />
+                                    <DetailItem label={t('licenseNo') || 'License No.'} value={maskLicense(licenseNo)} />
+                                    <DetailItem label={t('licenseExpiry') || 'License Expiry'} value={licenseExpiry} />
+                                    <DetailItem label={t('panNumber') || 'PAN No.'} value={maskPan(panNo)} />
                                 </View>
 
                                 {/* Call Driver & Interview CTAs */}

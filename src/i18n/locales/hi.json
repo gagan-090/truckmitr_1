@@ -2072,5 +2072,10 @@
   "subAuthorizePayments": "और भुगतान को अधिकृत करता/करती हूँ",
   "subTransporterConsentText": "मैं सहमत हूँ",
   "subNoPlansAvailable": "कोई प्लान उपलब्ध नहीं",
-  "quarterly": "तिमाही"
+  "quarterly": "तिमाही",
+  "personalInfo": "व्यक्तिगत जानकारी",
+  "workInfo": "कार्य जानकारी",
+  "licenseDocuments": "लाइसेंस और दस्तावेज़",
+  "dateOfBirth": "जन्म तिथि",
+  "district": "जिला"
 }

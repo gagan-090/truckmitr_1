@@ -2159,5 +2159,10 @@
   "subConsentAgree": "I agree to the",
   "subAuthorizePayments": "and authorize recurring payments",
   "subNoPlansAvailable": "No plans available",
-  "quarterly": "Quarterly"
+  "quarterly": "Quarterly",
+  "personalInfo": "Personal Information",
+  "workInfo": "Driving Details",
+  "licenseDocuments": "Documents",
+  "dateOfBirth": "Date of Birth",
+  "district": "District"
 }
