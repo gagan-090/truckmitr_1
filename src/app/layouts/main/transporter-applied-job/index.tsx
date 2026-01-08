@@ -1,4 +1,4 @@
-import { ActivityIndicator, Image, Modal, StyleSheet, Text, TouchableOpacity, View, Linking, ScrollView, BackHandler } from 'react-native'
+import { ActivityIndicator, Image, Modal, StyleSheet, Text, TouchableOpacity, View, Linking, ScrollView, BackHandler, Pressable, Animated } from 'react-native'
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useColor, useResponsiveScale, useShadow, useStatusBarStyle } from '@truckmitr/src/app/hooks';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -511,6 +511,27 @@ export default function TransporterAppliedJob() {
 
 
     const DriverApplicationCard = React.memo(({ item, index = 0 }: any) => {
+        const [tooltipVisible, setTooltipVisible] = useState(false);
+        const fadeAnim = useRef(new Animated.Value(0)).current;
+        const timerRef = useRef<any>(null);
+
+        const showTooltip = useCallback(() => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+            setTooltipVisible(true);
+            Animated.spring(fadeAnim, { toValue: 1, useNativeDriver: true }).start();
+            timerRef.current = setTimeout(() => {
+                Animated.timing(fadeAnim, { toValue: 0, duration: 500, useNativeDriver: true }).start(() => setTooltipVisible(false));
+            }, 5000);
+        }, [fadeAnim]);
+
+        useEffect(() => {
+            const paymentType = (item?.driver_details?.payments_type || item?.payment_type || '').toString().toLowerCase().trim();
+            if (paymentType === 'trusted') {
+                showTooltip();
+            }
+            return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+        }, [item, showTooltip]);
+
         const driver = item?.driver_details;
 
         // ❌ HARD STOP: no TM ID → no UI
@@ -976,8 +997,14 @@ export default function TransporterAppliedJob() {
                 ? ['#8B5CF6', '#7C3AED', '#5B21B6'] // Royal Purple Gradient
                 : ['#60A5FA', '#3B82F6', '#2563EB']; // Light blue -> Blue
 
+            const onCardPress = () => {
+                if (tag.premiumLevel === 2) {
+                    showTooltip();
+                }
+            };
+
             return (
-                <View style={{ marginBottom: 16, overflow: 'visible' }}>
+                <Pressable onPress={onCardPress} style={{ marginBottom: 16, overflow: 'visible' }}>
                     <LinearGradient
                         colors={gradientColors}
                         start={{ x: 0, y: 0 }}
@@ -991,13 +1018,76 @@ export default function TransporterAppliedJob() {
                     </LinearGradient>
 
                     {/* Simple Classic Ribbon Badge */}
-                    <View style={{
-                        position: 'absolute',
-                        top: 0, // Flush with top edge
-                        right: 16,
-                        alignItems: 'center',
-                        zIndex: 10,
-                    }}>
+                    <TouchableOpacity
+                        activeOpacity={0.9}
+                        onPress={() => {
+                            if (tag.premiumLevel === 2) {
+                                setShowTrustedInfoModal(true);
+                                setTooltipVisible(false);
+                            }
+                        }}
+                        style={{
+                            position: 'absolute',
+                            top: 0, // Flush with top edge
+                            right: 16,
+                            alignItems: 'center',
+                            zIndex: 10,
+                        }}
+                    >
+                        {tag.premiumLevel === 2 && tooltipVisible && (
+                            <Animated.View style={{
+                                position: 'absolute',
+                                right: 62,
+                                top: 18,
+                                opacity: fadeAnim,
+                                transform: [{ scale: fadeAnim }],
+                                backgroundColor: '#FFF',
+                                paddingHorizontal: 2,
+                                paddingVertical: 4,
+                                borderRadius: 12,
+                                borderWidth: 1,
+                                borderColor: '#F59E0B',
+                                shadowColor: '#F59E0B',
+                                shadowOffset: { width: 0, height: 0 },
+                                shadowOpacity: 0.8,
+                                shadowRadius: 8,
+                                elevation: 8,
+                                zIndex: 20,
+                            }}>
+                                <Text numberOfLines={1} style={{ color: '#F59E0B', fontSize: 10, fontWeight: '700' }}>
+                                    Why Trusted?
+                                </Text>
+                                {/* Arrow pointing right */}
+                                <View style={{
+                                    position: 'absolute',
+                                    right: -5,
+                                    top: 6,
+                                    width: 0,
+                                    height: 0,
+                                    borderStyle: 'solid',
+                                    borderTopWidth: 4,
+                                    borderBottomWidth: 4,
+                                    borderLeftWidth: 5,
+                                    borderTopColor: 'transparent',
+                                    borderBottomColor: 'transparent',
+                                    borderLeftColor: '#F59E0B',
+                                }} />
+                                <View style={{
+                                    position: 'absolute',
+                                    right: -3.5,
+                                    top: 6,
+                                    width: 0,
+                                    height: 0,
+                                    borderStyle: 'solid',
+                                    borderTopWidth: 4,
+                                    borderBottomWidth: 4,
+                                    borderLeftWidth: 5,
+                                    borderTopColor: 'transparent',
+                                    borderBottomColor: 'transparent',
+                                    borderLeftColor: '#FFF',
+                                }} />
+                            </Animated.View>
+                        )}
                         {/* Ribbon Body with Gradient */}
                         <LinearGradient
                             colors={ribbonGradientColors}
@@ -1063,8 +1153,8 @@ export default function TransporterAppliedJob() {
                                 borderTopColor: tag.premiumLevel === 2 ? '#5B21B6' : '#2563EB', // Match bottom gradient color
                             }} />
                         </View>
-                    </View>
-                </View>
+                    </TouchableOpacity>
+                </Pressable>
             );
         }
 
@@ -1239,7 +1329,7 @@ export default function TransporterAppliedJob() {
                                                     </ScrollView>
                                                     {validApplications.map((item: any, index: number) => {
                                                         return (
-                                                            <DriverApplicationCard key={item.application_id} item={item} />
+                                                            <DriverApplicationCard key={item.application_id} item={item} index={index} />
                                                         )
                                                     })}
                                                 </View>
@@ -2185,6 +2275,82 @@ export default function TransporterAppliedJob() {
                                 </Text>
                             </TouchableOpacity>
                         </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Trusted Driver Info Modal */}
+            <Modal
+                transparent={true}
+                visible={showTrustedInfoModal}
+                animationType="fade"
+                onRequestClose={() => setShowTrustedInfoModal(false)}
+            >
+                <View style={{
+                    flex: 1,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    padding: 20,
+                }}>
+                    <View style={{
+                        width: '90%',
+                        backgroundColor: '#fff',
+                        borderRadius: 16,
+                        padding: 24,
+                        elevation: 5,
+                    }}>
+                        {/* Header */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                            <Ionicons name="ellipse" size={12} color="#7C3AED" style={{ marginRight: 8 }} />
+                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1F2937', flex: 1 }}>
+                                Trusted Driver – What does it mean?
+                            </Text>
+                            <TouchableOpacity onPress={() => setShowTrustedInfoModal(false)}>
+                                <Ionicons name="close" size={24} color="#9CA3AF" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={{ fontSize: 14, color: '#4B5563', marginBottom: 16 }}>
+                            Trusted Driver is a 100% verified and highly reliable driver on TruckMitr.
+                        </Text>
+
+                        <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 12 }}>
+                            Why this driver is Trusted?
+                        </Text>
+
+                        {/* List */}
+                        {[
+                            'Government ID verified',
+                            'Face verification completed',
+                            'Court / criminal record check done',
+                            'Digital address verified',
+                            'Driving license verified',
+                            'High verification score & trust rating'
+                        ].map((item, index) => (
+                            <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                <MaterialCommunityIcons
+                                    name={index === 5 ? "star" : "check-circle"}
+                                    size={18}
+                                    color={index === 5 ? "#F59E0B" : "#10B981"}
+                                    style={{ marginRight: 8 }}
+                                />
+                                <Text style={{ fontSize: 14, color: '#374151', fontWeight: index === 5 ? '600' : '400' }}>{item}</Text>
+                            </View>
+                        ))}
+
+                        <View style={{ height: 1, backgroundColor: '#E5E7EB', marginVertical: 16 }} />
+
+                        <Text style={{ fontSize: 14, color: '#374151', marginBottom: 8 }}>
+                            <Text style={{ fontWeight: '700' }}>Best for: </Text>
+                            Transporters who want maximum safety, zero risk, and peace of mind while hiring drivers.
+                        </Text>
+
+                        <Text style={{ fontSize: 14, color: '#374151' }}>
+                            <Text style={{ fontWeight: '700' }}>👉 Recommended for </Text>
+                            long trips, high-value goods, and critical assignments.
+                        </Text>
+
                     </View>
                 </View>
             </Modal>
