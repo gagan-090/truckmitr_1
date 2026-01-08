@@ -9,7 +9,8 @@ import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
 import { END_POINTS } from '@truckmitr/src/utils/config';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
 import { useTranslation } from 'react-i18next';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { subscriptionModalAction } from '@truckmitr/src/redux/actions/user.action';
 
 interface RcHistoryItem {
     id: number;
@@ -24,6 +25,7 @@ interface RcHistoryItem {
 const RcCheckInfo = () => {
     const { t } = useTranslation();
     const navigation = useNavigation<any>();
+    const dispatch = useDispatch();
     const colors = useColor();
     const { responsiveWidth, responsiveFontSize, responsiveHeight } = useResponsiveScale();
     const { shadow } = useShadow();
@@ -54,7 +56,7 @@ const RcCheckInfo = () => {
             const amt = activeSub.amount ? parseFloat(activeSub.amount) : 0;
             // RC Check is available for ₹199 and ₹499 plans
             if (isTransporter) {
-                return amt === 499;
+                return amt >= 499;
             }
             return amt >= 199;
         }
@@ -143,7 +145,7 @@ const RcCheckInfo = () => {
 
     const _handleViewPlans = () => {
         setSubscriptionModalVisible(false);
-        navigation.navigate(STACKS.SUBSCRIPTION_CONSENT);
+        dispatch(subscriptionModalAction(true));
     };
 
     const _viewHistoryItem = (item: RcHistoryItem) => {
@@ -443,11 +445,11 @@ const RcCheckInfo = () => {
                         >
                             <Text style={{ color: '#64748B', fontSize: responsiveFontSize(1.6), fontWeight: '600' }}>{t('cancel') || 'Cancel'}</Text>
                         </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
+                    </View >
+                </View >
+            </Modal >
 
-        </View>
+        </View >
     );
 };
 

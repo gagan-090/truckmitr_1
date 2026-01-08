@@ -1,4 +1,4 @@
-import { ActivityIndicator, Image, Modal, StyleSheet, Text, TouchableOpacity, View, Linking, ScrollView, BackHandler, Pressable, Animated } from 'react-native'
+import { ActivityIndicator, Image, Modal, StyleSheet, Text, TouchableOpacity, View, Linking, ScrollView, BackHandler, Pressable, Animated, SectionList } from 'react-native'
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useColor, useResponsiveScale, useShadow, useStatusBarStyle } from '@truckmitr/src/app/hooks';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -1171,6 +1171,27 @@ export default function TransporterAppliedJob() {
         return cardContent;
     });
 
+    const sections = useMemo(() => {
+        if (!jobGroups || !Array.isArray(jobGroups)) return [];
+        return jobGroups.map((job: any) => {
+            const isExpanded = expandedJobIds.includes(job.job_id);
+            const activeFilter = jobFilters[job.job_id] || 'All';
+            const allFiltered = Array.isArray(job.applications) ? job.applications.filter((app: any) => {
+                if (!app?.driver_details?.unique_id) return false;
+                if (activeFilter === 'Accepted') return app?.current_status === 'Accepted';
+                if (activeFilter === 'Rejected') return app?.current_status === 'Rejected';
+                return app?.current_status !== 'Rejected';
+            }) : [];
+            return {
+                ...job,
+                data: isExpanded ? allFiltered : [],
+                displayCount: allFiltered.length,
+                activeFilter,
+                isExpanded
+            };
+        });
+    }, [jobGroups, expandedJobIds, jobFilters]);
+
     return (
         <View style={{ flex: 1, backgroundColor: colors.white }}>
             <Space height={safeAreaInsets.top} />
@@ -1201,12 +1222,18 @@ export default function TransporterAppliedJob() {
                         :
                         <View style={{ flex: 1 }}>
 
-                            <FlatList
-                                data={jobGroups}
-                                keyExtractor={(item: any) => item.job_id}
+                            <SectionList
+                                sections={sections}
+                                keyExtractor={(item: any) => item.application_id}
+                                stickySectionHeadersEnabled={false}
                                 showsVerticalScrollIndicator={false}
                                 onEndReached={_loadMoreJobs}
                                 onEndReachedThreshold={0.3}
+                                contentContainerStyle={{
+                                    paddingHorizontal: responsiveWidth(5),
+                                    paddingBottom: responsiveHeight(5),
+                                    paddingTop: responsiveHeight(2),
+                                }}
                                 ListFooterComponent={() => (
                                     loadingMore ? (
                                         <View style={{ paddingVertical: 20, alignItems: 'center' }}>
@@ -1237,116 +1264,91 @@ export default function TransporterAppliedJob() {
                                         </Text>
                                     ) : null
                                 )}
-                                initialNumToRender={5}
-                                maxToRenderPerBatch={5}
-                                windowSize={10}
-                                removeClippedSubviews={true}
-                                contentContainerStyle={{
-                                    paddingHorizontal: responsiveWidth(5),
-                                    paddingBottom: responsiveHeight(5),
-                                    paddingTop: responsiveHeight(2),
-                                }}
-                                renderItem={({ item: job }: any) => {
-                                    const isExpanded = expandedJobIds.includes(job.job_id);
+                                renderSectionHeader={({ section: job }) => (
+                                    <View style={{ marginBottom: job.isExpanded ? 0 : responsiveFontSize(3) }}>
+                                        {/* ================= JOB DROPDOWN HEADER ================= */}
+                                        <TouchableOpacity
+                                            activeOpacity={0.85}
+                                            onPress={() => toggleJob(job.job_id)}
+                                            style={{
+                                                backgroundColor: colors.royalBlue,
+                                                borderRadius: 10,
+                                                padding: responsiveFontSize(1.6),
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                ...shadow,
+                                                shadowColor: colors.blackOpacity(0.3),
+                                            }}
+                                        >
+                                            <View style={{ flex: 1 }}>
+                                                <Text
+                                                    numberOfLines={1}
+                                                    style={{
+                                                        color: colors.white,
+                                                        fontSize: responsiveFontSize(2),
+                                                        fontWeight: '700',
+                                                    }}
+                                                >
+                                                    {job.job_title}
+                                                </Text>
 
-                                    const activeFilter = jobFilters[job.job_id] || 'All';
+                                                <Text
+                                                    style={{
+                                                        color: colors.whiteOpacity(0.9),
+                                                        fontSize: responsiveFontSize(1.6),
+                                                        marginTop: 4,
+                                                    }}
+                                                >
+                                                    {t('jobId')}: {job.job_id} • {job.displayCount} {t('applicants')}
+                                                </Text>
+                                            </View>
 
-                                    const validApplications = job.applications.filter((app: any) => {
-                                        if (!app?.driver_details?.unique_id) return false;
-                                        if (activeFilter === 'Accepted') return app?.current_status === 'Accepted';
-                                        if (activeFilter === 'Rejected') return app?.current_status === 'Rejected';
-                                        // 'All' shows everything EXCEPT Rejected (Default view)
-                                        return app?.current_status !== 'Rejected';
-                                    });
-                                    return (
-                                        <View style={{ marginBottom: responsiveFontSize(3) }}>
-                                            {/* ================= JOB DROPDOWN HEADER ================= */}
-                                            <TouchableOpacity
-                                                activeOpacity={0.85}
-                                                onPress={() => toggleJob(job.job_id)}
-                                                style={{
-                                                    backgroundColor: colors.royalBlue,
-                                                    borderRadius: 10,
-                                                    padding: responsiveFontSize(1.6),
-                                                    flexDirection: 'row',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'space-between',
-                                                    ...shadow,
-                                                    shadowColor: colors.blackOpacity(0.3),
-                                                }}
-                                            >
-                                                <View style={{ flex: 1 }}>
-                                                    <Text
-                                                        numberOfLines={1}
-                                                        style={{
-                                                            color: colors.white,
-                                                            fontSize: responsiveFontSize(2),
-                                                            fontWeight: '700',
-                                                        }}
-                                                    >
-                                                        {job.job_title}
-                                                    </Text>
+                                            <Ionicons
+                                                name={job.isExpanded ? 'chevron-up' : 'chevron-down'}
+                                                size={24}
+                                                color={colors.white}
+                                            />
+                                        </TouchableOpacity>
 
-                                                    <Text
-                                                        style={{
-                                                            color: colors.whiteOpacity(0.9),
-                                                            fontSize: responsiveFontSize(1.6),
-                                                            marginTop: 4,
-                                                        }}
-                                                    >
-                                                        {t('jobId')}: {job.job_id} • {validApplications.length} {t('applicants')}
-                                                    </Text>
-                                                </View>
-
-                                                <Ionicons
-                                                    name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                                                    size={24}
-                                                    color={colors.white}
-                                                />
-                                            </TouchableOpacity>
-
-                                            {/* ================= DROPDOWN CONTENT ================= */}
-                                            {isExpanded && (
-                                                <View style={{ marginTop: responsiveFontSize(1.5) }}>
-                                                    {/* FILTER CHIPS */}
-                                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12, flexDirection: 'row' }}>
-                                                        {['All', 'Accepted', 'Rejected'].map((filter) => {
-                                                            const isSelected = activeFilter === filter;
-                                                            return (
-                                                                <TouchableOpacity
-                                                                    key={filter}
-                                                                    onPress={() => setFilter(job.job_id, filter)}
-                                                                    style={{
-                                                                        paddingHorizontal: 16,
-                                                                        paddingVertical: 6,
-                                                                        borderRadius: 20,
-                                                                        backgroundColor: isSelected ? colors.royalBlue : '#F3F4F6',
-                                                                        marginRight: 10,
-                                                                        borderWidth: 1,
-                                                                        borderColor: isSelected ? colors.royalBlue : '#E5E7EB',
-                                                                    }}
-                                                                >
-                                                                    <Text style={{
-                                                                        color: isSelected ? colors.white : '#4B5563',
-                                                                        fontSize: responsiveFontSize(1.5),
-                                                                        fontWeight: '600'
-                                                                    }}>
-                                                                        {filter}
-                                                                    </Text>
-                                                                </TouchableOpacity>
-                                                            );
-                                                        })}
-                                                    </ScrollView>
-                                                    {validApplications.map((item: any, index: number) => {
+                                        {/* FILTER CHIPS (Visible only when expanded) */}
+                                        {job.isExpanded && (
+                                            <View style={{ marginTop: responsiveFontSize(1.5), marginBottom: 12 }}>
+                                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
+                                                    {['All', 'Accepted', 'Rejected'].map((filter) => {
+                                                        const isSelected = job.activeFilter === filter;
                                                         return (
-                                                            <DriverApplicationCard key={item.application_id} item={item} index={index} />
-                                                        )
+                                                            <TouchableOpacity
+                                                                key={filter}
+                                                                onPress={() => setFilter(job.job_id, filter)}
+                                                                style={{
+                                                                    paddingHorizontal: 16,
+                                                                    paddingVertical: 6,
+                                                                    borderRadius: 20,
+                                                                    backgroundColor: isSelected ? colors.royalBlue : '#F3F4F6',
+                                                                    marginRight: 10,
+                                                                    borderWidth: 1,
+                                                                    borderColor: isSelected ? colors.royalBlue : '#E5E7EB',
+                                                                }}
+                                                            >
+                                                                <Text style={{
+                                                                    color: isSelected ? colors.white : '#4B5563',
+                                                                    fontSize: responsiveFontSize(1.5),
+                                                                    fontWeight: '600'
+                                                                }}>
+                                                                    {filter}
+                                                                </Text>
+                                                            </TouchableOpacity>
+                                                        );
                                                     })}
-                                                </View>
-                                            )}
-                                        </View>
-                                    );
-                                }}
+                                                </ScrollView>
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
+                                renderItem={({ item, index }) => (
+                                    <DriverApplicationCard item={item} index={index} />
+                                )}
                             />
 
                         </View>
