@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import {
     View,
     Text,
@@ -11,21 +11,26 @@ import {
     FlatList,
     Image,
     Pressable,
+    Alert,
+    BackHandler,
+    TouchableOpacity,
 } from 'react-native';
-import { useStatusBarStyle } from '@truckmitr/src/app/hooks';
+import { useStatusBarStyle, useColor, useResponsiveScale } from '@truckmitr/src/app/hooks';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NavigatorParams } from '@truckmitr/stacks/stacks';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Calendar } from 'react-native-calendars';
 import moment from 'moment';
 import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
 import { END_POINTS } from '@truckmitr/src/utils/config';
 import { jobAddAction } from '@truckmitr/src/redux/actions/user.action';
 import { Dropdown } from 'react-native-element-dropdown';
+import { showToast } from '@truckmitr/src/app/hooks/toast';
 
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 type EditJobRouteProp = RouteProp<NavigatorParams, 'editJob'>;
@@ -138,11 +143,13 @@ const ExperienceTile = memo(({ exp, isSelected, onSelect, label }: { exp: any; i
 
 // Memoized Salary Tile
 const SalaryTile = memo(({ salary, isSelected, onSelect }: { salary: any; isSelected: boolean; onSelect: () => void }) => (
-    <Pressable style={({ pressed }) => [styles.salaryTile, isSelected && styles.salaryTileSelected, pressed && styles.pressedTile]}
-        onPress={onSelect} android_ripple={{ color: '#E0E7FF', borderless: false }}>
+    <TouchableOpacity 
+        style={[styles.salaryTile, isSelected && styles.salaryTileSelected]}
+        onPress={onSelect}
+    >
         <Text style={[styles.salaryTileText, isSelected && styles.salaryTileTextSelected]}>{salary.label}</Text>
         {isSelected && <Ionicons name="checkmark-circle" size={16} color="#246BFD" style={{ marginLeft: 4 }} />}
-    </Pressable>
+    </TouchableOpacity>
 ));
 
 // Memoized Skill Chip
@@ -159,6 +166,8 @@ export default function EditJob() {
     const { t } = useTranslation();
     const dispatch = useDispatch();
     useStatusBarStyle('dark-content');
+    const colors = useColor();
+    const { responsiveHeight, responsiveFontSize } = useResponsiveScale();
     const safeAreaInsets = useSafeAreaInsets();
     const navigation = useNavigation<NavigatorProp>();
     const route = useRoute<EditJobRouteProp>();
@@ -171,6 +180,7 @@ export default function EditJob() {
 
     const [locationsList, setLocationsList] = useState<any[]>([]);
     const [locationModalOpen, setLocationModalOpen] = useState(false);
+    const [locationSearchQuery, setLocationSearchQuery] = useState('');
     const [datePickerOpen, setDatePickerOpen] = useState(false);
     const [pincode, setPincode] = useState(addJob?.pincode || '');
     const [pincodeAreas, setPincodeAreas] = useState<any[]>([]);
@@ -178,12 +188,83 @@ export default function EditJob() {
     const [pincodeError, setPincodeError] = useState('');
     const [selectedArea, setSelectedArea] = useState<string | null>(addJob?.area || null);
 
+    // Track unsaved changes
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const originalData = useRef(JSON.stringify(addJob));
+
+    // Check if data has changed
+    const checkForChanges = useCallback(() => {
+        const currentData = JSON.stringify(addJob);
+        setHasUnsavedChanges(currentData !== originalData.current);
+    }, [addJob]);
+
+    // Update original data when component mounts or when user saves
+    const resetOriginalData = useCallback(() => {
+        originalData.current = JSON.stringify(addJob);
+        setHasUnsavedChanges(false);
+    }, [addJob]);
+
     useEffect(() => {
         if (stepId === 'job_location') {
             fetchLocations();
             if (addJob?.pincode) fetchAreasByPincode(addJob.pincode);
         }
     }, [stepId]);
+
+    // Safety check for job ID
+    useEffect(() => {
+        if (!addJob?.id) {
+            showToast(t('jobIdNotFound') || 'Job ID not found');
+            navigation.goBack();
+        }
+    }, [addJob?.id, navigation, t]);
+
+    // Check for changes whenever addJob updates
+    useEffect(() => {
+        checkForChanges();
+    }, [checkForChanges]);
+
+    // Show confirmation dialog for unsaved changes
+    const showUnsavedChangesAlert = useCallback(() => {
+        Alert.alert(
+            t('unsavedChanges') || 'Unsaved Changes',
+            t('unsavedChangesMessage') || 'You have unsaved changes. Are you sure you want to exit without saving?',
+            [
+                {
+                    text: t('cancel') || 'Cancel',
+                    style: 'cancel',
+                },
+                {
+                    text: t('exitWithoutSaving') || 'Exit Without Saving',
+                    style: 'destructive',
+                    onPress: () => {
+                        // Revert Redux data back to original state
+                        const originalJobData = JSON.parse(originalData.current);
+                        dispatch(jobAddAction(originalJobData));
+                        resetOriginalData();
+                        navigation.goBack();
+                    },
+                },
+            ]
+        );
+    }, [t, navigation, resetOriginalData, dispatch]);
+
+    // Handle Android hardware back button
+    useFocusEffect(
+        useCallback(() => {
+            const onBackPress = () => {
+                if (hasUnsavedChanges) {
+                    showUnsavedChangesAlert();
+                    return true; // Prevent default back action
+                }
+                return false; // Allow default back action
+            };
+
+            const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+            return () => subscription.remove();
+        }, [hasUnsavedChanges, showUnsavedChangesAlert])
+    );
 
     const fetchLocations = useCallback(async () => {
         try {
@@ -218,10 +299,84 @@ export default function EditJob() {
         dispatch(jobAddAction({ ...addJob, Preferred_Skills: newSkills }));
     }, [addJob, dispatch]);
 
-    const handleUpdate = useCallback(() => navigation.goBack(), [navigation]);
-    const goBack = useCallback(() => navigation.goBack(), [navigation]);
+    // API call to update job
+    const updateJobAPI = useCallback(async () => {
+        if (!addJob?.id) {
+            showToast(t('jobIdNotFound') || 'Job ID not found');
+            return false;
+        }
+
+        setIsUpdating(true);
+        
+        try {
+            const FormData = require('form-data');
+            let data = new FormData();
+            
+            // Prepare data in the same format as add-job
+            data.append('job_title', addJob?.job_title || '');
+            data.append('job_location', addJob?.job_location || '');
+            data.append('pincode', addJob?.pincode || '');
+            data.append('area', addJob?.area || '');
+            data.append('route', addJob?.route || '');
+            data.append('vehicle_type', addJob?.vehicle_type || '');
+            data.append('Required_Experience', addJob?.Required_Experience || '');
+            data.append('Salary_Range', addJob?.Salary_Range || '');
+            data.append('esi_pf', addJob?.esi_pf || 'no');
+            data.append('food_allowance', addJob?.food_allowance || 'no');
+            data.append('food_allowance_desc', addJob?.food_allowance_desc || '');
+            data.append('trip_incentive', addJob?.trip_incentive || 'no');
+            data.append('trip_incentive_desc', addJob?.trip_incentive_desc || '');
+            data.append('rahane_ki_suvidha', addJob?.rahane_ki_suvidha || 'no');
+            data.append('mileage', addJob?.mileage || 'no');
+            data.append('mileage_desc', addJob?.mileage_desc || '');
+            data.append('fast_tag_road_kharcha', addJob?.fast_tag_road_kharcha || 'no');
+            data.append('fast_tag_road_kharcha_desc', addJob?.fast_tag_road_kharcha_desc || '');
+            data.append('Type_of_License', addJob?.Type_of_License || '');
+            data.append('Preferred_Skills', JSON.stringify(addJob?.Preferred_Skills || []));
+            data.append('Application_Deadline', addJob?.Application_Deadline ? moment(addJob.Application_Deadline).format("DD-MM-YYYY") : '');
+            data.append('number_of_drivers_required', addJob?.Job_Management || '');
+            data.append('Job_Description', addJob?.Job_Description || '');
+            data.append('truck_condition', addJob?.truck_condition || '');
+            data.append('consent_visible_driver', 1); // Always consent for edits
+
+            const response = await axiosInstance.post(END_POINTS.TRANSPORTER_EDIT_JOB(addJob.id), data);
+
+            if (response?.data?.status) {
+                showToast(t('jobUpdatedSuccessfully') || 'Job updated successfully');
+                resetOriginalData();
+                return true;
+            } else {
+                showToast(response?.data?.message || t('failedToUpdateJob') || 'Failed to update job');
+                return false;
+            }
+        } catch (error) {
+            console.log('Edit job error:', JSON.stringify(error));
+            showToast(t('somethingWentWrong') || 'Something went wrong');
+            return false;
+        } finally {
+            setIsUpdating(false);
+        }
+    }, [addJob, t, resetOriginalData]);
+
+    const handleUpdate = useCallback(async () => {
+        const success = await updateJobAPI();
+        if (success) {
+            navigation.goBack();
+        }
+    }, [updateJobAPI, navigation]);
+
+    const goBack = useCallback(() => {
+        if (hasUnsavedChanges) {
+            showUnsavedChangesAlert();
+        } else {
+            navigation.goBack();
+        }
+    }, [navigation, hasUnsavedChanges, showUnsavedChangesAlert]);
     const openLocationModal = useCallback(() => setLocationModalOpen(true), []);
-    const closeLocationModal = useCallback(() => setLocationModalOpen(false), []);
+    const closeLocationModal = useCallback(() => {
+        setLocationModalOpen(false);
+        setLocationSearchQuery('');
+    }, []);
     const openDatePicker = useCallback(() => setDatePickerOpen(true), []);
     const closeDatePicker = useCallback(() => setDatePickerOpen(false), []);
 
@@ -359,7 +514,9 @@ export default function EditJob() {
                 return (
                     <View style={styles.stepContainer}>
                         <Text style={styles.classicLabel}>{t('fixedSalary') || 'Fixed Salary'}</Text>
-                        <Text style={styles.helperText}>{t('selectSalaryHintDetail') || 'Select the monthly salary range'}</Text>
+                        <Text style={[styles.helperText, { marginBottom: 12, marginTop: 0 }]}>
+                            {t('selectSalaryHintDetail') || 'Select the monthly salary range for this position'}
+                        </Text>
                         <View style={styles.gridContainer}>
                             {salaryRanges.map((salary) => (
                                 <SalaryTile
@@ -605,27 +762,148 @@ export default function EditJob() {
             </ScrollView>
 
             <View style={[styles.footer, { paddingBottom: safeAreaInsets.bottom + 16 }]}>
-                <Pressable style={({ pressed }) => [styles.updateButton, pressed && styles.updateButtonPressed]} onPress={handleUpdate}>
-                    <Text style={styles.updateButtonText}>{t('update') || 'Update'}</Text>
+                <Pressable 
+                    style={({ pressed }) => [
+                        styles.updateButton, 
+                        pressed && styles.updateButtonPressed,
+                        isUpdating && styles.updateButtonDisabled
+                    ]} 
+                    onPress={handleUpdate}
+                    disabled={isUpdating}
+                >
+                    {isUpdating ? (
+                        <View style={styles.updateButtonContent}>
+                            <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
+                            <Text style={styles.updateButtonText}>{t('updating') || 'Updating...'}</Text>
+                        </View>
+                    ) : (
+                        <Text style={styles.updateButtonText}>{t('update') || 'Update'}</Text>
+                    )}
                 </Pressable>
             </View>
 
-            <Modal visible={locationModalOpen} animationType="slide" transparent>
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>{t('selectLocation') || 'Select Location'}</Text>
-                            <Pressable onPress={closeLocationModal} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}><Ionicons name="close" size={24} color="#333" /></Pressable>
+            <Modal 
+                visible={locationModalOpen} 
+                animationType="slide" 
+                presentationStyle="fullScreen"
+                onRequestClose={closeLocationModal}
+            >
+                <View style={{ flex: 1, backgroundColor: '#FFF' }}>
+                    <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
+                    {/* Modal Header */}
+                    <View style={{
+                        paddingTop: safeAreaInsets.top,
+                        backgroundColor: '#FFF',
+                        borderBottomWidth: 1,
+                        borderBottomColor: '#E9ECEF',
+                    }}>
+                        <View style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingHorizontal: 16,
+                            paddingVertical: 12,
+                        }}>
+                            <Pressable
+                                onPress={closeLocationModal}
+                                style={{
+                                    height: 40,
+                                    width: 40,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: '#F5F5F5',
+                                    borderRadius: 12,
+                                }}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                                <Ionicons name="close" size={24} color="#246BFD" />
+                            </Pressable>
+                            <Text style={{
+                                flex: 1,
+                                textAlign: 'center',
+                                fontSize: 18,
+                                fontWeight: '700',
+                                color: '#212529',
+                                marginRight: 40, // Compensate for close button
+                            }}>
+                                {t('selectLocation') || 'Select Location'}
+                            </Text>
                         </View>
-                        <FlatList data={locationsList} keyExtractor={(item) => item.id.toString()} initialNumToRender={15} maxToRenderPerBatch={10}
-                            renderItem={({ item }) => (
-                                <Pressable style={({ pressed }) => [styles.locationItem, pressed && { backgroundColor: '#F5F5F5' }]}
-                                    onPress={() => { updateJob({ job_location: item.name }); closeLocationModal(); }}>
-                                    <Text style={styles.locationText}>{item.name}</Text>
-                                    {addJob?.job_location === item.name && <Ionicons name="checkmark" size={20} color="#246BFD" />}
-                                </Pressable>
-                            )} />
                     </View>
+
+                    {/* Search Input */}
+                    <View style={{ paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFF' }}>
+                        <TextInput
+                            style={{
+                                borderWidth: 1,
+                                borderColor: '#E5E7EB',
+                                borderRadius: 12,
+                                paddingHorizontal: 16,
+                                paddingVertical: 12,
+                                fontSize: 16,
+                                backgroundColor: '#FAFAFA',
+                            }}
+                            placeholder={t('searchLocation') || 'Search location...'}
+                            placeholderTextColor="#999"
+                            value={locationSearchQuery}
+                            onChangeText={setLocationSearchQuery}
+                        />
+                    </View>
+
+                    {/* Location List */}
+                    <FlatList 
+                        data={locationsList.filter(location =>
+                            location.name.toLowerCase().includes(locationSearchQuery.toLowerCase())
+                        )}
+                        keyExtractor={(item) => item.id.toString()}
+                        style={{ flex: 1, backgroundColor: '#F8F9FA' }}
+                        contentContainerStyle={{ paddingHorizontal: 16 }}
+                        renderItem={({ item }) => {
+                            const isSelected = item.name === addJob?.job_location;
+                            return (
+                                <TouchableOpacity
+                                    activeOpacity={0.7}
+                                    onPress={() => {
+                                        updateJob({ job_location: item.name });
+                                        setLocationModalOpen(false);
+                                        setLocationSearchQuery('');
+                                    }}
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        paddingVertical: responsiveHeight(1.8),
+                                        paddingHorizontal: 16,
+                                        marginBottom: 8,
+                                        backgroundColor: isSelected ? colors.royalBlue + '10' : colors.white,
+                                        borderRadius: 12,
+                                        borderWidth: 1,
+                                        borderColor: isSelected ? colors.royalBlue : colors.blackOpacity(0.08),
+                                    }}
+                                >
+                                    <View style={{
+                                        width: 24,
+                                        height: 24,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        marginRight: 14,
+                                    }}>
+                                        <MaterialCommunityIcons
+                                            name={isSelected ? 'radiobox-marked' : 'radiobox-blank'}
+                                            size={24}
+                                            color={isSelected ? colors.royalBlue : colors.blackOpacity(0.3)}
+                                        />
+                                    </View>
+                                    <Text style={{
+                                        flex: 1,
+                                        fontSize: responsiveFontSize(1.9),
+                                        fontWeight: isSelected ? '600' : '500',
+                                        color: isSelected ? colors.royalBlue : colors.black,
+                                    }}>
+                                        {item.name}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        }}
+                    />
                 </View>
             </Modal>
 
@@ -662,7 +940,7 @@ const styles = StyleSheet.create({
     stepTitle: { fontSize: 20, fontWeight: '700', color: '#212529', marginBottom: 2 },
     stepSubtitle: { fontSize: 13, color: '#6C757D' },
     divider: { height: 1, backgroundColor: '#E9ECEF', marginBottom: 16 },
-    stepContainer: { backgroundColor: '#FFF', borderRadius: 16, padding: 20, marginBottom: 16 },
+    stepContainer: { width: '100%' },
     classicLabel: { fontSize: 16, fontWeight: '600', color: '#212529', marginBottom: 8 },
     helperText: { fontSize: 14, color: '#6C757D', marginBottom: 12 },
     classicInput: { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, color: '#333', backgroundColor: '#FAFAFA' },
@@ -695,14 +973,14 @@ const styles = StyleSheet.create({
     vehicleLabel: { fontSize: 12, color: '#333', textAlign: 'center' },
     vehicleLabelSelected: { color: '#246BFD', fontWeight: '600' },
     vehicleCheckmark: { position: 'absolute', top: 8, right: 8 },
-    gridContainer: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -4 },
+    gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
     experienceTile: { paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', margin: 4 },
     experienceTileSelected: { borderColor: '#246BFD', backgroundColor: '#F0F7FF' },
     experienceTileText: { fontSize: 15, color: '#374151', fontWeight: '500' },
     experienceTileTextSelected: { color: '#246BFD', fontWeight: '600' },
-    salaryTile: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#FAFAFA', margin: 4 },
-    salaryTileSelected: { borderColor: '#246BFD', backgroundColor: '#F0F7FF' },
-    salaryTileText: { fontSize: 15, color: '#374151', fontWeight: '500' },
+    salaryTile: { width: '48%', backgroundColor: 'white', borderRadius: 8, borderWidth: 1.5, borderColor: '#DEE2E6', paddingVertical: 14, paddingHorizontal: 10, marginBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    salaryTileSelected: { borderColor: '#246BFD', backgroundColor: '#F0F5FF' },
+    salaryTileText: { fontSize: 12, fontWeight: '500', color: '#495057', textAlign: 'center' },
     salaryTileTextSelected: { color: '#246BFD', fontWeight: '600' },
     endorsementTile: { flexDirection: 'row', alignItems: 'center', padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, backgroundColor: '#FFFFFF' },
     endorsementTileSelected: { borderColor: '#246BFD', backgroundColor: '#F0F7FF' },
@@ -721,6 +999,8 @@ const styles = StyleSheet.create({
     footer: { paddingHorizontal: 16, paddingTop: 12, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#E9ECEF' },
     updateButton: { backgroundColor: '#246BFD', borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
     updateButtonPressed: { opacity: 0.8, backgroundColor: '#1E5AD8' },
+    updateButtonDisabled: { opacity: 0.6, backgroundColor: '#9CA3AF' },
+    updateButtonContent: { flexDirection: 'row', alignItems: 'center' },
     updateButtonText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
     modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '80%' },

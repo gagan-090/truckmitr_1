@@ -1,8 +1,8 @@
 import { ActivityIndicator, Text, TextInput, TouchableOpacity, View, StyleSheet, Animated } from 'react-native'
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { useColor, useResponsiveScale, useShadow, useStatusBarStyle } from '@truckmitr/src/app/hooks';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NavigatorParams, STACKS } from '@truckmitr/stacks/stacks';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Space, Switch } from '@truckmitr/src/app/components';
@@ -259,7 +259,7 @@ const AppleJobCard = ({ item, index, locations }: any) => {
                         <InfoRow
                             icon={<FontAwesome6 name='user-tie' size={12} color={colors.royalBlue} />}
                             label={t('noOfDrivers')}
-                            value={item?.Job_Management}
+                            value={item?.number_of_drivers_required}
                         />
                         <InfoRow
                             icon={<FontAwesome name='calendar-o' size={12} color={colors.royalBlue} />}
@@ -330,30 +330,45 @@ export default function AvailableJob() {
     const [search, setsearch] = useState('');
     const [searchFocused, setSearchFocused] = useState(false);
 
-    useEffect(() => {
-        search.length !== 0 && setloading(true);
-        const timer = setTimeout(() => {
-            const _fetchJobs = async () => {
-                try {
-                    const response: any = await axiosInstance.get(END_POINTS?.TRANSPORTER_ALL_JOBS(search));
-                    if (response?.data?.status) {
-                        console.log('-------------response?.data?.data-----',response?.data?.data);
-                        
-                        setjobList(response?.data?.data);
-                    } else {
-                        setjobList([]);
-                    }
-                } catch (error) {
-                    console.error("Error searching jobs:", error);
-                } finally {
-                    setloading(false);
-                }
-            };
-            _fetchJobs();
-        }, 500);
+    // Extract job fetching logic into a separate function
+    const fetchJobs = useCallback(async (searchTerm: string = '') => {
+        try {
+            setloading(true);
+            const response: any = await axiosInstance.get(END_POINTS?.TRANSPORTER_ALL_JOBS(searchTerm));
+            if (response?.data?.status) {
+                console.log('-------------response?.data?.data-----', response?.data?.data);
+                setjobList(response?.data?.data);
+            } else {
+                setjobList([]);
+            }
+        } catch (error) {
+            console.error("Error fetching jobs:", error);
+            setjobList([]);
+        } finally {
+            setloading(false);
+        }
+    }, []);
 
-        return () => clearTimeout(timer);
-    }, [search]);
+    // Refresh jobs when screen comes into focus (after editing)
+    useFocusEffect(
+        useCallback(() => {
+            fetchJobs(search);
+        }, [fetchJobs, search])
+    );
+
+    useEffect(() => {
+        if (search.length === 0) {
+            // For empty search, fetch immediately
+            fetchJobs(search);
+        } else {
+            // For search terms, debounce the API call
+            setloading(true);
+            const timer = setTimeout(() => {
+                fetchJobs(search);
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [search, fetchJobs]);
 
     const getLocation = async () => {
         try {

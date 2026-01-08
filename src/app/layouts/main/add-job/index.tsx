@@ -2475,66 +2475,6 @@ export default function AddJob() {
                 </TouchableOpacity>
             </Animated.View>
 
-            {/* Location Modal - Updated to match Profile Completion State Selector UI */}
-            <Modal visible={locationModalOpen} transparent animationType="slide">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                            <Text style={styles.modalTitle}>
-                                {t('selectLocation') || 'Select Location'}
-                            </Text>
-                            <TouchableOpacity onPress={() => {
-                                setLocationModalOpen(false);
-                                setLocationSearchQuery('');
-                            }}>
-                                <Ionicons name="close" size={24} color="#333" />
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Search Input */}
-                        <TextInput
-                            style={styles.searchInput}
-                            placeholder={t('searchLocation') || 'Search location...'}
-                            placeholderTextColor="#999"
-                            value={locationSearchQuery}
-                            onChangeText={setLocationSearchQuery}
-                        />
-
-                        <ScrollView style={{ flex: 1, marginTop: 10 }} showsVerticalScrollIndicator={true}>
-                            {locationsList
-                                .filter(location =>
-                                    location.name.toLowerCase().includes(locationSearchQuery.toLowerCase())
-                                )
-                                .map((location) => (
-                                    <TouchableOpacity
-                                        key={location.id}
-                                        style={[
-                                            styles.modalItem,
-                                            addJob?.job_location === location.name && styles.modalItemSelected
-                                        ]}
-                                        onPress={() => {
-                                            dispatch(jobAddAction({ ...addJob, job_location: location.name }));
-                                            setLocationModalOpen(false);
-                                            setLocationSearchQuery('');
-                                        }}
-                                    >
-                                        <Ionicons name="location-outline" size={20} color={addJob?.job_location === location.name ? "#246BFD" : "#666"} />
-                                        <Text style={[
-                                            styles.modalItemText,
-                                            addJob?.job_location === location.name && { color: '#246BFD', fontWeight: '600' }
-                                        ]}>
-                                            {location.name}
-                                        </Text>
-                                        {addJob?.job_location === location.name && (
-                                            <Ionicons name="checkmark-circle" size={20} color="#246BFD" />
-                                        )}
-                                    </TouchableOpacity>
-                                ))}
-                        </ScrollView>
-                    </View>
-                </View>
-            </Modal>
-
             {/* Full-screen Location Modal - Matching Registration State Selector */}
             <Modal
                 visible={locationModalOpen}
