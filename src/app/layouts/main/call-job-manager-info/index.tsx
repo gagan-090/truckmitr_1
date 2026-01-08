@@ -5,6 +5,8 @@ import { useColor, useResponsiveScale, useShadow } from '@truckmitr/src/app/hook
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { STACKS } from '@truckmitr/src/stacks/stacks';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { hitSlop } from '@truckmitr/src/app/functions';
 
 const CallJobManagerInfo = () => {
     const navigation = useNavigation<any>();
@@ -12,6 +14,7 @@ const CallJobManagerInfo = () => {
     const { responsiveWidth, responsiveFontSize, responsiveHeight } = useResponsiveScale();
     const { shadow } = useShadow();
     const { t } = useTranslation();
+    const safeAreaInsets = useSafeAreaInsets();
 
     const _goBack = () => navigation.goBack();
 
@@ -43,13 +46,40 @@ const CallJobManagerInfo = () => {
     return (
         <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
             {/* Header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', padding: responsiveWidth(4), paddingTop: responsiveHeight(6), backgroundColor: colors.white, elevation: 4 }}>
-                <TouchableOpacity onPress={_goBack} style={{ padding: 5, marginRight: 10 }}>
-                    <Ionicons name="chevron-back" size={24} color={colors.royalBlue} />
+            {/* Header */}
+            <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: 12,
+                marginTop: safeAreaInsets.top,
+                paddingHorizontal: responsiveFontSize(2),
+                backgroundColor: colors.white,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.blackOpacity(0.05)
+            }}>
+                <TouchableOpacity
+                    onPress={_goBack}
+                    hitSlop={hitSlop(10)}
+                    style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: colors.blackOpacity(0.05)
+                    }}
+                >
+                    <Ionicons name="chevron-back" size={22} color={colors.royalBlue} />
                 </TouchableOpacity>
-                <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: 'bold', color: colors.royalBlue }}>
+                <Text style={{
+                    fontSize: responsiveFontSize(2.2),
+                    color: colors.black,
+                    fontWeight: '700'
+                }}>
                     {t('callJobManagerTitle', 'Call Job Manager')}
                 </Text>
+                <View style={{ width: 36 }} />
             </View>
 
             <ScrollView contentContainerStyle={{ padding: responsiveWidth(4), paddingBottom: responsiveHeight(14) }} showsVerticalScrollIndicator={false}>

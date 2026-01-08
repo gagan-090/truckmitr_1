@@ -52,6 +52,7 @@ import RazorpayCheckout from 'react-native-razorpay';
 import { jobAddAction, subscriptionModalAction } from '@truckmitr/src/redux/actions/user.action';
 import { Dropdown } from 'react-native-element-dropdown';
 import LinearGradient from 'react-native-linear-gradient';
+import { hitSlop } from '@truckmitr/src/app/functions';
 
 // Truck Images
 const TruckImages = {
@@ -743,7 +744,7 @@ export default function AddJob() {
         data.append('truck_condition', addJob?.truck_condition || '');
         data.append('consent_visible_driver', checkBoxSelect ? 1 : 0);
         // console.log('+++++++++++++++++++++++formdata++++++++++++++++', data);
- 
+
         try {
             const response = addJob?.id
                 ? await axiosInstance.post(END_POINTS.TRANSPORTER_EDIT_JOB(addJob?.id), data)
@@ -2395,11 +2396,15 @@ export default function AddJob() {
 
             {/* Header */}
             <Animated.View style={[styles.header, animatedHeaderStyle]}>
-                <TouchableOpacity onPress={handleBack} style={styles.navBtn}>
-                    <Ionicons name="arrow-back" size={24} color="#333" />
+                <TouchableOpacity
+                    onPress={handleBack}
+                    style={styles.backButton}
+                    hitSlop={hitSlop(10)}
+                >
+                    <Ionicons name="chevron-back" size={22} color="#246BFD" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{addJob?.id ? t('editJob') : t('addJob')}</Text>
-                <View style={styles.navBtn} />
+                <View style={{ width: 36 }} />
             </Animated.View>
 
 
@@ -3134,6 +3139,14 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         backgroundColor: '#F8F9FA',
     },
+    backButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0,0,0,0.05)',
+    },
     navBtn: {
         width: 60,
         height: 40,
@@ -3141,11 +3154,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     headerTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#333',
-        textTransform: 'uppercase',
-        letterSpacing: 1,
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#000',
     },
 
     progressInfo: {

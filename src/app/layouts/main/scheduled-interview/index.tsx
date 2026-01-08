@@ -6,12 +6,15 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
 import { END_POINTS } from '@truckmitr/src/utils/config';
 import moment from 'moment';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { hitSlop } from '@truckmitr/src/app/functions';
 
 const ScheduledInterviews = () => {
     const navigation = useNavigation<any>();
     const colors = useColor();
     const { responsiveWidth, responsiveFontSize, responsiveHeight } = useResponsiveScale();
     const { shadow } = useShadow();
+    const safeAreaInsets = useSafeAreaInsets();
 
     const [interviews, setInterviews] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -131,13 +134,39 @@ const ScheduledInterviews = () => {
     return (
         <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
             {/* Header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: responsiveWidth(4), paddingTop: responsiveHeight(7), paddingBottom: responsiveHeight(2), backgroundColor: colors.white, elevation: 2 }}>
-                <TouchableOpacity onPress={_goBack} style={{ position: 'absolute', left: responsiveWidth(4), top: responsiveHeight(6), padding: 5, zIndex: 1 }}>
-                    <Ionicons name="chevron-back" size={28} color={colors.royalBlue} />
+            <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: responsiveFontSize(2),
+                paddingVertical: 12,
+                marginTop: safeAreaInsets.top,
+                backgroundColor: colors.white,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.blackOpacity(0.05)
+            }}>
+                <TouchableOpacity
+                    onPress={_goBack}
+                    hitSlop={hitSlop(10)}
+                    style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: colors.blackOpacity(0.05)
+                    }}
+                >
+                    <Ionicons name="chevron-back" size={22} color={colors.royalBlue} />
                 </TouchableOpacity>
-                <Text style={{ fontSize: responsiveFontSize(2.5), fontWeight: 'bold', color: colors.royalBlue, textAlign: 'center' }}>
+                <Text style={{
+                    fontSize: responsiveFontSize(2.2),
+                    color: colors.black,
+                    fontWeight: '700'
+                }}>
                     Scheduled Interviews ({interviews.length})
                 </Text>
+                <View style={{ width: 36 }} />
             </View>
 
             {loading ? (

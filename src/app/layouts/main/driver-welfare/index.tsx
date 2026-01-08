@@ -5,6 +5,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useColor, useResponsiveScale, useShadow } from '@truckmitr/src/app/hooks';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { hitSlop } from '@truckmitr/src/app/functions';
 
 const DriverWelfare = () => {
     const navigation = useNavigation<any>();
@@ -12,12 +14,10 @@ const DriverWelfare = () => {
     const { responsiveWidth, responsiveFontSize, responsiveHeight } = useResponsiveScale();
     const { shadow } = useShadow();
     const { t } = useTranslation();
-    const [refreshKey, setRefreshKey] = useState(0);
+    const safeAreaInsets = useSafeAreaInsets();
 
     const _goBack = () => navigation.goBack();
-    const _refreshPage = () => {
-        setRefreshKey(prev => prev + 1);
-    };
+
 
     // Benefit Item Component (Same as ID Check)
     const BenefitItem = ({ text }: { text: string }) => (
@@ -70,16 +70,40 @@ const DriverWelfare = () => {
     return (
         <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
             {/* Header (Same as ID Check) */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: responsiveWidth(4), paddingTop: responsiveHeight(4), backgroundColor: colors.white, elevation: 2 }}>
-                <TouchableOpacity onPress={_goBack} style={{ padding: 5 }}>
-                    <Ionicons name="chevron-back" size={24} color={colors.royalBlue} />
+            {/* Header */}
+            <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: 12,
+                marginTop: safeAreaInsets.top,
+                paddingHorizontal: responsiveFontSize(2),
+                backgroundColor: colors.white,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.blackOpacity(0.05)
+            }}>
+                <TouchableOpacity
+                    onPress={_goBack}
+                    hitSlop={hitSlop(10)}
+                    style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: colors.blackOpacity(0.05)
+                    }}
+                >
+                    <Ionicons name="chevron-back" size={22} color={colors.royalBlue} />
                 </TouchableOpacity>
-                <Text style={{ fontSize: responsiveFontSize(2.4), fontWeight: 'bold', color: colors.royalBlue, textAlign: 'center' }}>
+                <Text style={{
+                    fontSize: responsiveFontSize(2.2),
+                    color: colors.black,
+                    fontWeight: '700'
+                }}>
                     {t('driverWelfareTitle')}
                 </Text>
-                <TouchableOpacity onPress={_refreshPage} style={{ padding: 5 }}>
-                    <Ionicons name="refresh" size={22} color={colors.royalBlue} />
-                </TouchableOpacity>
+                <View style={{ width: 36 }} />
             </View>
 
             <ScrollView contentContainerStyle={{ padding: responsiveWidth(4), paddingBottom: responsiveHeight(6) }} showsVerticalScrollIndicator={false}>

@@ -11,6 +11,8 @@ import { showToast } from '@truckmitr/src/app/hooks/toast';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { subscriptionModalAction } from '@truckmitr/src/redux/actions/user.action';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { hitSlop } from '@truckmitr/src/app/functions';
 
 interface RcHistoryItem {
     id: number;
@@ -29,6 +31,7 @@ const RcCheckInfo = () => {
     const colors = useColor();
     const { responsiveWidth, responsiveFontSize, responsiveHeight } = useResponsiveScale();
     const { shadow } = useShadow();
+    const safeAreaInsets = useSafeAreaInsets();
 
     // Get subscription details and user from Redux
     const { subscriptionDetails, user } = useSelector((state: any) => state?.user) || {};
@@ -216,13 +219,40 @@ const RcCheckInfo = () => {
     return (
         <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
             {/* Header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: responsiveWidth(4), paddingVertical: responsiveHeight(2), paddingTop: responsiveHeight(5), backgroundColor: colors.white, elevation: 2 }}>
-                <TouchableOpacity onPress={_goBack} style={{ padding: 8, marginRight: 12 }}>
-                    <Ionicons name="chevron-back" size={26} color={colors.royalBlue} />
+            {/* Header */}
+            <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: 12,
+                marginTop: safeAreaInsets.top,
+                paddingHorizontal: responsiveFontSize(2),
+                backgroundColor: colors.white,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.blackOpacity(0.05)
+            }}>
+                <TouchableOpacity
+                    onPress={_goBack}
+                    hitSlop={hitSlop(10)}
+                    style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: colors.blackOpacity(0.05)
+                    }}
+                >
+                    <Ionicons name="chevron-back" size={22} color={colors.royalBlue} />
                 </TouchableOpacity>
-                <Text style={{ fontSize: responsiveFontSize(2.4), fontWeight: 'bold', color: colors.royalBlue }}>
+                <Text style={{
+                    fontSize: responsiveFontSize(2.2),
+                    color: colors.black,
+                    fontWeight: '700'
+                }}>
                     {t('rcCheck') || 'RC Check'}
                 </Text>
+                <View style={{ width: 36 }} />
             </View>
 
             <ScrollView contentContainerStyle={{ padding: responsiveWidth(4), paddingBottom: responsiveHeight(14) }} showsVerticalScrollIndicator={false}>

@@ -549,7 +549,7 @@ export default function TransporterAppliedJob() {
         const city = driver?.city || '—';
         const state = driver?.states || driver?.state || '—';
         const drivingExp = driver?.driving_exp || driver?.driving_experience || driver?.Driver_Experience || '—';
-        const licenseType = driver?.license_type || driver?.Type_of_License || '—';
+        const licenseType = (driver?.license_type || driver?.Type_of_License || '—').toUpperCase();
         const licenseNo = driver?.license_no || driver?.License_number || '';
         const licenseExpiry = driver?.license_expiry || driver?.Expiry_date_of_license
             ? moment(driver?.license_expiry || driver?.Expiry_date_of_license).format('DD MMM YYYY')
@@ -1195,13 +1195,36 @@ export default function TransporterAppliedJob() {
     return (
         <View style={{ flex: 1, backgroundColor: colors.white }}>
             <Space height={safeAreaInsets.top} />
-            <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center', padding: responsiveWidth(3) }}>
-                <TouchableOpacity hitSlop={hitSlop(10)} onPress={_goback} style={{ height: responsiveFontSize(4), width: responsiveFontSize(4), alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white, borderRadius: 100, zIndex: 100 }}>
-                    <Ionicons name={'chevron-back'} size={24} color={colors.royalBlue} />
+            {/* Header */}
+            <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: 12,
+                paddingHorizontal: responsiveFontSize(2)
+            }}>
+                <TouchableOpacity
+                    hitSlop={hitSlop(10)}
+                    onPress={_goback}
+                    style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: colors.blackOpacity(0.05)
+                    }}
+                >
+                    <Ionicons name={'chevron-back'} size={22} color={colors.royalBlue} />
                 </TouchableOpacity>
-                <Text onPress={() => {
-                    ;
-                }} style={{ width: responsiveWidth(100), fontSize: responsiveFontSize(2.2), color: colors.royalBlue, fontWeight: 'bold', textAlign: 'center', position: 'absolute', zIndex: 1 }}>{t(`viewApplications`)}</Text>
+                <Text style={{
+                    color: colors.black,
+                    fontSize: responsiveFontSize(2.2),
+                    fontWeight: '700'
+                }}>
+                    {t('viewApplications')}
+                </Text>
+                <View style={{ width: responsiveFontSize(4) }} />
             </View>
             {(loading && !search.length) ?
                 <View style={{ flex: 1, alignItems: 'center' }}>
@@ -1259,12 +1282,12 @@ export default function TransporterAppliedJob() {
                                             </Text>
                                         </TouchableOpacity>
                                     )
-                                    //  : totalCount > 0 ? (
-                                    //     <Text style={{ textAlign: 'center', color: colors.blackOpacity(0.4), paddingVertical: 16, fontSize: 12 }}>
-                                    //         {t('showingAll') || 'Showing all'} {totalCount} {t('applications') || 'applications'}
-                                    //     </Text>
-                                    // ) 
-                                    : null
+                                        //  : totalCount > 0 ? (
+                                        //     <Text style={{ textAlign: 'center', color: colors.blackOpacity(0.4), paddingVertical: 16, fontSize: 12 }}>
+                                        //         {t('showingAll') || 'Showing all'} {totalCount} {t('applications') || 'applications'}
+                                        //     </Text>
+                                        // ) 
+                                        : null
                                 )}
                                 renderSectionHeader={({ section: job }) => (
                                     <View style={{ marginBottom: job.isExpanded ? 0 : responsiveFontSize(3) }}>

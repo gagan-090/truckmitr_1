@@ -93,20 +93,36 @@ export default function HealthHygiene() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.white }}>
       <Space height={safeAreaInsets.top} />
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: responsiveWidth(5), position: 'relative' }}>
-        <TouchableOpacity hitSlop={hitSlop(10)} onPress={() => navigation.goBack()} style={{ zIndex: 10 }}>
-          <Ionicons name={'chevron-back'} size={responsiveFontSize(3)} color={colors.royalBlue} />
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        paddingHorizontal: responsiveFontSize(2),
+        backgroundColor: colors.white
+      }}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          hitSlop={hitSlop(10)}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: colors.blackOpacity(0.05)
+          }}
+        >
+          <Ionicons name={'chevron-back'} size={22} color={colors.royalBlue} />
         </TouchableOpacity>
-
-        <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, justifyContent: 'center', alignItems: 'center', zIndex: 1 }}>
-          <Text style={{ fontSize: responsiveFontSize(2.3), fontWeight: 'bold', color: colors.royalBlue, textAlign: 'center' }}>{t('healthHygiene')}</Text>
-        </View>
-
-        <TouchableOpacity onPress={_navigateLanguage} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: responsiveFontSize(.3), paddingHorizontal: responsiveFontSize(1), borderRadius: 100, borderColor: colors.blackOpacity(.1), borderWidth: 1, zIndex: 10 }}>
-          <Ionicons name={'language'} size={14} color={colors.royalBlue} />
-          <Text style={{ color: colors.royalBlue, fontWeight: 'bold', marginHorizontal: responsiveFontSize(.5), fontSize: responsiveFontSize(1.6) }}>{selectedLanguage}</Text>
-          <Feather name={'chevron-down'} size={16} color={colors.blackOpacity(.5)} />
-        </TouchableOpacity>
+        <Text style={{
+          fontSize: responsiveFontSize(2.2),
+          color: colors.black,
+          fontWeight: '700'
+        }}>
+          {t('healthHygiene')}
+        </Text>
+        <View style={{ width: 36 }} />
       </View>
       <Space height={responsiveFontSize(1)} />
       {loading ?

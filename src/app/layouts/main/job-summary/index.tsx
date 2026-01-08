@@ -18,6 +18,7 @@ import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import moment from 'moment';
+import { hitSlop } from '@truckmitr/src/app/functions';
 
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 
@@ -92,8 +93,8 @@ const conditionLabelsMap: { [key: string]: string } = {
 
 // Memoized Edit Button Component for better performance
 const EditButton = memo(({ onPress }: { onPress: () => void }) => (
-    <Pressable 
-        onPress={onPress} 
+    <Pressable
+        onPress={onPress}
         style={({ pressed }) => [styles.editButton, pressed && styles.editButtonPressed]}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
     >
@@ -194,11 +195,15 @@ export default function JobSummary() {
 
             {/* Header */}
             <View style={styles.header}>
-                <Pressable onPress={goBack} style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <Ionicons name="arrow-back" size={24} color="#212529" />
+                <Pressable
+                    onPress={goBack}
+                    style={styles.backButton}
+                    hitSlop={hitSlop(10)}
+                >
+                    <Ionicons name="chevron-back" size={22} color="#246BFD" />
                 </Pressable>
                 <Text style={styles.headerTitle}>{t('jobSummary') || 'Job Summary'}</Text>
-                <View style={{ width: 40 }} />
+                <View style={{ width: 36 }} />
             </View>
 
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} removeClippedSubviews>
@@ -265,9 +270,8 @@ export default function JobSummary() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F8F9FA' },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E9ECEF' },
-    backButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-    backButtonPressed: { opacity: 0.6, backgroundColor: '#F0F0F0' },
-    headerTitle: { fontSize: 18, fontWeight: '600', color: '#212529' },
+    backButton: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.05)' },
+    headerTitle: { fontSize: 18, fontWeight: '700', color: '#212529' },
     scrollView: { flex: 1 },
     scrollContent: { padding: 16 },
     summaryHeader: { marginBottom: 20 },

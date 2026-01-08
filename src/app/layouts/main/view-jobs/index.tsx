@@ -208,7 +208,7 @@ const AppleJobCard = ({ item, index, locations }: any) => {
                 {/* Card Header */}
                 <View style={styles.cardHeader}>
                     <View style={styles.cardTitleContainer}>
-                        <Text style={[styles.cardTitle, { color: colors.black, fontSize: responsiveFontSize(2.3) }]} numberOfLines={2}>
+                        <Text style={[styles.cardTitle, { color: colors.black, fontSize: responsiveFontSize(2.3) }]}>
                             {item.job_title}
                         </Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>

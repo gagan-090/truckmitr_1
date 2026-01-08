@@ -5,6 +5,8 @@ import { useColor, useResponsiveScale, useShadow } from '@truckmitr/src/app/hook
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { hitSlop } from '@truckmitr/src/app/functions';
 
 const DriverKiAwazInfo = () => {
     const navigation = useNavigation<any>();
@@ -12,6 +14,7 @@ const DriverKiAwazInfo = () => {
     const { responsiveWidth, responsiveFontSize, responsiveHeight } = useResponsiveScale();
     const { shadow } = useShadow();
     const { t } = useTranslation();
+    const safeAreaInsets = useSafeAreaInsets();
 
     const _goBack = () => navigation.goBack();
 
@@ -19,14 +22,39 @@ const DriverKiAwazInfo = () => {
         <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
             {/* Header */}
             {/* Header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: responsiveWidth(4), paddingTop: responsiveHeight(4), backgroundColor: colors.white, elevation: 4 }}>
-                <TouchableOpacity onPress={_goBack} style={{ padding: 5 }}>
-                    <Ionicons name="chevron-back" size={24} color={colors.royalBlue} />
+            <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: 12,
+                marginTop: safeAreaInsets.top,
+                paddingHorizontal: responsiveFontSize(2),
+                backgroundColor: colors.white,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.blackOpacity(0.05)
+            }}>
+                <TouchableOpacity
+                    onPress={_goBack}
+                    hitSlop={hitSlop(10)}
+                    style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: colors.blackOpacity(0.05)
+                    }}
+                >
+                    <Ionicons name="chevron-back" size={22} color={colors.royalBlue} />
                 </TouchableOpacity>
-                <Text style={{ fontSize: responsiveFontSize(2.4), fontWeight: 'bold', color: colors.royalBlue, textAlign: 'center' }}>
+                <Text style={{
+                    fontSize: responsiveFontSize(2.2),
+                    color: colors.black,
+                    fontWeight: '700'
+                }}>
                     {t('driverKiAwazTitle', 'Driver Ki Awaz')}
                 </Text>
-                <View style={{ width: 34 }} />
+                <View style={{ width: 36 }} />
             </View>
 
             <ScrollView contentContainerStyle={{ padding: responsiveWidth(4), paddingBottom: responsiveHeight(4) }} showsVerticalScrollIndicator={false}>

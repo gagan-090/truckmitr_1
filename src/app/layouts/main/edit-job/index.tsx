@@ -31,6 +31,7 @@ import { END_POINTS } from '@truckmitr/src/utils/config';
 import { jobAddAction } from '@truckmitr/src/redux/actions/user.action';
 import { Dropdown } from 'react-native-element-dropdown';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
+import { hitSlop } from '@truckmitr/src/app/functions';
 
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 type EditJobRouteProp = RouteProp<NavigatorParams, 'editJob'>;
@@ -122,7 +123,7 @@ const truckConditions = [
 
 // Memoized Vehicle Tile for instant response
 const VehicleTile = memo(({ vehicle, isSelected, onSelect }: { vehicle: any; isSelected: boolean; onSelect: () => void }) => (
-    <Pressable 
+    <Pressable
         style={({ pressed }) => [styles.vehicleTile, isSelected && styles.vehicleTileSelected, pressed && styles.pressedTile]}
         onPress={onSelect}
         android_ripple={{ color: '#E0E7FF', borderless: false }}
@@ -143,7 +144,7 @@ const ExperienceTile = memo(({ exp, isSelected, onSelect, label }: { exp: any; i
 
 // Memoized Salary Tile
 const SalaryTile = memo(({ salary, isSelected, onSelect }: { salary: any; isSelected: boolean; onSelect: () => void }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
         style={[styles.salaryTile, isSelected && styles.salaryTileSelected]}
         onPress={onSelect}
     >
@@ -307,11 +308,11 @@ export default function EditJob() {
         }
 
         setIsUpdating(true);
-        
+
         try {
             const FormData = require('form-data');
             let data = new FormData();
-            
+
             // Prepare data in the same format as add-job
             data.append('job_title', addJob?.job_title || '');
             data.append('job_location', addJob?.job_location || '');
@@ -742,11 +743,15 @@ export default function EditJob() {
         <View style={[styles.container, { paddingTop: safeAreaInsets.top }]}>
             <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
             <View style={styles.header}>
-                <Pressable onPress={goBack} style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <Ionicons name="arrow-back" size={24} color="#212529" />
+                <Pressable
+                    onPress={goBack}
+                    style={styles.backButton}
+                    hitSlop={hitSlop(10)}
+                >
+                    <Ionicons name="chevron-back" size={22} color="#246BFD" />
                 </Pressable>
                 <Text style={styles.headerTitle}>{t('edit') || 'Edit'}</Text>
-                <View style={{ width: 40 }} />
+                <View style={{ width: 36 }} />
             </View>
 
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -762,12 +767,12 @@ export default function EditJob() {
             </ScrollView>
 
             <View style={[styles.footer, { paddingBottom: safeAreaInsets.bottom + 16 }]}>
-                <Pressable 
+                <Pressable
                     style={({ pressed }) => [
-                        styles.updateButton, 
+                        styles.updateButton,
                         pressed && styles.updateButtonPressed,
                         isUpdating && styles.updateButtonDisabled
-                    ]} 
+                    ]}
                     onPress={handleUpdate}
                     disabled={isUpdating}
                 >
@@ -782,9 +787,9 @@ export default function EditJob() {
                 </Pressable>
             </View>
 
-            <Modal 
-                visible={locationModalOpen} 
-                animationType="slide" 
+            <Modal
+                visible={locationModalOpen}
+                animationType="slide"
                 presentationStyle="fullScreen"
                 onRequestClose={closeLocationModal}
             >
@@ -850,7 +855,7 @@ export default function EditJob() {
                     </View>
 
                     {/* Location List */}
-                    <FlatList 
+                    <FlatList
                         data={locationsList.filter(location =>
                             location.name.toLowerCase().includes(locationSearchQuery.toLowerCase())
                         )}
@@ -929,9 +934,8 @@ export default function EditJob() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F8F9FA' },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: '#E9ECEF' },
-    backButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-    backButtonPressed: { opacity: 0.6, backgroundColor: '#F0F0F0' },
-    headerTitle: { fontSize: 18, fontWeight: '600', color: '#212529' },
+    backButton: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.05)' },
+    headerTitle: { fontSize: 18, fontWeight: '700', color: '#212529' },
     scrollView: { flex: 1 },
     scrollContent: { padding: 16 },
     stepHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },

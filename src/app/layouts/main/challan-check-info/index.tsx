@@ -11,6 +11,8 @@ import axiosInstance from '@truckmitr/src/utils/config/axiosInstance';
 import { subscriptionModalAction } from '@truckmitr/src/redux/actions/user.action';
 import { END_POINTS } from '@truckmitr/src/utils/config';
 import { showToast } from '@truckmitr/src/app/hooks/toast';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { hitSlop } from '@truckmitr/src/app/functions';
 
 interface ChallanHistoryItem {
     id: number;
@@ -43,6 +45,7 @@ const ChallanCheckInfo = () => {
     const { responsiveWidth, responsiveFontSize, responsiveHeight } = useResponsiveScale();
     const { shadow } = useShadow();
     const { t } = useTranslation();
+    const safeAreaInsets = useSafeAreaInsets();
 
     const { subscriptionDetails, user } = useSelector((state: any) => state?.user);
     const isTransporter = user?.role?.toLowerCase() === 'transporter';
@@ -370,13 +373,40 @@ const ChallanCheckInfo = () => {
     return (
         <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
             {/* Header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', padding: responsiveWidth(4), paddingTop: responsiveHeight(6), backgroundColor: colors.white, elevation: 4 }}>
-                <TouchableOpacity onPress={_goBack} style={{ padding: 5, marginRight: 10 }}>
-                    <Ionicons name="chevron-back" size={24} color={colors.royalBlue} />
+            {/* Header */}
+            <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: 12,
+                marginTop: safeAreaInsets.top,
+                paddingHorizontal: responsiveFontSize(2),
+                backgroundColor: colors.white,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.blackOpacity(0.05)
+            }}>
+                <TouchableOpacity
+                    onPress={_goBack}
+                    hitSlop={hitSlop(10)}
+                    style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: colors.blackOpacity(0.05)
+                    }}
+                >
+                    <Ionicons name="chevron-back" size={22} color={colors.royalBlue} />
                 </TouchableOpacity>
-                <Text style={{ fontSize: responsiveFontSize(2.2), fontWeight: 'bold', color: colors.royalBlue }}>
+                <Text style={{
+                    fontSize: responsiveFontSize(2.2),
+                    color: colors.black,
+                    fontWeight: '700'
+                }}>
                     {t('challanCheckTitle', 'Challan Check')}
                 </Text>
+                <View style={{ width: 36 }} />
             </View>
 
             <ScrollView

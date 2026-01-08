@@ -7,6 +7,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { STACKS } from '@truckmitr/src/stacks/stacks';
 import { useDispatch } from 'react-redux';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { hitSlop } from '@truckmitr/src/app/functions';
 
 if (Platform.OS === 'android') {
     if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -21,6 +23,7 @@ const JobInvitationsList = () => {
     const { responsiveWidth, responsiveFontSize, responsiveHeight } = useResponsiveScale();
     const { shadow } = useShadow();
     const { t } = useTranslation();
+    const safeAreaInsets = useSafeAreaInsets();
 
     const getRequirementTitle = (title: string) => {
         switch (title) {
@@ -196,21 +199,48 @@ const JobInvitationsList = () => {
     return (
         <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
             {/* Header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', padding: responsiveWidth(4), paddingTop: responsiveHeight(4), backgroundColor: colors.white, elevation: 2 }}>
-                <TouchableOpacity onPress={_goBack} style={{ padding: 5, marginRight: 10 }}>
-                    <Ionicons name="chevron-back" size={24} color={colors.royalBlue} />
+            {/* Header */}
+            <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: responsiveFontSize(2),
+                paddingVertical: 12,
+                marginTop: safeAreaInsets.top,
+                backgroundColor: colors.white,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.blackOpacity(0.05)
+            }}>
+                <TouchableOpacity
+                    onPress={_goBack}
+                    hitSlop={hitSlop(10)}
+                    style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: colors.blackOpacity(0.05)
+                    }}
+                >
+                    <Ionicons name="chevron-back" size={22} color={colors.royalBlue} />
                 </TouchableOpacity>
-                <View>
-                    <Text style={{ fontSize: responsiveFontSize(2.4), fontWeight: 'bold', color: colors.royalBlue }}>
-                        {t('jobInvitationsTitle')}
-                    </Text>
-                    <Text style={{ fontSize: responsiveFontSize(1.5), color: '#64748B' }}>
-                        {t('jobInvitationsSubtitle')}
-                    </Text>
-                </View>
+                <Text style={{
+                    fontSize: responsiveFontSize(2.2),
+                    color: colors.black,
+                    fontWeight: '700'
+                }}>
+                    {t('jobInvitationsTitle')}
+                </Text>
+                <View style={{ width: 36 }} />
             </View>
 
             <ScrollView contentContainerStyle={{ padding: responsiveWidth(4), paddingBottom: responsiveHeight(10) }} showsVerticalScrollIndicator={false}>
+                <View style={{ marginBottom: 16 }}>
+                    <Text style={{ fontSize: responsiveFontSize(1.5), color: '#64748B', textAlign: 'center' }}>
+                        {t('jobInvitationsSubtitle')}
+                    </Text>
+                </View>
                 {invitations.map((item) => (
                     <InvitationCard key={item.id} item={item} />
                 ))}

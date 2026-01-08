@@ -31,11 +31,37 @@ export default function AddLoad() {
     return (
         <View style={{ flex: 1, backgroundColor: colors.white }}>
             <Space height={safeAreaInsets.top} />
-            <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center', padding: responsiveWidth(3) }}>
-                <TouchableOpacity hitSlop={hitSlop(10)} onPress={() => navigation.goBack()} style={{ height: responsiveFontSize(4), width: responsiveFontSize(4), alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white, borderRadius: 100, zIndex: 100 }}>
-                    <Ionicons name={'chevron-back'} size={24} color={colors.royalBlue} />
+            {/* Header */}
+            <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: responsiveFontSize(2),
+                paddingVertical: 12,
+                backgroundColor: colors.white
+            }}>
+                <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    hitSlop={hitSlop(10)}
+                    style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: colors.blackOpacity(0.05)
+                    }}
+                >
+                    <Ionicons name={'chevron-back'} size={22} color={colors.royalBlue} />
                 </TouchableOpacity>
-                <Text style={{ width: responsiveWidth(100), fontSize: responsiveFontSize(2.2), color: colors.royalBlue, fontWeight: 'bold', textAlign: 'center', position: 'absolute', zIndex: 1 }}>{`Post Load`}</Text>
+                <Text style={{
+                    fontSize: responsiveFontSize(2.2),
+                    color: colors.black,
+                    fontWeight: '700'
+                }}>
+                    Post Load
+                </Text>
+                <View style={{ width: 36 }} />
             </View>
 
             <Space height={responsiveFontSize(1)} />

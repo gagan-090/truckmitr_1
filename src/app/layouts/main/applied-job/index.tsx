@@ -462,44 +462,40 @@ export default function AppliedJob() {
         <View style={{ flex: 1, backgroundColor: colors.white }}>
             <Space height={safeAreaInsets.top} />
 
-            {/* Premium Header */}
-            <Animated.View style={{
-                opacity: headerOpacity,
+            {/* Standard Header */}
+            <View style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                paddingHorizontal: responsiveWidth(4),
-                paddingVertical: responsiveHeight(1.5),
+                justifyContent: 'space-between',
+                paddingVertical: 12,
+                paddingHorizontal: responsiveFontSize(2),
                 backgroundColor: colors.white,
                 borderBottomWidth: 1,
-                borderBottomColor: colors.blackOpacity(0.05),
+                borderBottomColor: colors.blackOpacity(0.05)
             }}>
-                <Pressable
+                <TouchableOpacity
                     onPress={_goback}
-                    hitSlop={hitSlop(15)}
-                    style={({ pressed }) => [{
-                        height: responsiveFontSize(4.5),
-                        width: responsiveFontSize(4.5),
+                    hitSlop={hitSlop(10)}
+                    style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: colors.royalBlue + '10',
-                        borderRadius: responsiveFontSize(1.2),
-                        opacity: pressed ? 0.7 : 1,
-                    }]}
+                        backgroundColor: colors.blackOpacity(0.05)
+                    }}
                 >
                     <Ionicons name={'chevron-back'} size={22} color={colors.royalBlue} />
-                </Pressable>
+                </TouchableOpacity>
                 <Text style={{
-                    flex: 1,
-                    fontSize: responsiveFontSize(2.3),
+                    fontSize: responsiveFontSize(2.2),
                     color: colors.black,
-                    fontWeight: '700',
-                    textAlign: 'center',
-                    marginRight: responsiveFontSize(4.5), // Balance the back button
-                    letterSpacing: -0.3,
+                    fontWeight: '700'
                 }}>
                     {t('appliedJobs', 'Applied Jobs')} ({appliedJobsList?.length || 0})
                 </Text>
-            </Animated.View>
+                <View style={{ width: 36 }} />
+            </View>
 
             {/* Content */}
             {loading ? (

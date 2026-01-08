@@ -336,93 +336,90 @@ const JobCard = ({ item, expandedJobs, toggleExpand, checkBoxSelect, _onpressChe
                             </Text>
                         </View>
 
-                        {/* Row 1: Job ID & Posted On */}
-                        <View style={{ flexDirection: 'row', marginBottom: responsiveFontSize(1.8) }}>
-                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                                <MaterialCommunityIcons name="card-account-details-outline" size={16} color={colors.royalBlue} />
-                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
-                                    Job ID: <Text style={{ color: colors.black, fontWeight: '500' }}>{item?.job_id}</Text>
-                                </Text>
+                        {/* Details Grid - Using DetailItem for consistent alignment */}
+                        <View style={{ gap: responsiveFontSize(1) }}>
+                            {/* Row 1: Job ID & Posted On */}
+                            <View style={{ flexDirection: 'row' }}>
+                                <DetailItem
+                                    icon={<MaterialCommunityIcons name="card-account-details-outline" size={16} color={colors.royalBlue} />}
+                                    label="Job ID:"
+                                    value={item?.job_id}
+                                    colors={colors}
+                                    responsiveFontSize={responsiveFontSize}
+                                />
+                                <DetailItem
+                                    icon={<FontAwesome name="calendar" size={14} color={colors.royalBlue} />}
+                                    label="Posted On:"
+                                    value={moment(item?.Created_at).format("DD MMM YYYY")}
+                                    colors={colors}
+                                    responsiveFontSize={responsiveFontSize}
+                                />
                             </View>
-                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                                <FontAwesome name="calendar" size={14} color={colors.royalBlue} />
-                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
-                                    Posted On: <Text style={{ color: colors.black, fontWeight: '500' }}>{moment(item?.Created_at).format("DD MMM YYYY")}</Text>
-                                </Text>
-                            </View>
-                        </View>
 
-                        {/* Row 2: Location & Open Positions */}
-                        <View style={{ flexDirection: 'row', marginBottom: responsiveFontSize(1.8) }}>
-                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                                <FontAwesome6 name="location-dot" size={14} color={colors.royalBlue} />
-                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
-                                    {t('location') || 'Location'}: <Text style={{ color: colors.black, fontWeight: '500' }}>{item?.job_location}</Text>
-                                </Text>
+                            {/* Row 2: Location & Open Positions */}
+                            <View style={{ flexDirection: 'row' }}>
+                                <DetailItem
+                                    icon={<FontAwesome6 name="location-dot" size={14} color={colors.royalBlue} />}
+                                    label={`${t('location') || 'Location'}:`}
+                                    value={item?.job_location}
+                                    colors={colors}
+                                    responsiveFontSize={responsiveFontSize}
+                                />
+                                <DetailItem
+                                    icon={<FontAwesome6 name="users" size={14} color={colors.royalBlue} />}
+                                    label="Open Positions:"
+                                    value={item?.number_of_drivers_required || '-'}
+                                    colors={colors}
+                                    responsiveFontSize={responsiveFontSize}
+                                />
                             </View>
-                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                                <FontAwesome6 name="users" size={14} color={colors.royalBlue} />
-                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
-                                    Open Positions: <Text style={{ color: colors.black, fontWeight: '500' }}>{item?.number_of_drivers_required || '-'}</Text>
-                                </Text>
-                            </View>
-                        </View>
 
-                        {/* Row 3: Experience Required & License Type */}
-                        <View style={{ flexDirection: 'row', marginBottom: responsiveFontSize(1.8) }}>
-                            <View style={{ flex: 1 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <FontAwesome name="star" size={14} color={colors.royalBlue} />
-                                    <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
-                                        Experience Required
-                                    </Text>
-                                </View>
-                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.black, fontWeight: '500', marginLeft: responsiveFontSize(2.5), marginTop: responsiveFontSize(0.3) }}>
-                                    {item?.Required_Experience} Years
-                                </Text>
+                            {/* Row 3: Experience & License */}
+                            <View style={{ flexDirection: 'row' }}>
+                                <DetailItem
+                                    icon={<FontAwesome name="star" size={14} color={colors.royalBlue} />}
+                                    label="Experience Required:"
+                                    value={`${item?.Required_Experience} Years`}
+                                    colors={colors}
+                                    responsiveFontSize={responsiveFontSize}
+                                />
+                                <DetailItem
+                                    icon={<MaterialCommunityIcons name="license" size={16} color={colors.royalBlue} />}
+                                    label="License Type:"
+                                    value={item?.Type_of_License?.toUpperCase()}
+                                    colors={colors}
+                                    responsiveFontSize={responsiveFontSize}
+                                />
                             </View>
-                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                                <MaterialCommunityIcons name="license" size={16} color={colors.royalBlue} />
-                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
-                                    License Type: <Text style={{ color: colors.black, fontWeight: '500' }}>{item?.Type_of_License}</Text>
-                                </Text>
-                            </View>
-                        </View>
 
-                        {/* Row 4: Industry & Vehicle Type */}
-                        <View style={{ flexDirection: 'row', marginBottom: responsiveFontSize(1.8) }}>
-                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                                <MaterialCommunityIcons name="domain" size={16} color={colors.royalBlue} />
-                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
-                                    Industry: <Text style={{ color: colors.black, fontWeight: '500' }}>{item?.Industry || 'N/A'}</Text>
-                                </Text>
+                            {/* Row 4: Vehicle Type & Application Deadline */}
+                            <View style={{ flexDirection: 'row' }}>
+                                <DetailItem
+                                    icon={<MaterialCommunityIcons name="truck" size={16} color={colors.royalBlue} />}
+                                    label={`${t('vehicleType') || 'Vehicle Type'}:`}
+                                    value={item?.vehicle_type}
+                                    colors={colors}
+                                    responsiveFontSize={responsiveFontSize}
+                                />
+                                <DetailItem
+                                    icon={<FontAwesome name="calendar-check-o" size={14} color={colors.royalBlue} />}
+                                    label="Application Deadline:"
+                                    value={item?.Application_Deadline || '-'}
+                                    colors={colors}
+                                    responsiveFontSize={responsiveFontSize}
+                                />
                             </View>
-                            <View style={{ flex: 1 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <MaterialCommunityIcons name="truck" size={16} color={colors.royalBlue} />
-                                    <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
-                                        {t('vehicleType') || 'Vehicle Type'}
-                                    </Text>
-                                </View>
-                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.black, fontWeight: '500', marginLeft: responsiveFontSize(2.5), marginTop: responsiveFontSize(0.3) }}>
-                                    {item?.vehicle_type}
-                                </Text>
-                            </View>
-                        </View>
 
-                        {/* Row 5: Application Deadline */}
-                        <View style={{ flexDirection: 'row' }}>
-                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                                <FontAwesome name="calendar" size={14} color={colors.royalBlue} />
-                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.royalBlue, fontWeight: '600', marginLeft: responsiveFontSize(0.5) }}>
-                                    Application Deadline
-                                </Text>
-                            </View>
-                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                                <FontAwesome name="calendar-check-o" size={14} color={colors.royalBlue} />
-                                <Text style={{ fontSize: responsiveFontSize(1.55), color: colors.black, fontWeight: '500', marginLeft: responsiveFontSize(0.5) }}>
-                                    {item?.Application_Deadline || '-'}
-                                </Text>
+                            {/* Row 5: Industry (Moved to bottom to match visual flow) */}
+                            <View style={{ flexDirection: 'row' }}>
+                                <DetailItem
+                                    icon={<MaterialCommunityIcons name="domain" size={16} color={colors.royalBlue} />}
+                                    label="Industry:"
+                                    value={item?.Industry || 'N/A'}
+                                    colors={colors}
+                                    responsiveFontSize={responsiveFontSize}
+                                />
+                                <View style={{ flex: 1 }} />
                             </View>
                         </View>
                     </View>
@@ -570,7 +567,7 @@ const DetailItem = ({ icon, label, value, colors, responsiveFontSize }: any) => 
             color: colors.black,
             fontWeight: '500',
             paddingLeft: responsiveFontSize(2.4),
-        }} numberOfLines={2}>
+        }}>
             {value || '-'}
         </Text>
     </View>
