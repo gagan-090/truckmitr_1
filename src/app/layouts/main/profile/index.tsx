@@ -48,7 +48,7 @@ import RNShare from 'react-native-share';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // Membership Card Asset Images
 const LOGO_IMAGE = require('@truckmitr/src/assets/membership-card/logotrick.png');
-const PROFILE_PLACEHOLDER = require('@truckmitr/src/assets/membership-card/man.png');
+
 const BACKGROUND_VERIFIED = require('@truckmitr/src/assets/membership-card/membershipbg.png');
 const BACKGROUND_TRUSTED = require('@truckmitr/src/assets/membership-card/membershipcardbg2.png');
 const BACKGROUND_JOB_READY = require('@truckmitr/src/assets/membership-card/membershipcard3.png');
@@ -1210,7 +1210,7 @@ export default function Profile() {
           const displayValue = isTransporterRole ? (user?.Transport_Name || user?.transport_name || '')?.toUpperCase() : (user?.Type_of_License || 'HMV')?.toUpperCase();
           const licenseType = user?.Type_of_License || 'HMV'; // Keeping for backward compatibility if needed elsewhere
 
-          const profileImage = user?.images ? { uri: `${BASE_URL}public/${user?.images}` } : PROFILE_PLACEHOLDER;
+
 
           const startDate = subscriptionDetails?.start_at
             ? moment.unix(subscriptionDetails.start_at).format('DD/MM/YY')
@@ -1298,11 +1298,17 @@ export default function Profile() {
                                 padding: 2,
                                 borderRadius: 28
                               }}>
-                                <Image
-                                  source={profileImage}
-                                  style={{ width: 52, height: 52, borderRadius: 26 }}
-                                  resizeMode="cover"
-                                />
+                                {user?.images ? (
+                                  <Image
+                                    source={{ uri: `${BASE_URL}public/${user?.images}` }}
+                                    style={{ width: 52, height: 52, borderRadius: 26 }}
+                                    resizeMode="cover"
+                                  />
+                                ) : (
+                                  <View style={{ width: 52, height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', backgroundColor: '#E0E0E0' }}>
+                                    <FontAwesome name="user" size={32} color="#757575" />
+                                  </View>
+                                )}
                               </View>
                             </LinearGradient>
                           </View>
