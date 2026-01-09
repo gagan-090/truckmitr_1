@@ -515,6 +515,7 @@ export default function Routes() {
             appliedJob: 'applied-job',
             search: 'search',
             profileEdit: 'profile-edit',
+            profileEditNew: 'profile-edit-new',
             drivingDetails: 'driving-details',
             uploadDocuments: 'upload-documents',
             settings: 'settings',

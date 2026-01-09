@@ -520,7 +520,7 @@ export default function ProfileCompletion() {
         contentOpacity.value = withTiming(1, { duration: 400 });
         contentTranslateX.value = withSpring(0, { damping: 12 });
 
-        // Play voice if not muted (regardless of language)
+        // Play voice if not muted (for drivers regardless of language)
         if (!isVoiceMuted) {
             playStepVoice();
         }
@@ -849,7 +849,9 @@ export default function ProfileCompletion() {
             }
 
             // Sex/Gender
-            formData.append('sex', userEdit?.Sex || '');
+            // formData.append('sex', userEdit?.Sex || '');
+            formData.append('Sex', userEdit?.Sex || '');
+
 
             // Education
             formData.append('highest_education', userEdit?.education || userEdit?.Highest_Education || '');
@@ -885,13 +887,13 @@ export default function ProfileCompletion() {
                 '6-10': '6',
                 '10+': '10'
             };
-            formData.append('Driving_Experience', expMapping[userEdit?.Driving_Experience] || userEdit?.Driving_Experience || '0');
+            formData.append('driving_experience', expMapping[userEdit?.Driving_Experience] || userEdit?.Driving_Experience || '0');
 
             // Aadhar Number
             formData.append('Aadhar_Number', userEdit?.Aadhar_Number || '');
 
             // License Number
-            formData.append('License_Number', userEdit?.license_number || userEdit?.License_Number || '');
+            formData.append('license_number', userEdit?.license_number || userEdit?.License_Number || '');
 
             // License Expiry Date - format as d-m-Y
             if (userEdit?.Expiry_date_of_License) {
@@ -1095,7 +1097,7 @@ export default function ProfileCompletion() {
             if (image && image.path) {
                 dispatch(userEditAction({ ...userEdit, profilePath: image }));
                 setProfileModalOpen(false);
-                showToast(t('photoSelected') || "Photo selected!");
+                // showToast(t('photoSelected') || "Photo selected!");
             }
         } catch (error: any) {
             if (error.code !== 'E_PICKER_CANCELLED') {
@@ -1815,7 +1817,7 @@ export default function ProfileCompletion() {
                             <Text style={styles.stepTitle}>{t(STEPS[currentStep].title)} </Text>
                             <Text style={styles.stepSubtitle}>{t(STEPS[currentStep].subtitle)}</Text>
                         </View>
-                        {i18n.language === 'hi' && ((userRole === 'driver' && DRIVER_VOICE_FILES[STEPS[currentStep].id]) || (userRole === 'transporter' && TRANSPORTER_VOICE_FILES[STEPS[currentStep].id])) && (
+                        {userRole === 'driver' && DRIVER_VOICE_FILES[STEPS[currentStep].id] && (
                             <TouchableOpacity
                                 onPress={toggleVoiceMute}
                                 style={{
@@ -1839,7 +1841,7 @@ export default function ProfileCompletion() {
             </ScrollView>
 
             {/* Hidden audio player for voice guidance */}
-            {i18n.language === 'hi' && currentAudioSource && (
+            {userRole === 'driver' && currentAudioSource && (
                 <Video
                     source={currentAudioSource}
                     paused={false}

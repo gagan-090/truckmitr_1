@@ -658,6 +658,10 @@ export default function Profile() {
     isTransporter && navigation.navigate(STACKS.PROFILE_EDIT_TRANSPORTER)
   }
 
+  const _navigateProfileOverview = () => {
+    navigation.navigate(STACKS.PROFILE_OVERVIEW)
+  }
+
   const logAllAsyncStorage = async () => {
     try {
       const keys = await AsyncStorage.getAllKeys();
@@ -1554,6 +1558,12 @@ export default function Profile() {
           <MenuItem
             icon={<Feather name="user" size={20} color={colors.royalBlue} />}
             title={t('profile')}
+            onPress={_navigateProfileOverview}
+          />
+          <View style={[styles.divider, { backgroundColor: colors.blackOpacity(0.06) }]} />
+          <MenuItem
+            icon={<Feather name="edit-2" size={20} color={colors.royalBlue} />}
+            title={t('editProfile') || 'Edit Profile'}
             onPress={_navigateProfileEdit}
           />
           {isDriver && (
