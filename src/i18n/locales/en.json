@@ -600,6 +600,9 @@
   "forVerification": "For Verification",
   "forTraining": "For Training",
   "others": "Others",
+  "upgradePlan": "Upgrade Plan",
+  "becomeTruckMitrMember": "Become Truckmitr Member",
+  "currentPlan": "Current Plan",
   "forHiringDriver": "For Hiring Driver",
   "forDriverVerification": "For Driver Verification",
   "updateAvailable": "Update Available",
@@ -2177,8 +2180,8 @@
   "dateOfBirth": "Date of Birth",
   "district": "District",
   "licenseEndorsement": "License Endorsement",
-  "upgradeToTrusted":"Upgrade To Trusted",
-  "fatherNameRequired":"Father Name Required",
+  "upgradeToTrusted": "Upgrade To Trusted",
+  "fatherNameRequired": "Father Name Required",
   "maritalStatusRequired": "Marital Status Required",
-  "pincodeRequired":"Pincode is Required"
+  "pincodeRequired": "Pincode is Required"
 }
