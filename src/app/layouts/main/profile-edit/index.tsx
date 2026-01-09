@@ -22,7 +22,6 @@ import { requestCameraPermission, requestPhotoLibraryPermission } from '@truckmi
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
 import { Calendar } from 'react-native-calendars';
 import DatePicker from 'react-native-date-picker';
-import Video from 'react-native-video';
 
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
 
@@ -71,37 +70,6 @@ const TRANSPORTER_STEPS = [
     { id: 'pan_gst', title: 'panGstStep', subtitle: 'panGstStepDesc' },
 ];
 
-// Voice file mapping for Hindi step descriptions - using step IDs
-const DRIVER_VOICE_FILES: { [key: string]: any } = {
-    'avatar': require('@truckmitr/src/assets/voice/step_profile_photo.mp3'),
-    // 'personal_info': require('@truckmitr/src/assets/voice/step_personal_info.mp3'),
-    'dob': require('@truckmitr/src/assets/voice/step_dob.mp3'),
-    'gender': require('@truckmitr/src/assets/voice/step_gender.mp3'),
-    'education': require('@truckmitr/src/assets/voice/step_education.mp3'),
-    // 'address': require('@truckmitr/src/assets/voice/step_address.mp3'),
-    'vehicle': require('@truckmitr/src/assets/voice/step_vehicle.mp3'),
-    'experience': require('@truckmitr/src/assets/voice/step_experience.mp3'),
-    'license_type': require('@truckmitr/src/assets/voice/step_license_type.mp3'),
-    'salary': require('@truckmitr/src/assets/voice/step_salary.mp3'),
-    // 'preferences': require('@truckmitr/src/assets/voice/step_preferences.mp3'),
-    // 'aadhar_details': require('@truckmitr/src/assets/voice/step_aadhar.mp3'),
-    // 'license_details': require('@truckmitr/src/assets/voice/step_license.mp3'),
-    // 'pan_details': require('@truckmitr/src/assets/voice/step_pan_gst.mp3'),
-};
-
-const TRANSPORTER_VOICE_FILES: { [key: string]: any } = {
-    // 'avatar': require('@truckmitr/src/assets/voice/step_profile_photo.mp3'),
-    // 'personal_info': require('@truckmitr/src/assets/voice/step_personal_info.mp3'),
-    // 'transport_details': require('@truckmitr/src/assets/voice/step_transport_details.mp3'),
-    // 'address': require('@truckmitr/src/assets/voice/step_address.mp3'),
-    // 'year_of_exp': require('@truckmitr/src/assets/voice/step_experience_years.mp3'),
-    // 'fleet_size': require('@truckmitr/src/assets/voice/step_fleet_size.mp3'),
-    // 'industry_segment': require('@truckmitr/src/assets/voice/step_industry.mp3'),
-    // 'avg_km_run': require('@truckmitr/src/assets/voice/step_avg_km.mp3'),
-    // 'vehicle': require('@truckmitr/src/assets/voice/step_vehicle_transporter.mp3'),
-    // 'pan_gst': require('@truckmitr/src/assets/voice/step_pan_gst.mp3'),
-};
-
 export default function ProfileEdit() {
     const { t, i18n } = useTranslation();
     const dispatch = useDispatch();
@@ -124,8 +92,6 @@ export default function ProfileEdit() {
     const [licenseExpiryModal, setLicenseExpiryModal] = useState(false);
     const [loading, setLoading] = useState(false);
     const [calendarMonth, setCalendarMonth] = useState(moment().subtract(18, 'years').format('YYYY-MM-DD'));
-    const [currentAudioSource, setCurrentAudioSource] = useState<any>(null);
-    const [isVoiceMuted, setIsVoiceMuted] = useState(false);
     const [loadingPincode, setLoadingPincode] = useState(false);
 
     const contentOpacity = useSharedValue(1);
@@ -493,44 +459,7 @@ export default function ProfileEdit() {
         contentTranslateX.value = 20;
         contentOpacity.value = withTiming(1, { duration: 300 });
         contentTranslateX.value = withSpring(0, { damping: 12 });
-
-        // Play voice for Hindi language only if not muted
-        if (i18n.language === 'hi' && !isVoiceMuted) {
-            playStepVoice();
-        }
-    }, [currentStep, i18n.language, isVoiceMuted]);
-
-    const playStepVoice = () => {
-        if (isVoiceMuted) return;
-
-        try {
-            const stepId = STEPS[currentStep].id;
-            const VOICE_FILES = userRole === 'transporter' ? TRANSPORTER_VOICE_FILES : DRIVER_VOICE_FILES;
-            const voiceFile = VOICE_FILES[stepId];
-
-            if (voiceFile) {
-                // Stop any currently playing audio by setting to null first
-                setCurrentAudioSource(null);
-
-                // Small delay to ensure smooth transition
-                setTimeout(() => {
-                    setCurrentAudioSource(voiceFile);
-                }, 100);
-            } else {
-                console.log('No voice file found for step:', stepId);
-            }
-        } catch (error) {
-            console.log('Error playing voice:', error);
-        }
-    };
-
-    const toggleVoiceMute = () => {
-        setIsVoiceMuted(!isVoiceMuted);
-        if (!isVoiceMuted) {
-            // If muting, stop any currently playing audio
-            setCurrentAudioSource(null);
-        }
-    };
+    }, [currentStep]);
 
     const animatedContentStyle = useAnimatedStyle(() => ({
         opacity: contentOpacity.value,
@@ -893,6 +822,13 @@ export default function ProfileEdit() {
                     type: userEdit.profilePath.mime,
                     name: userEdit.profilePath.filename || 'profile.jpg'
                 });
+                console.log('✅ PROFILE PHOTO - Added to FormData:', {
+                    uri: userEdit.profilePath.path,
+                    type: userEdit.profilePath.mime,
+                    name: userEdit.profilePath.filename || 'profile.jpg'
+                });
+            } else {
+                console.log('❌ PROFILE PHOTO - Not added (missing path or mime)');
             }
 
             // PAN image
@@ -902,6 +838,13 @@ export default function ProfileEdit() {
                     type: userEdit.panImagePath.mime,
                     name: userEdit.panImagePath.filename || 'pan.jpg'
                 });
+                console.log('✅ PAN IMAGE - Added to FormData:', {
+                    uri: userEdit.panImagePath.path,
+                    type: userEdit.panImagePath.mime,
+                    name: userEdit.panImagePath.filename || 'pan.jpg'
+                });
+            } else {
+                console.log('❌ PAN IMAGE - Not added (missing path or mime)');
             }
 
             // GST Certificate
@@ -911,6 +854,13 @@ export default function ProfileEdit() {
                     type: userEdit.gstCertificatePath.mime,
                     name: userEdit.gstCertificatePath.filename || 'gst.jpg'
                 });
+                console.log('✅ GST CERTIFICATE - Added to FormData:', {
+                    uri: userEdit.gstCertificatePath.path,
+                    type: userEdit.gstCertificatePath.mime,
+                    name: userEdit.gstCertificatePath.filename || 'gst.jpg'
+                });
+            } else {
+                console.log('❌ GST CERTIFICATE - Not added (missing path or mime)');
             }
 
             // Aadhar photo
@@ -920,15 +870,29 @@ export default function ProfileEdit() {
                     type: userEdit.aadharImagePath.mime,
                     name: userEdit.aadharImagePath.filename || 'aadhar.jpg'
                 });
+                console.log('✅ AADHAR PHOTO - Added to FormData:', {
+                    uri: userEdit.aadharImagePath.path,
+                    type: userEdit.aadharImagePath.mime,
+                    name: userEdit.aadharImagePath.filename || 'aadhar.jpg'
+                });
+            } else {
+                console.log('❌ AADHAR PHOTO - Not added (missing path or mime)');
             }
 
             // Driving license photo
             if (userEdit?.drivingLicensePath?.path && userEdit?.drivingLicensePath?.mime) {
-                formData.append('driving_license', {
+                formData.append('Driving_License', {
                     uri: userEdit.drivingLicensePath.path,
                     type: userEdit.drivingLicensePath.mime,
                     name: userEdit.drivingLicensePath.filename || 'license.jpg'
                 });
+                console.log('✅ DRIVING LICENSE - Added to FormData:', {
+                    uri: userEdit.drivingLicensePath.path,
+                    type: userEdit.drivingLicensePath.mime,
+                    name: userEdit.drivingLicensePath.filename || 'license.jpg'
+                });
+            } else {
+                console.log('❌ DRIVING LICENSE - Not added (missing path or mime)');
             }
 
             // Debug: Log what's being sent
@@ -937,10 +901,21 @@ export default function ProfileEdit() {
             console.log('Vehicle Type:', userEdit?.vehicle_type);
             console.log('Sending to:', END_POINTS.EDIT_PROFILE);
 
+            // Summary of images being uploaded
+            const imagesSummary = {
+                profilePhoto: !!(userEdit?.profilePath?.path && userEdit?.profilePath?.mime),
+                aadharPhoto: !!(userEdit?.aadharImagePath?.path && userEdit?.aadharImagePath?.mime),
+                panImage: !!(userEdit?.panImagePath?.path && userEdit?.panImagePath?.mime),
+                drivingLicense: !!(userEdit?.drivingLicensePath?.path && userEdit?.drivingLicensePath?.mime),
+                gstCertificate: !!(userEdit?.gstCertificatePath?.path && userEdit?.gstCertificatePath?.mime)
+            };
+            console.log('📸 IMAGES SUMMARY:', imagesSummary);
+            console.log('📸 Total images being uploaded:', Object.values(imagesSummary).filter(Boolean).length);
+
             // Debug: Log driving license details
-            console.log('=== Driving License Debug ===');
-            console.log('drivingLicensePath:', JSON.stringify(userEdit?.drivingLicensePath, null, 2));
-            console.log('Driving_License (existing):', userEdit?.Driving_License);
+            // console.log('=== Driving License Debug ===');
+            // console.log('drivingLicensePath:', JSON.stringify(userEdit?.drivingLicensePath, null, 2));
+            // console.log('Driving_License (existing):', userEdit?.Driving_License);
             if (userEdit?.drivingLicensePath?.path) {
                 console.log('UPLOADING driving_license with:', {
                     uri: userEdit.drivingLicensePath.path,
@@ -950,6 +925,7 @@ export default function ProfileEdit() {
             } else {
                 console.log('NOT uploading driving_license - no new image selected');
             }
+            console.log('=======================formdata==================', formData);
 
             const response = await axiosInstance.post(END_POINTS.EDIT_PROFILE, formData);
 
@@ -1152,10 +1128,16 @@ export default function ProfileEdit() {
             case 'gender':
                 return (
                     <View style={styles.stepContent}>
-                        <Text style={styles.inputLabel}>{t('gender')}</Text>
+                        <Text style={styles.inputLabel}>
+                            {t('gender')}
+                            <Text style={{ color: 'red' }}> *</Text>
+                        </Text>
                         <View style={styles.radioGroup}>{['Male', 'Female', 'Other'].map(g => (<TouchableOpacity key={g} style={[styles.radioBox, userEdit?.Sex === g && styles.radioBoxSelected]} onPress={() => dispatch(userEditAction({ ...userEdit, Sex: g }))}><View style={[styles.radioCircle, userEdit?.Sex === g && styles.radioCircleSelected]}>{userEdit?.Sex === g && <View style={styles.radioDot} />}</View><Text style={[styles.radioText, userEdit?.Sex === g && { color: colors.royalBlue }]}>{g}</Text></TouchableOpacity>))}</View>
                         <Space height={24} />
-                        <Text style={styles.inputLabel}>{t('maritalStatus')}</Text>
+                        <Text style={styles.inputLabel}>
+                            {t('maritalStatus')}
+                            <Text style={{ color: 'red' }}> *</Text>
+                        </Text>
                         <View style={styles.chipContainer}>{['Single', 'Married', 'Widowed', 'Divorced'].map(s => (<Chip key={s} label={s} selected={userEdit?.Marital_Status === s} onPress={() => dispatch(userEditAction({ ...userEdit, Marital_Status: s }))} />))}</View>
                     </View>
                 );
@@ -1491,44 +1473,11 @@ export default function ProfileEdit() {
                                 <Text style={styles.stepTitle}>{STEPS[currentStep] ? t(STEPS[currentStep].title) : ''}</Text>
                                 <Text style={styles.stepSubtitle}>{STEPS[currentStep] ? t(STEPS[currentStep].subtitle) : ''}</Text>
                             </View>
-                            {i18n.language === 'hi' && STEPS[currentStep] && ((userRole === 'driver' && DRIVER_VOICE_FILES[STEPS[currentStep].id]) || (userRole === 'transporter' && TRANSPORTER_VOICE_FILES[STEPS[currentStep].id])) && (
-                                <TouchableOpacity
-                                    onPress={toggleVoiceMute}
-                                    style={{
-                                        width: 44,
-                                        height: 44,
-                                        borderRadius: 22,
-                                        backgroundColor: isVoiceMuted ? '#999' : colors.royalBlue,
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                    }}
-                                >
-                                    <Ionicons name={isVoiceMuted ? "volume-mute" : "volume-high"} size={24} color="white" />
-                                </TouchableOpacity>
-                            )}
                         </View>
                         <View style={styles.divider} />
                         {renderStepContent()}
                     </Animated.View>
                 </KeyboardAwareScrollView>
-
-                {/* Hidden audio player */}
-                {i18n.language === 'hi' && currentAudioSource && (
-                    <Video
-                        source={currentAudioSource}
-                        paused={false}
-                        volume={1.0}
-                        playInBackground={false}
-                        playWhenInactive={false}
-                        ignoreSilentSwitch="ignore"
-                        onEnd={() => { setCurrentAudioSource(null); }}
-                        onError={(error) => {
-                            console.log('Audio error:', error);
-                            setCurrentAudioSource(null);
-                        }}
-                        style={{ height: 0, width: 0, position: 'absolute' }}
-                    />
-                )}
 
                 <View style={styles.footer}>
                     <TouchableOpacity style={[styles.nextButton, { backgroundColor: colors.royalBlue }]} onPress={handleNext} disabled={loading}>

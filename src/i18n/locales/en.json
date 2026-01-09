@@ -41,7 +41,7 @@
   "address": "Address",
   "enterCompleteAddress": "Enter Your Complete Address",
   "city": "District",
-  "enterCity": "Enter City",
+  "enterCity": "Enter District",
   "state": "State",
   "selectState": "Select State",
   "next": "Next",
@@ -2176,5 +2176,9 @@
   "licenseDocuments": "Documents",
   "dateOfBirth": "Date of Birth",
   "district": "District",
-  "licenseEndorsement": "License Endorsement"
+  "licenseEndorsement": "License Endorsement",
+  "upgradeToTrusted":"Upgrade To Trusted",
+  "fatherNameRequired":"Father Name Required",
+  "maritalStatusRequired": "Marital Status Required",
+  "pincodeRequired":"Pincode is Required"
 }
