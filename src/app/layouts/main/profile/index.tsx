@@ -1187,8 +1187,8 @@ export default function Profile() {
         */}
         {shouldShowMembershipCard({ user, subscriptionDetails, isDriver }) && (() => {
           // Get tier and card configuration using utility functions
-          const paidAmount = getPaidAmount();
-          const tier = getTierFromPaymentType(subscriptionDetails?.payment_type, paidAmount, user?.role);
+          const tier = getUserTier({ user, subscriptionDetails, isDriver });
+          const badgeText = getUserBadgeText({ user, subscriptionDetails, isDriver });
           const cardConfig = getMembershipCardConfig({ user, subscriptionDetails, isDriver });
 
           if (!cardConfig) return null;
@@ -1327,11 +1327,11 @@ export default function Profile() {
                                 </Defs>
                                 {/* Shadow layer */}
                                 <SvgText fill="#000000" fillOpacity="0.7" fontSize="15" fontWeight="900" fontStyle="italic" letterSpacing="1" x="1.5" y="17">
-                                  {tierConfig.categoryText}
+                                  {badgeText.toUpperCase()}
                                 </SvgText>
                                 {/* Main gradient text */}
                                 <SvgText fill="url(#chromeGradientCat)" stroke="#000" strokeWidth="0.5" fontSize="15" fontWeight="900" fontStyle="italic" letterSpacing="1" x="0" y="15.5">
-                                  {tierConfig.categoryText}
+                                  {badgeText.toUpperCase()}
                                 </SvgText>
                               </Svg>
                             </View>

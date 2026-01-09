@@ -20,7 +20,7 @@
   "address": "पता",
   "enterCompleteAddress": "अपना पूरा पता दर्ज करें",
   "city": "ज़िला",
-  "enterCity": "शहर दर्ज करें",
+  "enterCity": "ज़िला दर्ज करें",
   "state": "राज्य",
   "selectState": "राज्य चुनें",
   "next": "आगे",
@@ -37,7 +37,7 @@
   "dobRequired": "जन्म तिथि आवश्यक है",
   "genderRequired": "लिंग आवश्यक है",
   "addressRequired": "पता आवश्यक है",
-  "cityRequired": "शहर आवश्यक है",
+  "cityRequired": "ज़िला आवश्यक है",
   "stateRequired": "राज्य आवश्यक है",
   "vehicleType": "वाहन प्रकार",
   "drivingExperienceYears": "ड्राइविंग अनुभव (वर्षों में)",
@@ -164,7 +164,7 @@
   "jobsThatSuitYouNotAvailable": "जो नौकरियाँ आपके लिए उपयुक्त हैं — अभी कोई मेल नहीं मिल रहा है।",
   "noJobsFound": "इसके लिए कोई नौकरियाँ नहीं मिलीं",
   "trySearchingDifferentKeyword": "कृपया कोई अलग कीवर्ड खोजें।",
-  "noJobsAvailableCurrently": "शहर, राज्य या वेतन राशि (जैसे, 25000 या 30000) के अनुसार टाइप करें और खोजें!",
+  "noJobsAvailableCurrently": "ज़िला, राज्य या वेतन राशि (जैसे, 25000 या 30000) के अनुसार टाइप करें और खोजें!",
   "noJobsYet": "कोई नौकरियाँ उपलब्ध नहीं हैं",
   "status": "स्थिति",
   "applied": "आवेदित",
@@ -704,7 +704,7 @@
   "30kTo40k": "₹30,000 - ₹40,000",
   "40kTo50k": "₹40,000 - ₹50,000",
   "above50k": "₹50,000 से अधिक",
-  "selectStateAndCity": "अपना राज्य और शहर चुनें",
+  "selectStateAndCity": "अपना राज्य और ज़िला चुनें",
   "yearOfOperation": "अनुभव के वर्ष",
   "selectYearsOfOperation": "अपने अनुभव के वर्ष चुनें",
   "selectFleetSize": "अपना फ्लीट साइज चुनें",
@@ -2081,5 +2081,9 @@
   "subAuthorizePayments": "और भुगतान को अधिकृत करता/करती हूँ",
   "subTransporterConsentText": "मैं सहमत हूँ",
   "subNoPlansAvailable": "कोई प्लान उपलब्ध नहीं",
-  "quarterly": "तिमाही"
+  "quarterly": "तिमाही",
+  "upgradeToTrusted": "ट्रस्टेड बनने के लिए अपडेट करें",
+  "fatherNameRequired": "पिता का नाम आवश्यक है",
+  "pincodeRequired": "पिनकोड आवश्यक है"
+
 }
