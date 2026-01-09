@@ -168,18 +168,18 @@ export default function AddDriver() {
     return (
         <View style={{ flex: 1, backgroundColor: colors.white, alignItems: 'center' }}>
             <Space height={safeAreaInsets.top} />
-            {/* Header */}
+            {/* Apple-style Header */}
             <View style={{
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 paddingVertical: 12,
                 paddingHorizontal: responsiveFontSize(2),
-                backgroundColor: colors.white
+                width: '100%',
             }}>
                 <TouchableOpacity
-                    onPress={_goback}
                     hitSlop={hitSlop(10)}
+                    onPress={_goback}
                     style={{
                         width: 36,
                         height: 36,
@@ -198,7 +198,7 @@ export default function AddDriver() {
                 }}>
                     {t('addDriver')}
                 </Text>
-                <View style={{ width: 36 }} />
+                <View style={{ width: responsiveFontSize(4) }} />
             </View>
             <KeyboardAwareScrollView
                 contentContainerStyle={{ flexGrow: 1, backgroundColor: colors.white, alignItems: 'center' }}

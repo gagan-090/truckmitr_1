@@ -700,7 +700,7 @@ const Home = React.forwardRef((props, ref) => {
     const _navigateAddJob = () => {
         // Clear any existing job data from Redux
         dispatch(jobAddAction({}));
-        
+
         if (subscriptionDetails?.showSubscriptionModel && isTransporter) {
             dispatch(subscriptionModalAction(true))
         } else {
@@ -711,7 +711,7 @@ const Home = React.forwardRef((props, ref) => {
         navigation.navigate(STACKS.VIEW_JOBS)
     }
     const _navigateAddDriver = () => {
-        setAddDriverModal(true);
+        navigation.navigate(STACKS.ADD_DRIVER);
     }
     const _navigateAppliedJobsTransporter = () => {
         let hasPremium = false;
