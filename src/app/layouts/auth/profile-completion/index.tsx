@@ -289,16 +289,7 @@ const licenseTypesList = [
     { label: 'HPMV/HTV', value: 'HPMV/HTV' },
 ];
 
-const salaryRanges = [
-    { label: 'Below ₹10,000', value: 'below_10k' },
-    { label: '₹10,000 - ₹15,000', value: '10k_15k' },
-    { label: '₹15,000 - ₹20,000', value: '15k_20k' },
-    { label: '₹20,000 - ₹25,000', value: '20k_25k' },
-    { label: '₹25,000 - ₹30,000', value: '25k_30k' },
-    { label: '₹30,000 - ₹40,000', value: '30k_40k' },
-    { label: '₹40,000 - ₹50,000', value: '40k_50k' },
-    { label: 'Above ₹50,000', value: 'above_50k' },
-];
+const salaryRanges = ['15000-20000', '20000-25000', '25000-30000', '30000-35000', '35000-40000', '40000-45000', '45000-50000', '50000-55000', '55000-60000'];
 
 const endorsementOptions = [
     { id: 'hill', label: 'Hill Driving', emoji: '🏔️' },
@@ -416,16 +407,7 @@ export default function ProfileCompletion() {
         { label: t('hpmvHtv'), value: 'HPMV/HTV' },
     ];
 
-    const translatedSalaryRanges = [
-        { label: t('below10k'), value: 'below_10k' },
-        { label: t('10kTo15k'), value: '10k_15k' },
-        { label: t('15kTo20k'), value: '15k_20k' },
-        { label: t('20kTo25k'), value: '20k_25k' },
-        { label: t('25kTo30k'), value: '25k_30k' },
-        { label: t('30kTo40k'), value: '30k_40k' },
-        { label: t('40kTo50k'), value: '40k_50k' },
-        { label: t('above50k'), value: 'above_50k' },
-    ];
+    const translatedSalaryRanges = ['15000-20000', '20000-25000', '25000-30000', '30000-35000', '35000-40000', '40000-45000', '45000-50000', '50000-55000', '55000-60000'];
 
     const translatedEndorsements = [
         { id: 'hill', label: t('hillDriving'), emoji: '🏔️' },
@@ -937,7 +919,7 @@ export default function ProfileCompletion() {
 
             // Profile photo
             if (userEdit?.profilePath?.path && userEdit?.profilePath?.mime) {
-                formData.append('profile_photo', {
+                formData.append('images', {
                     uri: userEdit.profilePath.path,
                     type: userEdit.profilePath.mime,
                     name: userEdit.profilePath.filename || 'profile.jpg'
@@ -1455,20 +1437,20 @@ export default function ProfileCompletion() {
                         <View style={styles.gridContainer}>
                             {translatedSalaryRanges.map((salary) => (
                                 <TouchableOpacity
-                                    key={salary.value}
+                                    key={salary}
                                     style={[
                                         styles.salaryTile,
-                                        userEdit?.current_salary === salary.value && styles.salaryTileSelected
+                                        userEdit?.current_salary === salary && styles.salaryTileSelected
                                     ]}
-                                    onPress={() => dispatch(userEditAction({ ...userEdit, current_salary: salary.value }))}
+                                    onPress={() => dispatch(userEditAction({ ...userEdit, current_salary: salary }))}
                                 >
                                     <Text style={[
                                         styles.salaryTileText,
-                                        userEdit?.current_salary === salary.value && styles.salaryTileTextSelected
+                                        userEdit?.current_salary === salary && styles.salaryTileTextSelected
                                     ]}>
-                                        {salary.label}
+                                        ₹{salary}
                                     </Text>
-                                    {userEdit?.current_salary === salary.value && (
+                                    {userEdit?.current_salary === salary && (
                                         <Ionicons name="checkmark-circle" size={16} color="#246BFD" style={{ marginLeft: 4 }} />
                                     )}
                                 </TouchableOpacity>
@@ -1483,20 +1465,20 @@ export default function ProfileCompletion() {
                         <View style={styles.gridContainer}>
                             {translatedSalaryRanges.map((salary) => (
                                 <TouchableOpacity
-                                    key={salary.value}
+                                    key={salary}
                                     style={[
                                         styles.salaryTile,
-                                        userEdit?.expected_salary === salary.value && styles.salaryTileSelected
+                                        userEdit?.expected_salary === salary && styles.salaryTileSelected
                                     ]}
-                                    onPress={() => dispatch(userEditAction({ ...userEdit, expected_salary: salary.value }))}
+                                    onPress={() => dispatch(userEditAction({ ...userEdit, expected_salary: salary }))}
                                 >
                                     <Text style={[
                                         styles.salaryTileText,
-                                        userEdit?.expected_salary === salary.value && styles.salaryTileTextSelected
+                                        userEdit?.expected_salary === salary && styles.salaryTileTextSelected
                                     ]}>
-                                        {salary.label}
+                                        ₹{salary}
                                     </Text>
-                                    {userEdit?.expected_salary === salary.value && (
+                                    {userEdit?.expected_salary === salary && (
                                         <Ionicons name="checkmark-circle" size={16} color="#246BFD" style={{ marginLeft: 4 }} />
                                     )}
                                 </TouchableOpacity>

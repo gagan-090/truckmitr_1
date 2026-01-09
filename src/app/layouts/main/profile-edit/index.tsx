@@ -815,9 +815,9 @@ export default function ProfileEdit() {
             formData.append('year_of_establishment', userEdit?.year_of_exp || userEdit?.year_of_establishment || userEdit?.establishment_year || '');
             formData.append('Referral_Code', userEdit?.Referral_Code || '');
 
-            // Profile photo
+
             if (userEdit?.profilePath?.path && userEdit?.profilePath?.mime) {
-                formData.append('profile_photo', {
+                formData.append('images', {
                     uri: userEdit.profilePath.path,
                     type: userEdit.profilePath.mime,
                     name: userEdit.profilePath.filename || 'profile.jpg'
