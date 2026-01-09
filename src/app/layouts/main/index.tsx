@@ -15,6 +15,7 @@ import Rating from "@truckmitr/src/app/layouts/main/rating"
 import ContactUs from "@truckmitr/src/app/layouts/main/contact-us"
 import Privacy from "@truckmitr/src/app/layouts/main/privacy"
 import ProfileEdit from "@truckmitr/src/app/layouts/main/profile-edit"
+import ProfileEditNew from "@truckmitr/src/app/layouts/main/profile-edit-new"
 import DrivingDetails from "@truckmitr/src/app/layouts/main/profile-edit/driving-details"
 import UploadDocuments from "@truckmitr/src/app/layouts/main/profile-edit/upload-documents"
 import Dashboard from "@truckmitr/src/app/layouts/main/dashboard"
@@ -60,4 +61,4 @@ import Convoy from "./convoy"
 import JobSummary from "./job-summary"
 
 
-export { Home, Training, Job, HealthHygiene, Profile, Modules, Quiz, Player, AvailableJob, AppliedJob, Search, Settings, LanguageMain, Notification, Rating, ContactUs, Privacy, Terms, ProfileEdit, DrivingDetails, UploadDocuments, Dashboard, SuitsJob, QuizResult, AddJob, ViewJobs, AddDriver, TransporterAppliedJob, DriverList, ProfileEditTransporter, DrivingDetailsTransporter, UploadDocumentsTransporter, JobStep2, JobStep3, DriverProfileEditByTransporter, DriverDrivingDetailsByTransporter, DriverUploadDocumentsByTransporter, PreferredColor, PaymentSuccess, ExcelImport, AddLoad, LocationSearch, LocationMap, DocumentUploadScreen, VerificationStatusScreen, TransporterVerificationScreen, DLVerification, DriverKiAwazInfo, CallJobManagerList, CallJobManagerInfo, ChallanCheckInfo, ChallanCheckResult, CourtCheckInfo, DigitalAddressCheckInfo, DriverInvites, RcCheckInfo, IdCheckInfo, Convoy ,JobSummary}
+export { Home, Training, Job, HealthHygiene, Profile, Modules, Quiz, Player, AvailableJob, AppliedJob, Search, Settings, LanguageMain, Notification, Rating, ContactUs, Privacy, Terms, ProfileEdit, ProfileEditNew, DrivingDetails, UploadDocuments, Dashboard, SuitsJob, QuizResult, AddJob, ViewJobs, AddDriver, TransporterAppliedJob, DriverList, ProfileEditTransporter, DrivingDetailsTransporter, UploadDocumentsTransporter, JobStep2, JobStep3, DriverProfileEditByTransporter, DriverDrivingDetailsByTransporter, DriverUploadDocumentsByTransporter, PreferredColor, PaymentSuccess, ExcelImport, AddLoad, LocationSearch, LocationMap, DocumentUploadScreen, VerificationStatusScreen, TransporterVerificationScreen, DLVerification, DriverKiAwazInfo, CallJobManagerList, CallJobManagerInfo, ChallanCheckInfo, ChallanCheckResult, CourtCheckInfo, DigitalAddressCheckInfo, DriverInvites, RcCheckInfo, IdCheckInfo, Convoy ,JobSummary}

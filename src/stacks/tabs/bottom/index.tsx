@@ -13,6 +13,7 @@ import { TourGuideZone, useTourGuideController, Tooltip } from 'rn-tourguide';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { subscriptionModalAction } from '@truckmitr/src/redux/actions/user.action';
 import Verification from '@truckmitr/src/app/layouts/main/verification/verification-screen';
+import ProfileOverview from '@truckmitr/src/app/layouts/main/profile-overview';
 
 
 const Tab = createBottomTabNavigator();

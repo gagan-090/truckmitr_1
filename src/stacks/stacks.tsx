@@ -31,6 +31,7 @@ export type NavigatorParams = {
     appliedJob: undefined
     search: undefined
     profileEdit: undefined
+    profileEditNew: { stepId?: string }
     drivingDetails: any
     uploadDocuments: any
     settings: undefined
@@ -125,6 +126,7 @@ export type NavigatorParams = {
     addSingleDriverInfo: undefined
     jobSummary: undefined
     editJob: { stepId: string } | undefined
+    profileOverview: undefined
 };
 
 export const STACKS = {
@@ -161,6 +163,7 @@ export const STACKS = {
     APPLIED_JOB: 'appliedJob',
     SEARCH: 'search',
     PROFILE_EDIT: 'profileEdit',
+    PROFILE_EDIT_NEW: 'profileEditNew',
     DRIVING_DETAILS: 'drivingDetails',
     UPLOAD_DOCUMENTS: 'uploadDocuments',
     SETTINGS: 'settings',
@@ -261,5 +264,6 @@ export const STACKS = {
     ADD_SINGLE_DRIVER_INFO: 'addSingleDriverInfo',
     JOB_SUMMARY: 'jobSummary',
     EDIT_JOB: 'editJob',
+    PROFILE_OVERVIEW: 'profileOverview',
 
 } as const;

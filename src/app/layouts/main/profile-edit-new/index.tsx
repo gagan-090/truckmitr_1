@@ -2,7 +2,7 @@ import { Image, Modal, Text, TextInput, TouchableOpacity, TouchableWithoutFeedba
 import React, { useEffect, useState, useRef } from 'react';
 import { useColor, useResponsiveScale, useShadow } from '@truckmitr/src/app/hooks';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NavigatorParams, STACKS } from '@truckmitr/stacks/stacks';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Space } from '@truckmitr/src/app/components';
@@ -24,6 +24,7 @@ import { Calendar } from 'react-native-calendars';
 import DatePicker from 'react-native-date-picker';
 
 type NavigatorProp = NativeStackNavigationProp<NavigatorParams, keyof NavigatorParams>;
+type ProfileEditNewRouteProp = RouteProp<NavigatorParams, 'profileEditNew'>;
 
 // Truck Images
 const TruckImages = {
@@ -69,8 +70,7 @@ const TRANSPORTER_STEPS = [
     { id: 'vehicle', title: 'vehicleTypeStep', subtitle: 'vehicleTypeStepDescTransporter' },
     { id: 'pan_gst', title: 'panGstStep', subtitle: 'panGstStepDesc' },
 ];
-
-export default function ProfileEdit() {
+export default function ProfileEditNew() {
     const { t, i18n } = useTranslation();
     const dispatch = useDispatch();
     const colors = useColor();
@@ -78,12 +78,18 @@ export default function ProfileEdit() {
     const safeAreaInsets = useSafeAreaInsets();
     const { responsiveHeight, responsiveWidth, responsiveFontSize } = useResponsiveScale();
     const navigation = useNavigation<NavigatorProp>();
+    const route = useRoute<ProfileEditNewRouteProp>();
     const { userEdit, isTransporter, user } = useSelector((state: any) => state?.user);
 
     const userRole = isTransporter || user?.role === 'transporter' || userEdit?.role === 'transporter' ? 'transporter' : 'driver';
     const STEPS = userRole === 'transporter' ? TRANSPORTER_STEPS : DRIVER_STEPS;
 
-    const [currentStep, setCurrentStep] = useState(0);
+    // Get initial step from route params or default to 0
+    const initialStepId = route.params?.stepId;
+    const initialStepIndex = initialStepId ? STEPS.findIndex(step => step.id === initialStepId) : 0;
+    
+    // Fixed step - no navigation between steps
+    const currentStep = initialStepIndex >= 0 ? initialStepIndex : 0;
     const [imagePickerOpen, setImagePickerOpen] = useState(false);
     const [activeField, setActiveField] = useState<string>('');
     const [locations, setLocations] = useState<any[]>([]);
@@ -96,8 +102,6 @@ export default function ProfileEdit() {
 
     const contentOpacity = useSharedValue(1);
     const contentTranslateX = useSharedValue(0);
-
-    const progressPercent = ((currentStep + 1) / STEPS.length) * 100;
 
     // Data arrays
     const drivingExperienceArray = Array.from({ length: 51 }, (_, i) => ({ label: i === 0 ? t('lessThan1Year') || 'Less than 1 year' : `${i} ${i === 1 ? 'year' : 'years'}`, value: i === 0 ? 'less_than_1' : `${i}` }));
@@ -202,6 +206,9 @@ export default function ProfileEdit() {
 
     // Normalize transporter fields from API response (handle casing mismatches)
     useEffect(() => {
+        // Skip normalization if user is actively uploading images
+        if (imagePickerOpen) return;
+        
         // Debug logs to see what we're receiving
         console.log('=== Normalization Effect Triggered ===');
         console.log('User Role:', userRole);
@@ -413,16 +420,27 @@ export default function ProfileEdit() {
             if (shouldUpdate) {
                 console.log('Normalizing transporter data with updates:', updates);
                 // We must spread userEdit to preserve other fields, but avoid infinite loops
-                // strictly update only if values are different
-                dispatch(userEditAction({ ...(userEditRef.current || {}), ...updates }));
+                // Preserve image paths that might have been recently updated
+                const currentUserEdit = userEditRef.current || {};
+                const preservedImagePaths = {
+                    profilePath: currentUserEdit.profilePath,
+                    panImagePath: currentUserEdit.panImagePath,
+                    gstCertificatePath: currentUserEdit.gstCertificatePath,
+                    aadharImagePath: currentUserEdit.aadharImagePath,
+                    drivingLicensePath: currentUserEdit.drivingLicensePath,
+                };
+                dispatch(userEditAction({ ...currentUserEdit, ...preservedImagePaths, ...updates }));
             } else {
                 console.log('No normalization updates needed');
             }
         }
-    }, [user, userRole, vehicleTypes]);
+    }, [user, userRole, vehicleTypes, imagePickerOpen]);
 
     // Driver Data Normalization
     useEffect(() => {
+        // Skip normalization if user is actively uploading images
+        if (imagePickerOpen) return;
+        
         if (userRole === 'driver' && user) {
             let shouldUpdate = false;
             const updates: any = {};
@@ -448,18 +466,25 @@ export default function ProfileEdit() {
 
             if (shouldUpdate) {
                 console.log('Normalizing driver data:', updates);
-                dispatch(userEditAction({ ...(userEditRef.current || {}), ...updates }));
+                // Preserve image paths that might have been recently updated
+                const currentUserEdit = userEditRef.current || {};
+                const preservedImagePaths = {
+                    profilePath: currentUserEdit.profilePath,
+                    panImagePath: currentUserEdit.panImagePath,
+                    gstCertificatePath: currentUserEdit.gstCertificatePath,
+                    aadharImagePath: currentUserEdit.aadharImagePath,
+                    drivingLicensePath: currentUserEdit.drivingLicensePath,
+                };
+                dispatch(userEditAction({ ...currentUserEdit, ...preservedImagePaths, ...updates }));
             }
         }
-    }, [user, userRole]);
+    }, [user, userRole, imagePickerOpen]);
 
-    // Play voice when step changes (only for Hindi language)
+    // Initialize animation values
     useEffect(() => {
-        contentOpacity.value = 0;
-        contentTranslateX.value = 20;
         contentOpacity.value = withTiming(1, { duration: 300 });
         contentTranslateX.value = withSpring(0, { damping: 12 });
-    }, [currentStep]);
+    }, []);
 
     const animatedContentStyle = useAnimatedStyle(() => ({
         opacity: contentOpacity.value,
@@ -667,27 +692,18 @@ export default function ProfileEdit() {
         return true;
     };
 
-    const handleNext = () => {
-        // Validate current step before proceeding
+    const handleUpdate = () => {
+        // Validate current step before updating
         if (!validateCurrentStep()) {
             return;
         }
-
-        if (currentStep < STEPS.length - 1) {
-            contentOpacity.value = withTiming(0, { duration: 150 });
-            setTimeout(() => setCurrentStep(prev => prev + 1), 150);
-        } else {
-            submitProfile();
-        }
+        
+        // Submit the profile update
+        submitProfile();
     };
 
     const handleBack = () => {
-        if (currentStep > 0) {
-            contentOpacity.value = withTiming(0, { duration: 150 });
-            setTimeout(() => setCurrentStep(prev => prev - 1), 150);
-        } else {
-            navigation.goBack();
-        }
+        navigation.goBack();
     };
 
     // Helper function to normalize corrupted array data (handles nested JSON strings)
@@ -941,7 +957,7 @@ export default function ProfileEdit() {
                     //         profile_completed: true,
                     //     },
                     // }));
-                    navigation.navigate(STACKS.BOTTOM_TAB, { screen: STACKS.PROFILE });
+                    navigation.goBack(); // Go back to previous screen
                 }
             } else {
                 showToast(response?.data?.message || t('updateFailed') || 'Update failed');
@@ -1451,8 +1467,7 @@ export default function ProfileEdit() {
     return (
         <View style={[styles.container, { backgroundColor: '#F8F9FA' }]}>
             <Space height={safeAreaInsets.top} />
-            <View style={styles.header}><TouchableOpacity onPress={handleBack} style={styles.navBtn}><Ionicons name="arrow-back" size={24} color="#333" /></TouchableOpacity><Text style={styles.headerTitle}>{t('profileEdit')}</Text><View style={styles.navBtn} /></View>
-            <View style={styles.progressContainer}><View style={styles.progressBar}><View style={[styles.progressFill, { width: `${progressPercent}%`, backgroundColor: colors.royalBlue }]} /></View><Text style={styles.progressText}>{currentStep + 1}/{STEPS.length}</Text></View>
+            <View style={styles.header}><TouchableOpacity onPress={handleBack} style={styles.navBtn}><Ionicons name="arrow-back" size={24} color="#333" /></TouchableOpacity><Text style={styles.headerTitle}>{STEPS[currentStep] ? t(STEPS[currentStep].title) : t('profileEdit')}</Text><View style={styles.navBtn} /></View>
 
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
@@ -1480,8 +1495,8 @@ export default function ProfileEdit() {
                 </KeyboardAwareScrollView>
 
                 <View style={styles.footer}>
-                    <TouchableOpacity style={[styles.nextButton, { backgroundColor: colors.royalBlue }]} onPress={handleNext} disabled={loading}>
-                        {loading ? <ActivityIndicator color="white" /> : <><Text style={styles.nextButtonText}>{currentStep === STEPS.length - 1 ? t('submit') : t('next')}</Text>{currentStep !== STEPS.length - 1 && <Ionicons name="arrow-forward" size={18} color="white" style={{ marginLeft: 8 }} />}</>}
+                    <TouchableOpacity style={[styles.nextButton, { backgroundColor: colors.royalBlue }]} onPress={handleUpdate} disabled={loading}>
+                        {loading ? <ActivityIndicator color="white" /> : <Text style={styles.nextButtonText}>{t('update')}</Text>}
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>

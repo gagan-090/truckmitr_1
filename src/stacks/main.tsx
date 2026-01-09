@@ -2,10 +2,11 @@ import React, { useEffect } from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { STACKS } from '@truckmitr/stacks/stacks';
 import Bottom from './tabs/bottom';
-import { AddDriver, AddJob, AddLoad, AppliedJob, AvailableJob, ContactUs, Dashboard, DriverDrivingDetailsByTransporter, DriverList, DriverProfileEditByTransporter, DriverUploadDocumentsByTransporter, DrivingDetails, DrivingDetailsTransporter, ExcelImport, JobStep2, JobStep3, LanguageMain, LocationSearch, LocationMap, Modules, Notification, PaymentSuccess, Player, PreferredColor, Privacy, ProfileEdit, ProfileEditTransporter, Quiz, QuizResult, Rating, Search, Settings, SuitsJob, TransporterAppliedJob, TransporterVerificationScreen, UploadDocuments, UploadDocumentsTransporter, ViewJobs, DLVerification, DriverKiAwazInfo, CallJobManagerList, CallJobManagerInfo, ChallanCheckInfo, ChallanCheckResult, CourtCheckInfo, DigitalAddressCheckInfo, DriverInvites, RcCheckInfo, IdCheckInfo, Convoy } from '@truckmitr/layouts/index';
+import { AddDriver, AddJob, AddLoad, AppliedJob, AvailableJob, ContactUs, Dashboard, DriverDrivingDetailsByTransporter, DriverList, DriverProfileEditByTransporter, DriverUploadDocumentsByTransporter, DrivingDetails, DrivingDetailsTransporter, ExcelImport, JobStep2, JobStep3, LanguageMain, LocationSearch, LocationMap, Modules, Notification, PaymentSuccess, Player, PreferredColor, Privacy, ProfileEdit, ProfileEditNew, ProfileEditTransporter, Quiz, QuizResult, Rating, Search, Settings, SuitsJob, TransporterAppliedJob, TransporterVerificationScreen, UploadDocuments, UploadDocumentsTransporter, ViewJobs, DLVerification, DriverKiAwazInfo, CallJobManagerList, CallJobManagerInfo, ChallanCheckInfo, ChallanCheckResult, CourtCheckInfo, DigitalAddressCheckInfo, DriverInvites, RcCheckInfo, IdCheckInfo, Convoy } from '@truckmitr/layouts/index';
 import { setupFirebaseNotifications, initializeNotificationChannel } from '@truckmitr/src/utils/notification';
 import { DocumentUploadScreen, JobSummary, VerificationStatusScreen, } from '../app/layouts/main';
 import EditJob from '../app/layouts/main/edit-job';
+import ProfileOverview from '../app/layouts/main/profile-overview';
 // import DriverInvites from '@truckmitr/src/app/layouts/main/driver-invites/driver-invites';
 import InviteDriver from '@truckmitr/src/app/layouts/main/all-driver-list/all-drivers-invitation-tab';
 import { Referral } from '../app/layouts/main/home/referral-driver';
@@ -137,6 +138,7 @@ export default function Main() {
       <Stack.Screen name={STACKS.APPLIED_JOB} component={AppliedJob} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.SEARCH} component={Search} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.PROFILE_EDIT} component={ProfileEdit} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.PROFILE_EDIT_NEW} component={ProfileEditNew} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.DRIVING_DETAILS} component={DrivingDetails} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.UPLOAD_DOCUMENTS} component={UploadDocuments} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.SETTINGS} component={Settings} options={{ animation: 'fade' }} />
@@ -214,6 +216,7 @@ export default function Main() {
       <Stack.Screen name={STACKS.ADD_SINGLE_DRIVER_INFO} component={AddSingleDriverInfo} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.JOB_SUMMARY} component={JobSummary} options={{ animation: 'fade' }} />
       <Stack.Screen name={STACKS.EDIT_JOB} component={EditJob} options={{ animation: 'fade' }} />
+      <Stack.Screen name={STACKS.PROFILE_OVERVIEW} component={ProfileOverview} options={{ animation: 'fade' }} />
 
       {/* DriverInvites usually mapped to STACKS.DRIVERINVITES, but checking stacks definition: invites */}
       {/* already there at line 165 as invites? No line 165 is DriverInvites component from local import. */}
